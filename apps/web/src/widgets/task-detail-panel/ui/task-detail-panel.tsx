@@ -4,6 +4,7 @@ import { ArrowLeft, CornerLeftUp, X } from "lucide-react";
 import Link from "next/link";
 import { DeleteTaskButton } from "@/features/task-delete";
 import { TaskContentForm, TaskPriorityPicker, TaskStatusPicker } from "@/features/task-edit";
+import { WriteStatusUpdateButton } from "@/features/write-status-update";
 import { StatusIcon, useTask, useTaskListParams, type TaskDetail } from "@/entities/task";
 import { ApiError } from "@/shared/api";
 import { formatDateTime, formatShortDate } from "@/shared/lib/format";
@@ -167,6 +168,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
         <span className="flex-1 text-[13px] text-muted-foreground tabular-nums">
           {task?.identifier}
         </span>
+        {task && <WriteStatusUpdateButton key={task.id} task={task} className="mr-1" />}
         {task && (
           <DeleteTaskButton
             task={task}
