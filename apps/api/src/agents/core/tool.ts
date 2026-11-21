@@ -1,13 +1,13 @@
 import { jsonSchema, tool, type ToolSet } from "ai";
 import { z } from "zod";
 
-export interface ReadTool<N extends string = string, S extends z.ZodType = z.ZodType> {
+export interface ReadTool<N extends string = string, S extends z.ZodType = z.ZodType, O = unknown> {
   name: N;
   description: string;
   input: S;
   terminal?: false;
-  run(input: z.output<S>): unknown;
-  summarize?(output: unknown): string;
+  run(input: z.output<S>): O;
+  summarize?(output: Awaited<O>): string;
 }
 
 export interface TerminalTool<N extends string = string, S extends z.ZodType = z.ZodType> {
@@ -28,8 +28,8 @@ export function defineReadTool<const N extends string, S extends z.ZodType, O>(d
   input: S;
   run(input: z.output<S>): O;
   summarize?(output: Awaited<O>): string;
-}): ReadTool<N, S> {
-  return definition as ReadTool<N, S>;
+}): ReadTool<N, S, O> {
+  return definition;
 }
 
 export function defineTerminalTool<const N extends string, S extends z.ZodType>(definition: {

@@ -1,3 +1,4 @@
+import { createTaskInputSchema, type CreateTaskInput } from "@postdog/shared";
 import { describe, expect, it } from "vitest";
 import { computeTaskFacts } from "../../src/agents/context";
 import { ToolError } from "../../src/agents/core/errors";
@@ -14,7 +15,10 @@ const DAY = 24 * 60 * 60 * 1000;
 function setup() {
   const db: Db = openDatabase(IN_MEMORY);
   migrateDatabase(db);
-  const tasks = createTaskService(db);
+  const service = createTaskService(db);
+  const tasks = {
+    create: (input: Partial<CreateTaskInput>) => service.create(createTaskInputSchema.parse(input)),
+  };
   const links = createLinkService(db);
   return { db, tasks, links, tools: createReadTools(db, () => Date.now() + 3 * DAY) };
 }
