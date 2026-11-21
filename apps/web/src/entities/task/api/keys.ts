@@ -11,6 +11,7 @@ export const taskKeys = {
   /** The list key is normalized through the contract schema, so equal queries share one cache entry. */
   list: (query: TaskListQuery = {}) => apiKey("/tasks", listTasksQuerySchema.parse(query)),
   detail: (id: number) => apiKey(`/tasks/${id}`),
+  notes: (id: number) => apiKey(`/tasks/${id}/notes`),
 
   isList: (key: unknown) =>
     typeof key === "string" && (key === "/api/tasks" || key.startsWith("/api/tasks?")),

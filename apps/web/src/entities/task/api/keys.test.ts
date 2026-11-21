@@ -23,7 +23,13 @@ describe("taskKeys", () => {
     });
   });
 
+  it("requests the notes endpoint of one task", () => {
+    expect(taskKeys.notes(12)).toBe("/api/tasks/12/notes");
+    expect(taskKeys.notes(12)).not.toBe(taskKeys.notes(13));
+  });
+
   it("tells task rows apart from other resources", () => {
+    expect(taskKeys.holdsTasks(taskKeys.notes(12))).toBe(false);
     expect(taskKeys.holdsTasks(taskKeys.list({ status: "todo" }))).toBe(true);
     expect(taskKeys.holdsTasks(taskKeys.detail(12))).toBe(true);
     expect(taskKeys.holdsTasks("/api/tasks/12/notes")).toBe(false);
