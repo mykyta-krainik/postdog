@@ -39,7 +39,7 @@ export function StatusUpdateDialog({
         >
           <SheetHeader className="px-4 pt-4 pb-3">
             <div className="flex items-center gap-2 pr-8">
-              <SheetTitle className="min-w-0 truncate text-[15px]">{title}</SheetTitle>
+              <SheetTitle className="min-w-0 truncate text-[15px] leading-6">{title}</SheetTitle>
               {badge}
             </div>
             <SheetDescription className="text-[13px]">{description}</SheetDescription>
@@ -55,7 +55,7 @@ export function StatusUpdateDialog({
       <DialogContent className="max-h-[min(88dvh,52rem)] gap-4 overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <div className="flex items-center gap-2 pr-8">
-            <DialogTitle className="min-w-0 truncate text-[15px]">{title}</DialogTitle>
+            <DialogTitle className="min-w-0 truncate text-[15px] leading-6">{title}</DialogTitle>
             {badge}
           </div>
           <DialogDescription className="text-[13px]">{description}</DialogDescription>

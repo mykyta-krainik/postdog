@@ -18,22 +18,17 @@ import type { StatusUpdater } from "../model/use-status-update";
 
 const noteBody = createNoteInputSchema.shape.body;
 
-/** An empty box skips its task. A filled one follows the note rule, and one box must be filled. */
-const notesFormSchema = z
-  .object({
-    notes: z.array(
-      z.object({
-        taskId: idSchema,
-        body: z.string().refine((body) => body.trim() === "" || noteBody.safeParse(body).success, {
-          message: `Keep notes under ${NOTE_MAX_LENGTH.toLocaleString("en")} characters.`,
-        }),
+/** An empty box skips its task. A filled one follows the note rule. */
+const notesFormSchema = z.object({
+  notes: z.array(
+    z.object({
+      taskId: idSchema,
+      body: z.string().refine((body) => body.trim() === "" || noteBody.safeParse(body).success, {
+        message: `Keep notes under ${NOTE_MAX_LENGTH.toLocaleString("en")} characters.`,
       }),
-    ),
-  })
-  .refine((values) => values.notes.some((note) => note.body.trim() !== ""), {
-    path: ["notes"],
-    message: "Write a note for at least one task. Leave the others empty to skip them.",
-  });
+    }),
+  ),
+});
 
 const resolver = zodResolver(notesFormSchema);
 
@@ -57,9 +52,14 @@ export function NotesRequest({
   const submit = form.handleSubmit((values) => {
     const next = notesInput(run.input, values);
     if (next) updater.run(next);
+    else {
+      form.setError("root", {
+        message: "Write a note for at least one task. Leave the others empty to skip them.",
+      });
+    }
   });
 
-  const missing = errors.notes?.message ?? errors.notes?.root?.message;
+  const missing = errors.root?.message;
 
   return (
     <form noValidate onSubmit={submit} className="flex flex-col gap-4">
@@ -82,7 +82,7 @@ export function NotesRequest({
               <label htmlFor={fieldId} className="flex min-w-0 items-baseline gap-2 text-[13px]">
                 <span className="shrink-0 text-muted-foreground tabular-nums">
                   {task.identifier}
-                </span>
+                </span>{" "}
                 <span className="min-w-0 truncate font-medium">{task.title}</span>
               </label>
               <Textarea
@@ -91,7 +91,9 @@ export function NotesRequest({
                 placeholder="One line on where this stands, or leave it empty to skip"
                 aria-invalid={error ? true : undefined}
                 className="min-h-14 leading-relaxed md:text-[13px]"
-                {...form.register(`notes.${index}.body`)}
+                {...form.register(`notes.${index}.body`, {
+                  onChange: () => form.clearErrors("root"),
+                })}
               />
               {error && <p className="text-xs text-destructive">{error}</p>}
             </li>
