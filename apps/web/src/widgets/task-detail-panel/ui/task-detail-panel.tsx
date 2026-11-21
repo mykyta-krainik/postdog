@@ -146,8 +146,7 @@ function PanelError({
 
 /**
  * The selected task. The Tasks page hosts it as a side panel, an overlay sheet or a full page,
- * depending on the width. Every section below the title is keyed by the task, so switching
- * tasks starts each form fresh.
+ * depending on the width.
  */
 export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
   const { data: task, error, isValidating, mutate } = useTask(taskId);
@@ -187,9 +186,10 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
         </Button>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-6">
+      {/* Keyed by task, so another task opens scrolled to the top and with fresh forms. */}
+      <div key={taskId} className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-6">
         {task ? (
-          <TaskDetailBody key={task.id} task={task} />
+          <TaskDetailBody task={task} />
         ) : error ? (
           <PanelError
             error={error}
