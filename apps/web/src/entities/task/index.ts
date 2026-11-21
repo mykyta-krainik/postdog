@@ -1,16 +1,21 @@
 export type {
   AiState,
+  CreateNoteInput,
   CreateTaskInput,
   ListTasksResponse,
   Priority,
   Task,
   TaskDetail,
+  TaskDetailLink,
   TaskListItem,
+  TaskNote,
   TaskStatus,
   UpdateTaskInput,
 } from "@postdog/shared";
 
 export { AI_ATTENTION_HINT, shouldShowAiDot } from "./model/ai-attention";
+export { linkLabel, sortLinks } from "./model/links";
+export { subtaskProgress, toggledStatus, type SubtaskProgress } from "./model/subtasks";
 export {
   DEFAULT_TASK_LIST_PARAMS,
   hasActiveFilters,
@@ -33,6 +38,7 @@ export {
   type CreateSubtasksValues,
   type CreateTaskValues,
 } from "./api/mutations";
+export { createNote, useTaskNotes } from "./api/notes";
 export { useTask, useTasks } from "./api/queries";
 
 export { AiDot } from "./ui/ai-dot";
