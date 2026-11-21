@@ -29,7 +29,7 @@ export function LinksSection({ links }: { links: TaskDetailLink[] }) {
                 {linkLabel(link)}
               </span>
               <StatusIcon status={link.task.status} />
-              <span className="w-11 shrink-0 text-xs text-muted-foreground tabular-nums">
+              <span className="min-w-11 shrink-0 text-xs whitespace-nowrap text-muted-foreground tabular-nums">
                 {link.task.identifier}
               </span>
               <span className="min-w-0 flex-1 truncate">{link.task.title}</span>

@@ -64,7 +64,7 @@ export function SubtasksSection({ task }: { task: TaskDetail }) {
                   scroll={false}
                   className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-md pr-1.5 pl-1 text-[13px] outline-none focus-visible:ring-1 focus-visible:ring-ring md:h-7"
                 >
-                  <span className="w-11 shrink-0 text-xs text-muted-foreground tabular-nums">
+                  <span className="min-w-11 shrink-0 text-xs whitespace-nowrap text-muted-foreground tabular-nums">
                     {subtask.identifier}
                   </span>
                   <span
