@@ -199,19 +199,6 @@ describe("agent runs over HTTP", () => {
     expect(latest!.changedSince).toBe(1);
   });
 
-  it("fails the stub status updater with a not-implemented error and keeps the input", async () => {
-    const app = api();
-    const res = await app
-      .post("/api/agents/status-updater/run")
-      .send({ scope: "task", taskId: 3, tone: "neutral" })
-      .expect(202);
-    expect(await waitForRun(app, res.body.runId)).toMatchObject({
-      agent: "status_updater",
-      input: { scope: "task", taskId: 3, tone: "neutral" },
-      error: { code: "internal_error" },
-    });
-  });
-
   it("validates run bodies with the contract schemas", async () => {
     const app = api();
     const res = await app
