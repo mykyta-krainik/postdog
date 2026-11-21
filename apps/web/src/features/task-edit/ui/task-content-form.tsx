@@ -38,6 +38,16 @@ const isEmpty = (patch: UpdateTaskInput) => Object.keys(patch).length === 0;
 
 const SAVED_NOTICE_MS = 2000;
 
+type SaveStatus = "idle" | "dirty" | "saving" | "failed" | "saved";
+
+/** A failed save shows the API's own message instead. */
+const SAVE_STATUS_TEXT: Record<Exclude<SaveStatus, "failed">, string> = {
+  idle: "",
+  dirty: "Unsaved changes",
+  saving: "Saving…",
+  saved: "Saved",
+};
+
 /** Borderless until hovered or focused, so the panel reads as a document. */
 const FIELD =
   "-mx-2 w-[calc(100%+1rem)] resize-none border-transparent bg-transparent px-2 shadow-none hover:border-input focus-visible:border-ring dark:bg-transparent";
@@ -80,6 +90,15 @@ export function TaskContentForm({ task, children }: TaskContentFormProps) {
   const [title, description] = useWatch({ control: form.control, name: ["title", "description"] });
   const dirty = !isEmpty(contentPatch({ title, description }, task));
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const status: SaveStatus = isSubmitting
+    ? "saving"
+    : dirty
+      ? errors.root
+        ? "failed"
+        : "dirty"
+      : savedAt !== null
+        ? "saved"
+        : "idle";
 
   // The content the API last confirmed. Saves diff against it, and server changes rebase onto it.
   const savedRef = useRef<TaskContentValues>({ title: task.title, description: task.description });
@@ -202,19 +221,20 @@ export function TaskContentForm({ task, children }: TaskContentFormProps) {
         {errors.description && (
           <p className="text-xs text-destructive">{errors.description.message}</p>
         )}
-        <div ref={statusRef} aria-live="polite" className="flex items-center gap-2 text-xs">
-          {isSubmitting ? (
-            <span className="py-1.5 text-muted-foreground">Saving…</span>
-          ) : dirty ? (
+        <div ref={statusRef} className="flex items-center gap-2 text-xs">
+          <span
+            aria-live="polite"
+            className={cn(
+              "mr-auto flex min-w-0 items-center gap-1",
+              status !== "idle" && "py-1.5",
+              status === "failed" ? "text-destructive" : "text-muted-foreground",
+            )}
+          >
+            {status === "saved" && <Check className="size-3.5" aria-hidden />}
+            {status === "failed" ? errors.root?.message : SAVE_STATUS_TEXT[status]}
+          </span>
+          {(status === "dirty" || status === "failed") && (
             <>
-              <span
-                className={cn(
-                  "mr-auto min-w-0",
-                  errors.root ? "text-destructive" : "text-muted-foreground",
-                )}
-              >
-                {errors.root?.message ?? "Unsaved changes"}
-              </span>
               <Button
                 type="button"
                 variant="ghost"
@@ -233,16 +253,9 @@ export function TaskContentForm({ task, children }: TaskContentFormProps) {
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => void save()}
               >
-                {errors.root ? "Try again" : "Save"}
+                {status === "failed" ? "Try again" : "Save"}
               </Button>
             </>
-          ) : (
-            savedAt !== null && (
-              <span className="flex items-center gap-1 py-1.5 text-muted-foreground">
-                <Check className="size-3.5" aria-hidden />
-                Saved
-              </span>
-            )
           )}
         </div>
       </div>
