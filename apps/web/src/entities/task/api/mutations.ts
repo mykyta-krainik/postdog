@@ -19,6 +19,20 @@ function revalidateTasks(except?: string) {
   return mutate((key) => taskKeys.holdsTasks(key) && key !== except);
 }
 
+/**
+ * The list and detail keys now in the SWR cache. The matcher only records keys and selects none.
+ * updateTask needs one mutate call per key: with a matcher, SWR computes a function
+ * optimisticData for the first key and gives that same value to every other key.
+ */
+function cachedTaskKeys(): string[] {
+  const keys: string[] = [];
+  void mutate((key) => {
+    if (typeof key === "string" && taskKeys.holdsTasks(key)) keys.push(key);
+    return false;
+  });
+  return keys;
+}
+
 export async function createTask(input: CreateTaskValues): Promise<TaskDetail> {
   const created = await apiRequest(apiKey("/tasks"), taskDetailSchema, {
     method: "POST",
@@ -39,12 +53,16 @@ export async function updateTask(id: number, patch: UpdateTaskInput): Promise<Ta
     body: patch,
   });
   if (isOptimisticPatch(patch)) {
-    await mutate<TaskCacheEntry | undefined, TaskDetail>(taskKeys.holdsTasks, request, {
-      optimisticData: (_committed, displayed) => patchTaskCache(displayed, id, patch),
-      rollbackOnError: true,
-      populateCache: false,
-      revalidate: true,
-    });
+    await Promise.all(
+      cachedTaskKeys().map((key) =>
+        mutate<TaskCacheEntry | undefined, TaskDetail>(key, request, {
+          optimisticData: (_committed, displayed) => patchTaskCache(displayed, id, patch),
+          rollbackOnError: true,
+          populateCache: false,
+          revalidate: true,
+        }),
+      ),
+    );
     return request;
   }
   const updated = await request;
