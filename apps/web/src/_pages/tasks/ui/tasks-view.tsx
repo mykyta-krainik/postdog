@@ -4,6 +4,7 @@ import { TaskList } from "@/widgets/task-list";
 import { PlanDayButton } from "@/features/plan-day";
 import { CreateTaskButton } from "@/features/task-create";
 import { TaskFilterSort } from "@/features/task-filter-sort";
+import { MyUpdateButton } from "@/features/write-status-update";
 import { useTaskListParams } from "@/entities/task";
 import { cn } from "@/shared/lib/utils";
 import { TaskDetailHost } from "./task-detail-host";
@@ -25,6 +26,7 @@ export function TasksView() {
         <TasksHeader
           action={
             <div className="flex items-center gap-2">
+              <MyUpdateButton />
               <PlanDayButton />
               <CreateTaskButton />
             </div>
