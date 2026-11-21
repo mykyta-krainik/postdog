@@ -6,13 +6,32 @@ import { IN_MEMORY } from "../db/client";
 
 export const REPO_ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
 
+export const LLM_PROVIDERS = ["anthropic", "openai"] as const;
+export type LlmProvider = (typeof LLM_PROVIDERS)[number];
+
 const blankAsUnset = (value: unknown) => (value === "" ? undefined : value);
+
+const optionalText = z.preprocess(blankAsUnset, z.string().trim().min(1).optional());
 
 const envSchema = z.object({
   API_PORT: z.preprocess(blankAsUnset, z.coerce.number().int().min(0).max(65_535).default(4000)),
   DATABASE_PATH: z
     .preprocess(blankAsUnset, z.string().trim().min(1).default("./apps/api/data/postdog.db"))
     .transform((path) => (path === IN_MEMORY ? path : resolve(REPO_ROOT, path))),
+  ANTHROPIC_API_KEY: optionalText,
+  OPENAI_API_KEY: optionalText,
+  LLM_MOCK: z
+    .preprocess(blankAsUnset, z.enum(["true", "false"]).default("false"))
+    .transform((value) => value === "true"),
+  LLM_MODEL: z.preprocess(
+    blankAsUnset,
+    z
+      .templateLiteral([z.enum(LLM_PROVIDERS), ":", z.string().min(1)])
+      .default("anthropic:claude-sonnet-5-5"),
+  ),
+  LANGFUSE_PUBLIC_KEY: optionalText,
+  LANGFUSE_SECRET_KEY: optionalText,
+  LANGFUSE_BASE_URL: z.preprocess(blankAsUnset, z.url().optional()),
 });
 
 export type Env = z.infer<typeof envSchema>;
