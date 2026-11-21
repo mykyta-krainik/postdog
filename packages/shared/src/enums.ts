@@ -55,6 +55,7 @@ export const AGENT_ERROR_CODES = [
   "cancelled",
   "interrupted",
   "ai_disabled",
+  "internal_error",
 ] as const;
 export const agentErrorCodeSchema = z.enum(AGENT_ERROR_CODES);
 export type AgentErrorCode = z.infer<typeof agentErrorCodeSchema>;
