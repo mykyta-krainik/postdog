@@ -28,6 +28,15 @@ export function listLatestNotes(
     .all();
 }
 
+export function listNotesSince(ex: Executor, since: number): TaskNoteRow[] {
+  return ex
+    .select()
+    .from(taskNotes)
+    .where(gte(taskNotes.createdAt, since))
+    .orderBy(desc(taskNotes.createdAt), desc(taskNotes.id))
+    .all();
+}
+
 export function insertNote(ex: Executor, row: Omit<TaskNoteRow, "id">): TaskNoteRow {
   return ex.insert(taskNotes).values(row).returning().get();
 }
