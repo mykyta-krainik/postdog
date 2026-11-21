@@ -30,11 +30,13 @@ export function AddNoteForm({ taskId }: { taskId: number }) {
   const { errors, isSubmitting } = form.formState;
   const length = useWatch({ control: form.control, name: "body" }).length;
 
+  // The box clears as soon as a note is sent. A failed send puts the note back.
   const submit = form.handleSubmit(async (values) => {
+    form.setValue("body", "");
     try {
       await createNote(taskId, values);
-      form.reset({ body: "" });
     } catch (error) {
+      if (form.getValues("body") === "") form.setValue("body", values.body);
       setApiErrors(
         form,
         error,
@@ -56,7 +58,8 @@ export function AddNoteForm({ taskId }: { taskId: number }) {
         onKeyDown={(event) => {
           if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey)) return;
           event.preventDefault();
-          void submit();
+          // Like the disabled button, a second shortcut while sending adds nothing.
+          if (!form.formState.isSubmitting) void submit();
         }}
       />
       <div className="flex items-center justify-end gap-3">

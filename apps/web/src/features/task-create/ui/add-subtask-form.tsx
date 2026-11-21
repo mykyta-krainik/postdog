@@ -26,9 +26,9 @@ const resolver = zodResolver(subtaskSchema, {
 });
 
 /**
- * Adds subtasks one title at a time. The form stays open after each one, so a list goes in quickly.
- * The API refuses the add when the parent changed since it loaded. The parent is then refreshed
- * and the typed title stays, so pressing Enter again adds it.
+ * Adds subtasks one title at a time. The field clears as soon as a title is sent, so the next one
+ * can be typed while it saves. A failed add puts the title back. The API refuses the add when the
+ * parent changed since it loaded. The parent is then refreshed, so pressing Enter again adds it.
  */
 export function AddSubtaskForm({
   parent,
@@ -45,11 +45,12 @@ export function AddSubtaskForm({
   };
 
   const submit = form.handleSubmit(async ({ title }) => {
+    form.setValue("title", "");
+    form.setFocus("title");
     try {
       await createSubtasks(parent.id, { subtasks: [{ title }], baseUpdatedAt: parent.updatedAt });
-      form.reset({ title: "" });
-      form.setFocus("title");
     } catch (error) {
+      if (form.getValues("title") === "") form.setValue("title", title);
       if (error instanceof ApiError && error.code === "stale") {
         await mutate(taskKeys.detail(parent.id));
         form.setError("root", {
@@ -82,7 +83,14 @@ export function AddSubtaskForm({
 
   const message = errors.title?.message ?? errors.root?.message;
   return (
-    <form noValidate onSubmit={submit} className="flex flex-col gap-1.5">
+    <form
+      noValidate
+      // A second Enter while the first add is in flight would add the subtask twice.
+      onSubmit={(event) =>
+        form.formState.isSubmitting ? event.preventDefault() : void submit(event)
+      }
+      className="flex flex-col gap-1.5"
+    >
       <div className="flex items-center gap-2">
         <Input
           autoFocus
