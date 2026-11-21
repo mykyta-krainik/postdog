@@ -132,14 +132,14 @@ export function TodayFocus() {
         {latest && planButton("Refresh", "outline")}
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <div className="flex w-full max-w-[820px] flex-col gap-3">
+        <div className="flex w-full max-w-[820px] flex-col gap-3 pt-3">
           {runner.view.status !== "completed" && runner.view.status !== "idle" && (
             <AgentRunStatus
               view={runner.view}
               agent="planner"
               onCancel={runner.cancel}
               onRetry={runner.start}
-              className="mx-4 mt-3 md:mx-5"
+              className="mx-4 md:mx-5"
             />
           )}
           {body}
