@@ -45,8 +45,10 @@
   --radius-xl: calc(var(--radius) + 6px);
 }
 
-/* Light theme. Dark is the default and lives under .dark below. */
-:root {
+/* Light theme. Dark is the default and lives under .dark below. .light scopes the light
+   tokens to one element inside a dark page, such as a theme preview. */
+:root,
+.light {
   color-scheme: light;
   --radius: 0.375rem;
 
