@@ -92,7 +92,7 @@ When a schema fails, `details` matches `validationErrorDetailsSchema`. Each issu
 - `AgentRun` is one `agent_runs` row. `AgentRunSummary` is the same row without `input`, `output` and `trace`, for lists.
 - `mode` is always `null` in phase 2. Only the Decomposer sets it.
 - `promptVersion` names the prompt constant, such as `PLANNER_PROMPT_V1`.
-- `error` is `null` unless `status` is `failed` or `cancelled`. Its `code` comes from `AGENT_ERROR_CODES`, not `ERROR_CODES`.
+- `error` is `null` unless `status` is `failed` or `cancelled`. Its `code` comes from `AGENT_ERROR_CODES`, not `ERROR_CODES`. `internal_error` means the agent code itself crashed, not the model or a limit.
 - `trace` holds one `TraceStep` per step, 1-based. `input` is a truncated string, and `tokens` is set on `llm` steps only.
 - `llm` records the model layer the run used. `GET /api/agents/info` returns the one in use now, for the "Mock AI" badge.
 - `input` and `output` are `unknown` on `agentRunSchema`. To read them, parse the run with `plannerRunSchema` or `statusUpdaterRunSchema`, picked by `agent`.

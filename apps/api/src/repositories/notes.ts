@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, gte } from "drizzle-orm";
 import type { Executor } from "../db/client";
 import { taskNotes, type TaskNoteRow } from "../db/schema";
 
@@ -9,6 +9,22 @@ export function listNotes(ex: Executor, taskId: number): TaskNoteRow[] {
     .from(taskNotes)
     .where(eq(taskNotes.taskId, taskId))
     .orderBy(asc(taskNotes.createdAt), asc(taskNotes.id))
+    .all();
+}
+
+export function listLatestNotes(
+  ex: Executor,
+  taskId: number,
+  options: { since?: number; limit: number },
+): TaskNoteRow[] {
+  const conditions = [eq(taskNotes.taskId, taskId)];
+  if (options.since !== undefined) conditions.push(gte(taskNotes.createdAt, options.since));
+  return ex
+    .select()
+    .from(taskNotes)
+    .where(and(...conditions))
+    .orderBy(desc(taskNotes.createdAt), desc(taskNotes.id))
+    .limit(options.limit)
     .all();
 }
 

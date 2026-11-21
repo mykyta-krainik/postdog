@@ -1,16 +1,25 @@
 import type { AddressInfo } from "node:net";
+import { createLlm } from "./agents/core/llm";
+import { createTracer } from "./agents/core/tracer";
 import { createApp } from "./app";
 import { loadEnv } from "./config/env";
 import { bootDatabase } from "./db/boot";
 import { logger } from "./lib/logger";
 
 const env = loadEnv();
-const { db, seeded } = bootDatabase(env.DATABASE_PATH);
+const { db, seeded, interrupted } = bootDatabase(env.DATABASE_PATH);
 logger.info(seeded ? "Created and seeded the database" : "Database is up to date", {
   path: env.DATABASE_PATH,
 });
+if (interrupted > 0) logger.info(`Marked ${interrupted} interrupted agent runs as failed`);
 
-const server = createApp(db).listen(env.API_PORT, (err?: Error) => {
+const llm = createLlm(env);
+const tracer = createTracer(env);
+logger.info(`LLM: ${llm.info.mode} (${llm.info.model})`, {
+  langfuse: tracer.enabled ? "on" : "off",
+});
+
+const server = createApp(db, { llm, tracer }).listen(env.API_PORT, (err?: Error) => {
   if (err) {
     logger.error(`API could not listen on port ${env.API_PORT}`, { err });
     process.exit(1);

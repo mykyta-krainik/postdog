@@ -55,6 +55,10 @@ export function listLinksOfTask(ex: Executor, taskId: number): TaskDetailLink[] 
   return [...outgoing, ...incoming].sort((a, b) => a.id - b.id);
 }
 
+export function listLinksOfType(ex: Executor, type: LinkType): TaskLinkRow[] {
+  return ex.select().from(taskLinks).where(eq(taskLinks.type, type)).all();
+}
+
 export function insertLink(ex: Executor, row: Omit<TaskLinkRow, "id">): TaskLinkRow {
   return ex.insert(taskLinks).values(row).returning().get();
 }
