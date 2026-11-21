@@ -1,6 +1,7 @@
 "use client";
 
 import { TaskList } from "@/widgets/task-list";
+import { PlanDayButton } from "@/features/plan-day";
 import { CreateTaskButton } from "@/features/task-create";
 import { TaskFilterSort } from "@/features/task-filter-sort";
 import { useTaskListParams } from "@/entities/task";
@@ -21,7 +22,14 @@ export function TasksView() {
           selectedTaskId !== undefined && "max-md:hidden",
         )}
       >
-        <TasksHeader action={<CreateTaskButton />}>
+        <TasksHeader
+          action={
+            <div className="flex items-center gap-2">
+              <PlanDayButton />
+              <CreateTaskButton />
+            </div>
+          }
+        >
           <TaskFilterSort />
         </TasksHeader>
         <TaskList />
