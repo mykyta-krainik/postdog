@@ -14,7 +14,7 @@ export interface AgentDefinition<I = unknown, O = unknown> {
   promptVersion: string;
   input: ZodType<I>;
   output: ZodType<O>;
-  prepare?(db: Db, input: I): void;
+  prepare?(db: Db, input: I, startedAt: number): I;
   run(ctx: AgentContext, input: I): Promise<{ output: O }>;
 }
 

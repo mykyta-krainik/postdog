@@ -29,7 +29,7 @@ An agent is an `AgentDefinition`:
 - `promptVersion`: the prompt constant's name, such as `PLANNER_PROMPT_V1`, stored on the run.
 - `input`: the Zod schema of the request body. The route validates the body with it.
 - `output`: the Zod schema of the stored output. The run service parses what `run` returns with it, so a run never stores an output the contract rejects.
-- `prepare(db, input)`, optional: runs synchronously before the run row exists. Throw an `AppError` from `lib/errors` (such as `invalidField("taskId", "Task 9 does not exist")`) to answer 400 instead of starting a run. Saving `notes` before a Status updater run fits here too.
+- `prepare(db, input, startedAt)`, optional: runs synchronously before the run row exists and returns the input the run stores and receives, such as the input with a default resolved from `startedAt`. Throw an `AppError` from `lib/errors` (such as `invalidField("taskId", "Task 9 does not exist")`) to answer 400 instead of starting a run. Saving `notes` before a Status updater run fits here too.
 - `run(ctx, input)`: does the work and returns `{ output }`.
 
 `ctx` is an `AgentContext`:
