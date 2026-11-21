@@ -127,4 +127,4 @@ The Planner uses `get_task` and `search_tasks`. The Status updater uses all thre
 - Without `since`, the window starts `AGENT_LIMITS.statusUpdateDefaultWindowMs` (24 hours) before the run starts.
 - `tone` overrides the tone the model picks. `notes` are saved as task notes before the run starts, which is how the UI answers `ask_for_notes`.
 - The model ends with `submit_status_update` or `ask_for_notes`.
-- `StatusUpdaterOutput` is a union on `kind`. With `update`, code has checked every task id, moved each `done` item whose task is not done to `inProgress` with a warning, added `identifier` to every item, and built `text` as Slack mrkdwn. With `needs_notes`, the UI asks for one note per task in `taskIds`.
+- `StatusUpdaterOutput` is a union on `kind`. With `update`, code has checked every task id, moved each `done` item whose task is not done to `inProgress` with a warning, added `identifier` to every item, and built `text` as Slack mrkdwn. With `needs_notes`, `tasks` lists `{ taskId, identifier, title }` for each task that needs a note, so the UI can ask for one note per task without extra fetches.

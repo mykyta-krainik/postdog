@@ -127,7 +127,14 @@ const update = {
 describe("statusUpdaterOutputSchema", () => {
   it("accepts an update and a request for notes", () => {
     expect(statusUpdaterOutputSchema.parse(update)).toEqual(update);
-    const needsNotes = { kind: "needs_notes", taskIds: [3, 4], question: "What changed?" };
+    const needsNotes = {
+      kind: "needs_notes",
+      tasks: [
+        { taskId: 3, identifier: "PD-3", title: "Fix login" },
+        { taskId: 4, identifier: "PD-4", title: "Add export" },
+      ],
+      question: "What changed?",
+    };
     expect(statusUpdaterOutputSchema.parse(needsNotes)).toEqual(needsNotes);
   });
 
@@ -136,7 +143,7 @@ describe("statusUpdaterOutputSchema", () => {
       false,
     );
     expect(
-      statusUpdaterOutputSchema.safeParse({ kind: "update", taskIds: [3], question: "?" }).success,
+      statusUpdaterOutputSchema.safeParse({ kind: "update", tasks: [], question: "?" }).success,
     ).toBe(false);
     const bare = { ...update, update: { ...update.update, done: [{ taskId: 12, text: "x" }] } };
     expect(statusUpdaterOutputSchema.safeParse(bare).success).toBe(false);

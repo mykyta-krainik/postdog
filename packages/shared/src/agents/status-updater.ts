@@ -99,7 +99,9 @@ export const statusUpdaterOutputSchema = z.discriminatedUnion("kind", [
   }),
   z.object({
     kind: z.literal("needs_notes"),
-    taskIds: z.array(idSchema).min(1),
+    tasks: z
+      .array(z.object({ taskId: idSchema, identifier: z.string(), title: z.string() }))
+      .min(1),
     question: z.string(),
   }),
 ]);
