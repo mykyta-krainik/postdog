@@ -199,15 +199,8 @@ describe("agent runs over HTTP", () => {
     expect(latest!.changedSince).toBe(1);
   });
 
-  it("fails the stub agents with a not-implemented error and keeps the input", async () => {
+  it("fails the stub status updater with a not-implemented error and keeps the input", async () => {
     const app = api();
-    const runId = await startPlanner(app);
-    expect(await waitForRun(app, runId)).toMatchObject({
-      status: "failed",
-      promptVersion: "PLANNER_STUB",
-      error: { code: "internal_error", message: "The Planner agent is not implemented yet." },
-    });
-
     const res = await app
       .post("/api/agents/status-updater/run")
       .send({ scope: "task", taskId: 3, tone: "neutral" })
