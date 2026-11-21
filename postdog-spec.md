@@ -240,6 +240,10 @@ POST /api/agents/docs-reviewer/run
 Start a Docs reviewer run; returns { runId }
 GET /api/agents/runs[/:id]
 Run history and the full trace
+GET /api/agents/info
+The model layer in use ({ llm: { mode: real | mock, model } }), for the "Mock AI" badge
+GET /api/agents/planner/latest
+The latest completed Planner run and how many tasks changed since it finished, for the Today page
 POST /api/agents/runs/:id/cancel
 Cancel a running run (AbortController)
 GET /api/suggestions?targetType=&targetId=&status=
