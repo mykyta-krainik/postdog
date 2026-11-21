@@ -256,13 +256,12 @@ GET/PATCH /api/settings
 Settings
 Agent runs are asynchronous. A run endpoint creates the agent_runs row with status running, starts the work in the API process, and returns { runId } at once. The client polls GET /api/agents/runs/:id every second or two until the status is not running. The 60-second wall clock applies to each agent loop, not to an HTTP request, so a Decomposer batch can take several minutes. Cancel uses an in-memory map of runId to AbortController. Streaming progress over SSE is a phase-7 improvement; until then, the UI shows staged progress text from the polled trace.
 6. Frontend: FSD, UI and layouts
-The frontend follows Feature-Sliced Design. Next.js keeps routing in a root app/ folder whose route files only import from FSD pages. Per FSD's Next.js guidance, there is also an empty root pages/ folder with a README, so Next does not treat src/pages as the Pages Router. Verify this against the current FSD docs before scaffolding.
+The frontend follows Feature-Sliced Design. Next.js keeps routing in a root app/ folder whose route files only import from FSD pages. Per the current FSD Next.js guidance, the FSD layers app and pages are named _app and _pages inside src/ so they do not clash with Next's own folders, and there is no empty root pages/ folder.
 apps/web/
-  app/                    Next routes: layout.tsx, page.tsx files that re-export from src/pages
-  pages/README.md         empty on purpose (FSD + Next.js)
+  app/                    Next routes: layout.tsx, page.tsx files that re-export from src/_pages
   src/
-    app/                  providers (SWRConfig, theme, Toaster), global styles
-    pages/                tasks, task-detail, today, docs, doc-detail, inbox, settings
+    _app/                 providers (SWRConfig, theme, Toaster), global styles
+    _pages/               tasks, task-detail, today, docs, doc-detail, inbox, settings
     widgets/              app-shell (sidebar, top bar), task-list, task-detail-panel, today-focus,
                           suggestion-review, agent-trace, notifications-inbox, docs-list
     features/             task-create, task-edit, task-delete, task-filter-sort, task-link,
@@ -276,7 +275,7 @@ apps/web/
       lib/                formatting, dates, cn()
       config/             routes, constants
 Rules
-• Imports only go downward (app → pages → widgets → features → entities → shared). Slices on the same layer do not import each other. Enforce this with an ESLint rule (e.g. eslint-plugin-boundaries) or @feature-sliced/steiger.
+• Imports only go downward (_app → _pages → widgets → features → entities → shared). Slices on the same layer do not import each other. Enforce this with an ESLint rule (e.g. eslint-plugin-boundaries) or @feature-sliced/steiger.
 • Each slice exposes a public index.ts. No deep imports.
 • Server state lives only in SWR. Mutations call the API, then mutate() the affected keys. Optimistic updates are used for status and priority changes only.
 • Forms use React Hook Form with zodResolver, using schemas from packages/shared.
