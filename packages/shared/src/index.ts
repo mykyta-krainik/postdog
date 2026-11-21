@@ -1,5 +1,6 @@
 export * from "./agents/planner";
 export * from "./agents/runs";
+export * from "./agents/status-updater";
 export * from "./agents/tools";
 export * from "./common";
 export * from "./config";
