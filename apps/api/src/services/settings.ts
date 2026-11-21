@@ -1,8 +1,10 @@
 import { DEFAULT_SETTINGS, type Settings, type UpdateSettingsInput } from "@postdog/shared";
+import { AgentError } from "../agents/core/errors";
 import type { Db } from "../db/client";
 import { getSetting, setSetting } from "../repositories/settings";
+import type { AgentRunService } from "./agentRuns";
 
-export function createSettingsService(db: Db) {
+export function createSettingsService(db: Db, runs: Pick<AgentRunService, "cancelAll">) {
   function get(): Settings {
     return {
       aiEnabled: getSetting(db, "aiEnabled") ?? DEFAULT_SETTINGS.aiEnabled,
@@ -20,6 +22,9 @@ export function createSettingsService(db: Db) {
           setSetting(tx, "decompositionMode", input.decompositionMode);
         }
       });
+      if (input.aiEnabled === false) {
+        runs.cancelAll(new AgentError("ai_disabled", "AI was turned off in Settings."));
+      }
       return get();
     },
   };
