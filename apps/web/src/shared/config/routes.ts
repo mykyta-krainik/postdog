@@ -2,6 +2,7 @@
 export const SELECTED_TASK_PARAM = "task";
 
 export const routes = {
+  today: "/today",
   tasks: "/tasks",
   task: (id: number) => `/tasks?${SELECTED_TASK_PARAM}=${id}`,
   settings: "/settings",

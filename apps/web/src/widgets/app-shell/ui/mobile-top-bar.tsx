@@ -8,11 +8,13 @@ import { routes } from "@/shared/config";
 import { cn } from "@/shared/lib/utils";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/shared/ui/sheet";
 import { Wordmark } from "@/shared/ui/wordmark";
-import { NAV_ITEMS, isActive } from "../config/nav";
+import { useSettings } from "@/entities/settings";
+import { isActive, navItemsFor } from "../config/nav";
 
 /** Mobile only: the wordmark and a menu button that opens the navigation sheet. */
 export function MobileTopBar() {
   const pathname = usePathname();
+  const { aiEnabled } = useSettings();
   const [open, setOpen] = useState(false);
 
   return (
@@ -44,7 +46,7 @@ export function MobileTopBar() {
             </SheetClose>
           </div>
           <nav aria-label="Main" className="flex flex-col gap-1 px-2 pt-1">
-            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+            {navItemsFor(aiEnabled).map(({ href, label, icon: Icon }) => {
               const active = isActive(pathname, href);
               return (
                 <Link

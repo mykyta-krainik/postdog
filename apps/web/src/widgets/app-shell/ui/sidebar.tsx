@@ -8,7 +8,8 @@ import { routes } from "@/shared/config";
 import { cn } from "@/shared/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
 import { Wordmark } from "@/shared/ui/wordmark";
-import { NAV_ITEMS, isActive } from "../config/nav";
+import { useSettings } from "@/entities/settings";
+import { isActive, navItemsFor } from "../config/nav";
 
 /** Labels hide on the tablet rail until it is expanded. Desktop always shows them. */
 const RAIL_HIDDEN = "md:max-lg:group-data-[expanded=false]/sidebar:sr-only";
@@ -16,6 +17,7 @@ const RAIL_HIDDEN = "md:max-lg:group-data-[expanded=false]/sidebar:sr-only";
 /** Tablet: a collapsible icon rail. Desktop: the full sidebar. Hidden on mobile. */
 export function Sidebar() {
   const pathname = usePathname();
+  const { aiEnabled } = useSettings();
   const [expanded, setExpanded] = useState(false);
   const ToggleIcon = expanded ? PanelLeftClose : PanelLeftOpen;
 
@@ -33,7 +35,7 @@ export function Sidebar() {
       </Link>
 
       <nav aria-label="Main" className="flex flex-col gap-0.5 px-2 pt-1">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        {navItemsFor(aiEnabled).map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
           return (
             <Tooltip key={href}>
