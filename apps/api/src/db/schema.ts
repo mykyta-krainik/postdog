@@ -1,10 +1,17 @@
 import {
+  AGENT_NAMES,
   AI_STATES,
+  DECOMPOSITION_MODES,
   LINK_TYPES,
   PRIORITIES,
+  RUN_STATUSES,
   TASK_STATUSES,
+  type AgentRunError,
+  type AgentUsage,
   type DecompositionMode,
   type LinkCreatedBy,
+  type LlmInfo,
+  type TraceStep,
 } from "@postdog/shared";
 import {
   type AnySQLiteColumn,
@@ -81,7 +88,33 @@ export const settings = sqliteTable("settings", {
   value: text("value", { mode: "json" }).notNull(),
 });
 
+export const agentRuns = sqliteTable(
+  "agent_runs",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    agent: text("agent", { enum: AGENT_NAMES }).notNull(),
+    mode: text("mode", { enum: DECOMPOSITION_MODES }),
+    status: text("status", { enum: RUN_STATUSES }).notNull(),
+    promptVersion: text("prompt_version").notNull(),
+    input: text("input", { mode: "json" }).$type<unknown>().notNull(),
+    output: text("output", { mode: "json" }).$type<unknown>(),
+    trace: text("trace", { mode: "json" }).$type<TraceStep[]>().notNull(),
+    error: text("error", { mode: "json" }).$type<AgentRunError>(),
+    langfuseTraceId: text("langfuse_trace_id"),
+    usage: text("usage", { mode: "json" }).$type<AgentUsage>(),
+    llm: text("llm", { mode: "json" }).$type<LlmInfo>().notNull(),
+    startedAt: integer("started_at").notNull(),
+    finishedAt: integer("finished_at"),
+  },
+  (t) => [
+    index("agent_runs_agent_started_at_idx").on(t.agent, t.startedAt),
+    index("agent_runs_status_idx").on(t.status),
+  ],
+);
+
 export type TaskRow = typeof tasks.$inferSelect;
 export type NewTaskRow = typeof tasks.$inferInsert;
 export type TaskNoteRow = typeof taskNotes.$inferSelect;
 export type TaskLinkRow = typeof taskLinks.$inferSelect;
+export type AgentRunRow = typeof agentRuns.$inferSelect;
+export type NewAgentRunRow = typeof agentRuns.$inferInsert;
