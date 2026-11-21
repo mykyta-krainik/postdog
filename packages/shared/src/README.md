@@ -51,6 +51,7 @@ A `PATCH` body holds only the fields to change. `updateTaskInputSchema` and `upd
 | `stale`                      | 409    | `baseUpdatedAt` differs from the target task's `updatedAt`.                                                                             |
 | `ai_disabled`                | 403    | An agent or suggestion route is called while `aiEnabled` is false.                                                                      |
 | `agent_failed`, `step_limit` |        | Agent run failures. Phase 2 stores them on the run.                                                                                     |
+| `internal_error`             | 500    | The server failed in a way the request did not cause.                                                                                   |
 
 When a schema fails, `details` matches `validationErrorDetailsSchema`. Each issue has a dotted `path`, such as `subtasks.0.title`, which is also the React Hook Form field name.
 

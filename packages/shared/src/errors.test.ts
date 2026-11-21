@@ -23,6 +23,7 @@ describe("apiErrorBodySchema", () => {
       "ai_disabled",
       "agent_failed",
       "step_limit",
+      "internal_error",
     ];
     for (const code of codes) {
       expect(apiErrorBodySchema.safeParse({ error: { code, message: "m" } }).success).toBe(true);

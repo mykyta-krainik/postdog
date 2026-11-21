@@ -8,6 +8,7 @@ export const ERROR_CODES = [
   "ai_disabled",
   "agent_failed",
   "step_limit",
+  "internal_error",
 ] as const;
 export const errorCodeSchema = z.enum(ERROR_CODES);
 export type ErrorCode = z.infer<typeof errorCodeSchema>;
