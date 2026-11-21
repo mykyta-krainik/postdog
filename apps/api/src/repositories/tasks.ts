@@ -6,7 +6,7 @@ import {
   type TaskSort,
   type TaskStatus,
 } from "@postdog/shared";
-import { and, asc, count, desc, eq, isNull, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, isNull, or, sql, type SQL } from "drizzle-orm";
 import { alias, type SQLiteTable } from "drizzle-orm/sqlite-core";
 import type { Executor } from "../db/client";
 import { taskLinks, tasks, type NewTaskRow, type TaskRow } from "../db/schema";
@@ -40,12 +40,7 @@ export function listTasks(ex: Executor, filter: TaskListFilter): TaskListItem[] 
     filter.parentId === null ? isNull(tasks.parentId) : eq(tasks.parentId, filter.parentId),
   ];
   if (filter.status) conditions.push(eq(tasks.status, filter.status));
-  if (filter.search) {
-    const needle = filter.search;
-    conditions.push(
-      sql`(instr(lower(${tasks.title}), lower(${needle})) > 0 or instr(lower(${tasks.description}), lower(${needle})) > 0)`,
-    );
-  }
+  if (filter.search) conditions.push(containsText(filter.search));
 
   const direction = filter.order === "asc" ? asc : desc;
   const ordering =
@@ -81,6 +76,36 @@ export function listTasks(ex: Executor, filter: TaskListFilter): TaskListItem[] 
     .where(and(...conditions))
     .orderBy(...ordering)
     .all();
+}
+
+export interface TaskSearch {
+  words: string[];
+  status?: TaskStatus;
+  limit: number;
+}
+
+function containsText(needle: string): SQL {
+  return sql`(instr(lower(${tasks.title}), lower(${needle})) > 0 or instr(lower(${tasks.description}), lower(${needle})) > 0)`;
+}
+
+export function listAllTasks(ex: Executor): TaskRow[] {
+  return ex.select().from(tasks).orderBy(asc(tasks.id)).all();
+}
+
+export function searchTasks(ex: Executor, search: TaskSearch): TaskRow[] {
+  const conditions = search.words.map(containsText);
+  if (search.status) conditions.push(eq(tasks.status, search.status));
+  return ex
+    .select()
+    .from(tasks)
+    .where(and(...conditions))
+    .orderBy(desc(tasks.updatedAt), desc(tasks.id))
+    .limit(search.limit)
+    .all();
+}
+
+export function countTasksUpdatedAfter(ex: Executor, after: number): number {
+  return ex.select({ n: count() }).from(tasks).where(gt(tasks.updatedAt, after)).get()?.n ?? 0;
 }
 
 export function insertTask(ex: Executor, row: NewTaskRow): TaskRow {
