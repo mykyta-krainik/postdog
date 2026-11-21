@@ -19,4 +19,5 @@ export const AGENT_ERROR_LABEL: Record<AgentErrorCode, string> = {
   cancelled: "The run was cancelled",
   interrupted: "The API restarted during the run",
   ai_disabled: "AI was turned off during the run",
+  internal_error: "Something went wrong inside Postdog",
 };
