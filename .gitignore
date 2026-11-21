@@ -1,0 +1,15 @@
+node_modules/
+.next/
+dist/
+coverage/
+*.tsbuildinfo
+
+.env
+.env.*
+!.env.example
+
+apps/api/data/
+*-wal
+*-shm
+
+.claude/settings.local.json

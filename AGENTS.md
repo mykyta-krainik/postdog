@@ -1,0 +1,3 @@
+- use conventional commit messages
+- commit on every major meaningful change that works
+- if you can run multiple agents at once to speed up the process, do so
