@@ -16,8 +16,8 @@ How the agent platform works, for whoever writes an agent on it. The code has no
 | `tools/read.ts`           | `createReadTools(db, now?)`: `getTask`, `searchTasks`, `getTaskNotes`.                      |
 | `context.ts`              | `computeTaskFacts` and `loadTaskFacts(db, now)`: per-task numbers computed in code.         |
 | `registry.ts`             | The definitions the routes run.                                                             |
-| `planner/index.ts`        | `plannerAgent`. A stub until the Planner replaces it.                                       |
-| `status-updater/index.ts` | `statusUpdaterAgent`. A stub until the Status updater replaces it.                          |
+| `planner/index.ts`        | `plannerAgent`, the daily Planner (see `planner/README.md`).                                |
+| `status-updater/index.ts` | `statusUpdaterAgent`, the Slack status updater.                                             |
 
 Run storage and the HTTP routes live in `services/agentRuns.ts`, `controllers/agents.ts` and `routes/agents.ts`.
 
