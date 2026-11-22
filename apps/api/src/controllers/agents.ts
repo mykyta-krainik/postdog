@@ -1,6 +1,8 @@
 import type {
   AgentRun,
   AgentsInfo,
+  ClarifyInput,
+  DecomposerRunInput,
   IdParams,
   ListAgentRunsQuery,
   ListAgentRunsResponse,
@@ -23,6 +25,18 @@ export function createAgentController(runs: AgentRunService, agents: AgentRegist
       res: Response<StartRunResponse>,
     ) => {
       res.status(202).json(runs.start(agents.status_updater, req.body));
+    },
+    runDecomposer: (
+      req: Request<unknown, unknown, DecomposerRunInput>,
+      res: Response<StartRunResponse>,
+    ) => {
+      res.status(202).json(runs.start(agents.decomposer, req.body));
+    },
+    clarifyDecomposer: (
+      req: Request<unknown, unknown, ClarifyInput>,
+      res: Response<StartRunResponse>,
+    ) => {
+      res.status(202).json(runs.start(agents.decomposer_clarify, req.body));
     },
     list: (
       req: Request<unknown, unknown, unknown, ListAgentRunsQuery>,

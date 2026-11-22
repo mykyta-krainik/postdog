@@ -14,10 +14,12 @@ How the agent platform works, for whoever writes an agent on it. The code has no
 | `core/tracer.ts`          | `Tracer` and `RunTracer`: Langfuse, or a no-op without keys.                                |
 | `core/errors.ts`          | `AgentError(code, message)` fails a run. `ToolError(message)` becomes an error tool result. |
 | `tools/read.ts`           | `createReadTools(db, now?)`: `getTask`, `searchTasks`, `getTaskNotes`.                      |
+| `tools/userText.ts`       | `wrapTask` and `tagUserText`: user text in `<task>` tags with `<` and `>` escaped.          |
 | `context.ts`              | `computeTaskFacts` and `loadTaskFacts(db, now)`: per-task numbers computed in code.         |
 | `registry.ts`             | The definitions the routes run.                                                             |
 | `planner/index.ts`        | `plannerAgent`, the daily Planner (see `planner/README.md`).                                |
 | `status-updater/index.ts` | `statusUpdaterAgent`, the Slack status updater.                                             |
+| `decomposer/index.ts`     | `decomposerAgent` and `decomposerClarifyAgent`, suggest mode (see `decomposer/README.md`).  |
 
 Run storage and the HTTP routes live in `services/agentRuns.ts`, `controllers/agents.ts` and `routes/agents.ts`.
 
@@ -30,11 +32,13 @@ An agent is an `AgentDefinition`:
 - `input`: the Zod schema of the request body. The route validates the body with it.
 - `output`: the Zod schema of the stored output. The run service parses what `run` returns with it, so a run never stores an output the contract rejects.
 - `prepare(db, input, startedAt)`, optional: runs synchronously before the run row exists and returns the input the run stores and receives, such as the input with a default resolved from `startedAt`. Throw an `AppError` from `lib/errors` (such as `invalidField("taskId", "Task 9 does not exist")`) to answer 400 instead of starting a run. Saving `notes` before a Status updater run fits here too.
+- `mode(db)`, optional: the decomposition mode the run applies (`suggest` or `auto`). The run service stores it on the run row and passes it as `ctx.mode`. Without it, both are `null`.
 - `run(ctx, input)`: does the work and returns `{ output }`.
 
 `ctx` is an `AgentContext`:
 
 - `runId`, `startedAt`: the run row's id and start time. Use `startedAt` as "now" for day counts and windows.
+- `mode`: what `definition.mode(db)` returned when the run started, or `null`.
 - `db`: the database. Call repository functions from `src/repositories` with it, or build read tools with `createReadTools(ctx.db)`.
 - `signal`, `trace`, `llm`, `tracer`: what `runAgent` needs. `ctx` has the same field names, so `runAgent({ ...ctx, name, system, userMessage, tools })` passes them on.
 
@@ -42,13 +46,14 @@ Usage is not returned by `run`. The run service sums the tokens of every `llm` s
 
 ## The loop
 
-`runAgent({ name, system, userMessage, tools, maxSteps?, maxOutputTokens?, wallClockMs?, signal, trace, llm, tracer })` calls the model one step at a time.
+`runAgent({ name, system, userMessage, tools, maxSteps?, maxOutputTokens?, wallClockMs?, onStep?, signal, trace, llm, tracer })` calls the model one step at a time.
 
 - `name` names the loop. The mock model looks its script up by this name, and Langfuse names each generation after it. An agent with several loops can use names such as `decomposer:related`.
 - A tool call with invalid input or an unknown tool name gets an error tool result that tells the model what to fix, and the loop goes on. Two invalid calls in a row fail the run with `validation_failed`.
 - A read tool runs, and its return value goes back as a JSON tool result. A `ToolError` it throws goes back as an error tool result. Any other error it throws fails the run with `internal_error`.
 - Calling the same read tool with the same input twice in a row returns the first result again, with a note that the model already has it.
 - The first valid terminal tool call ends the loop. `runAgent` resolves to `{ toolName, output, steps }`, where `output` is the terminal tool's parsed input. With several terminal tools, `toolName` narrows `output`.
+- `onStep(step)`, optional, runs after every model call, before that step's tools run. The Decomposer renews its claims there.
 - A reply with no tool call gets one nudge ("Finish by calling one of: ..."). A second one fails with `no_terminal_tool`.
 - Limits fail with their code: `step_limit` after `maxSteps` model calls (default `AGENT_LIMITS.maxSteps`), `timeout` after `wallClockMs` per loop (default 60 s), `llm_error` when the model call throws. `maxOutputTokens` defaults to 2,048 per call.
 - An abort ends the loop with the abort reason when it is an `AgentError`, otherwise with `cancelled`. The user's cancel aborts with `cancelled` and the kill switch with `ai_disabled`.

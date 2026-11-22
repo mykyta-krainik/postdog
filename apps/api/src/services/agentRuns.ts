@@ -100,9 +100,10 @@ export function createAgentRunService(deps: { db: Db; llm: Llm; tracer: Tracer }
     start<I, O>(definition: AgentDefinition<I, O>, body: I): StartRunResponse {
       const startedAt = Date.now();
       const input = definition.prepare ? definition.prepare(db, body, startedAt) : body;
+      const mode = definition.mode?.(db) ?? null;
       const run = insertRun(db, {
         agent: definition.name,
-        mode: null,
+        mode,
         status: "running",
         promptVersion: definition.promptVersion,
         input,
@@ -123,6 +124,7 @@ export function createAgentRunService(deps: { db: Db; llm: Llm; tracer: Tracer }
       const ctx: AgentContext = {
         runId: run.id,
         startedAt,
+        mode,
         db,
         llm,
         signal: controller.signal,

@@ -1,4 +1,5 @@
 import { AGENT_LIMITS, STALE_IN_PROGRESS_DAYS, type PlannerContextRow } from "@postdog/shared";
+import { wrapTask } from "../tools/userText";
 
 export const PLANNER_PROMPT_VERSION = "PLANNER_PROMPT_V1";
 
@@ -33,23 +34,6 @@ const COLUMNS = [
   "aiState",
   "title",
 ] as const;
-
-const USER_TEXT_FIELDS = new Set(["title", "description"]);
-
-export function wrapTask(text: string): string {
-  return `<task>${text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</task>`;
-}
-
-export function tagUserText<T>(value: T): T {
-  if (Array.isArray(value)) return value.map(tagUserText) as T;
-  if (typeof value !== "object" || value === null) return value;
-  return Object.fromEntries(
-    Object.entries(value).map(([key, field]) => [
-      key,
-      USER_TEXT_FIELDS.has(key) && typeof field === "string" ? wrapTask(field) : tagUserText(field),
-    ]),
-  ) as T;
-}
 
 function tableRow(task: PlannerContextRow): string {
   const cells: Record<(typeof COLUMNS)[number], string | number | boolean> = {

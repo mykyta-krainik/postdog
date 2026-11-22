@@ -13,12 +13,8 @@ import { defineTerminalTool } from "../core/tool";
 import { createReadTools } from "../tools/read";
 import { rankCandidates } from "./candidates";
 import { plannerMockScript } from "./mock";
-import {
-  PLANNER_PROMPT_V1,
-  PLANNER_PROMPT_VERSION,
-  plannerUserMessage,
-  tagUserText,
-} from "./prompt";
+import { tagUserText } from "../tools/userText";
+import { PLANNER_PROMPT_V1, PLANNER_PROMPT_VERSION, plannerUserMessage } from "./prompt";
 import { checkPlan } from "./validate";
 
 export const PLANNER_LOOP = "planner";
