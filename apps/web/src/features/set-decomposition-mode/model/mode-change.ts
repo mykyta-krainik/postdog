@@ -13,6 +13,7 @@ export const MODE_OPTIONS: Record<DecompositionMode, { label: string; descriptio
   },
   auto: {
     label: "Auto",
-    description: "Subtasks and relates links are created for you. Undo any of them from the Inbox.",
+    description:
+      "Subtasks and relates links are created right away. Undo any of them from the Inbox.",
   },
 };

@@ -33,7 +33,7 @@ export function AutoModeDialog({
         <DialogHeader className="gap-1.5 px-5 pt-5 text-left">
           <DialogTitle className="text-[15px] font-semibold">Switch to Auto?</DialogTitle>
           <DialogDescription className="text-[13px] leading-5">
-            The Decomposer applies its work without waiting for your review. In Auto it may only:
+            Auto creates subtasks and relates links right away. It may only:
           </DialogDescription>
         </DialogHeader>
         <ul className="mx-5 mt-3 divide-y divide-border rounded-md border border-border">
@@ -45,8 +45,8 @@ export function AutoModeDialog({
           ))}
         </ul>
         <p className="mx-5 mt-3 text-[13px] leading-5 text-muted-foreground">
-          Nothing else. It never edits, deletes or re-prioritizes your tasks, and its questions
-          still wait for your answer. Every change can be undone from the Inbox.
+          It never edits or deletes anything else. Every change can be undone from the Inbox. Its
+          questions still wait for your answer.
         </p>
         <DialogFooter className="mt-5 border-t border-border px-5 py-3">
           <DialogClose asChild>
