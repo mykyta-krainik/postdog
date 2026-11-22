@@ -97,7 +97,7 @@ export function NotificationCard({
           {formatRelativeTime(notification.createdAt)}
         </time>
       </header>
-      <div className="flex min-w-0 flex-col gap-2 pl-[38px]">
+      <div className="flex min-w-0 flex-col gap-2 pl-11">
         <KindDetails notification={notification} renderTrace={renderTrace} />
         {unread && (
           <Button
