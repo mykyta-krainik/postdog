@@ -2,6 +2,7 @@
 
 import { ArrowLeft, CornerLeftUp, X } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { DeleteTaskButton } from "@/features/task-delete";
 import { TaskContentForm, TaskPriorityPicker, TaskStatusPicker } from "@/features/task-edit";
 import { WriteStatusUpdateButton } from "@/features/write-status-update";
@@ -18,6 +19,8 @@ export type TaskDetailPanelProps = {
   taskId: number;
   /** Clears the selection. The panel renders its own back (mobile) and close (tablet, desktop) control. */
   onClose: () => void;
+  /** Renders the task's pending suggestions above its subtasks. The page passes a widget here. */
+  suggestions?: (task: TaskDetail) => ReactNode;
 };
 
 /** A subtask shows where it belongs. Nesting is one level, so a parent is always top-level. */
@@ -45,7 +48,13 @@ function ParentLink({ parentId }: { parentId: number }) {
   );
 }
 
-function TaskDetailBody({ task }: { task: TaskDetail }) {
+function TaskDetailBody({
+  task,
+  suggestions,
+}: {
+  task: TaskDetail;
+  suggestions: TaskDetailPanelProps["suggestions"];
+}) {
   return (
     <article className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
@@ -64,6 +73,7 @@ function TaskDetailBody({ task }: { task: TaskDetail }) {
           </div>
         </TaskContentForm>
       </div>
+      {suggestions?.(task)}
       {task.parentId === null && <SubtasksSection task={task} />}
       <LinksSection links={task.links} />
       <NotesSection taskId={task.id} />
@@ -149,7 +159,7 @@ function PanelError({
  * The selected task. The Tasks page hosts it as a side panel, an overlay sheet or a full page,
  * depending on the width.
  */
-export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
+export function TaskDetailPanel({ taskId, onClose, suggestions }: TaskDetailPanelProps) {
   const { data: task, error, isValidating, mutate } = useTask(taskId);
   const { setParams } = useTaskListParams();
 
@@ -191,7 +201,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
       {/* Keyed by task, so another task opens scrolled to the top and with fresh forms. */}
       <div key={taskId} className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-6">
         {task ? (
-          <TaskDetailBody task={task} />
+          <TaskDetailBody task={task} suggestions={suggestions} />
         ) : error ? (
           <PanelError
             error={error}

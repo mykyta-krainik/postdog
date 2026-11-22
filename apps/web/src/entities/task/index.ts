@@ -13,7 +13,7 @@ export type {
   UpdateTaskInput,
 } from "@postdog/shared";
 
-export { AI_ATTENTION_HINT, shouldShowAiDot } from "./model/ai-attention";
+export { aiDotFor, type AiDotState } from "./model/ai-attention";
 export { linkLabel, sortLinks } from "./model/links";
 export { subtaskProgress, toggledStatus, type SubtaskProgress } from "./model/subtasks";
 export {

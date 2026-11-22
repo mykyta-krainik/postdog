@@ -27,7 +27,9 @@ export function PlanDayButton() {
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="h-10 gap-1.5 border-brand/40 px-3 text-[13px] hover:border-brand/70 md:h-8"
+          aria-label="Plan my day"
+          title="Plan my day"
+          className="h-10 gap-1.5 border-brand/40 px-3 text-[13px] hover:border-brand/70 max-md:w-10 max-md:px-0 md:h-8"
           onClick={(event) => {
             if (runner.view.status === "idle") {
               event.preventDefault();
@@ -44,7 +46,7 @@ export function PlanDayButton() {
           ) : (
             <Sparkles className="size-4 text-brand" aria-hidden />
           )}
-          {busy ? "Planning…" : "Plan my day"}
+          <span className="max-md:sr-only">{busy ? "Planning…" : "Plan my day"}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent

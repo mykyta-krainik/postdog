@@ -1,6 +1,7 @@
 "use client";
 
 import { TaskList } from "@/widgets/task-list";
+import { DecomposeButton } from "@/features/decompose-tasks";
 import { PlanDayButton } from "@/features/plan-day";
 import { CreateTaskButton } from "@/features/task-create";
 import { TaskFilterSort } from "@/features/task-filter-sort";
@@ -27,6 +28,7 @@ export function TasksView() {
           action={
             <div className="flex items-center gap-2">
               <MyUpdateButton />
+              <DecomposeButton />
               <PlanDayButton />
               <CreateTaskButton />
             </div>

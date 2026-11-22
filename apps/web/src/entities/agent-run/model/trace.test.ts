@@ -53,6 +53,23 @@ describe("describeStep", () => {
     );
   });
 
+  it("counts the subtasks and related groups of the Decomposer's terminal tools", () => {
+    const proposed = JSON.stringify({
+      subtasks: [{ title: "A" }, { title: "B" }, { title: "C" }],
+      rationale: "r",
+    });
+    expect(
+      describeStep(step({ type: "tool", tool: "propose_subtasks", input: proposed })).done,
+    ).toBe("Proposed 3 subtasks");
+    const groups = JSON.stringify({ groups: [{ relation: "duplicates", taskIds: [1, 2] }] });
+    expect(describeStep(step({ type: "tool", tool: "report_related", input: groups })).done).toBe(
+      "Found 1 related group",
+    );
+    expect(
+      describeStep(step({ type: "tool", tool: "report_related", input: '{"groups":[]}' })).done,
+    ).toBe("Found no related tasks");
+  });
+
   it("names an unknown tool instead of failing", () => {
     expect(describeStep(step({ type: "tool", tool: "search_docs", input: "{}" })).done).toBe(
       "Called search_docs",

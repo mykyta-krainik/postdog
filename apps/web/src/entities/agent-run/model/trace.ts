@@ -62,6 +62,22 @@ const TOOL_ACTIVITY: Record<string, (step: TraceStep) => StepActivity> = {
       doing: "Asking for notes",
     };
   },
+  report_related: (step) => {
+    const groups = countOf(step.input, "relation");
+    return {
+      done: groups > 0 ? `Found ${plural(groups, "related group")}` : "Found no related tasks",
+      doing: "Looking for related tasks",
+    };
+  },
+  propose_subtasks: (step) => {
+    const count = countOf(step.input, "title");
+    return {
+      done: count > 0 ? `Proposed ${plural(count, "subtask")}` : "Proposed subtasks",
+      doing: "Checking the subtasks",
+    };
+  },
+  ask_clarification: () => ({ done: "Asked a question", doing: "Writing a question" }),
+  skip: () => ({ done: "Skipped the task", doing: "Skipping the task" }),
 };
 
 export function describeStep(step: TraceStep): StepActivity {

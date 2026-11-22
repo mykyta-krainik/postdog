@@ -1,6 +1,8 @@
 "use client";
 
+import { SuggestionReview } from "@/widgets/suggestion-review";
 import { TaskDetailPanel } from "@/widgets/task-detail-panel";
+import type { TaskDetail } from "@/entities/task";
 import { MEDIA } from "@/shared/config";
 import { useMediaQuery } from "@/shared/lib/use-media-query";
 import { Sheet, SheetContent, SheetTitle } from "@/shared/ui/sheet";
@@ -10,6 +12,8 @@ import { Sheet, SheetContent, SheetTitle } from "@/shared/ui/sheet";
  * Tablet: an overlay sheet from the right. Mobile: a full page that replaces the list.
  * The side panel and the full page are CSS, so they are right on the first paint.
  */
+const suggestions = (task: TaskDetail) => <SuggestionReview key={task.id} task={task} />;
+
 export function TaskDetailHost({
   taskId,
   onClose,
@@ -26,7 +30,7 @@ export function TaskDetailHost({
           aria-label="Selected task"
           className="flex min-h-0 w-full flex-col md:hidden lg:flex lg:w-[420px] lg:shrink-0 lg:border-l lg:border-border xl:w-[480px]"
         >
-          <TaskDetailPanel taskId={taskId} onClose={onClose} />
+          <TaskDetailPanel taskId={taskId} onClose={onClose} suggestions={suggestions} />
         </aside>
       )}
       <Sheet open={isTablet && taskId !== undefined} onOpenChange={(open) => !open && onClose()}>
@@ -36,7 +40,9 @@ export function TaskDetailHost({
           className="w-[420px] gap-0 p-0 sm:max-w-[420px]"
         >
           <SheetTitle className="sr-only">Selected task</SheetTitle>
-          {taskId !== undefined && <TaskDetailPanel taskId={taskId} onClose={onClose} />}
+          {taskId !== undefined && (
+            <TaskDetailPanel taskId={taskId} onClose={onClose} suggestions={suggestions} />
+          )}
         </SheetContent>
       </Sheet>
     </>
