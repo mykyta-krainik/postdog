@@ -2,6 +2,7 @@ import type {
   CreateSubtasksInput,
   CreateTaskInput,
   ListTasksQuery,
+  SubtaskProposal,
   TaskDetail,
   TaskListItem,
   UpdateTaskInput,
@@ -50,6 +51,36 @@ export function planTaskUpdate(
     updatedAt: now,
     ...(changed.includes("status") && { statusChangedAt: now }),
   };
+}
+
+/** 409 stale when the task changed after the client loaded it at `baseUpdatedAt`. */
+export function assertUnchanged(task: TaskRow, baseUpdatedAt: number): void {
+  if (task.updatedAt !== baseUpdatedAt) {
+    throw stale(`Task ${task.identifier} changed since it was loaded`);
+  }
+}
+
+/** Creates todo subtasks of the parent, in order. The parent's updatedAt stays as it is. */
+export function insertSubtasks(
+  ex: Executor,
+  parentId: number,
+  subtasks: readonly SubtaskProposal[],
+  now: number,
+): TaskRow[] {
+  const identifiers = allocateIdentifiers(ex, subtasks.length);
+  return subtasks.map((subtask, i) =>
+    insertTask(ex, {
+      title: subtask.title,
+      description: subtask.description,
+      priority: subtask.priority ?? "medium",
+      identifier: identifiers[i]!,
+      status: "todo",
+      parentId,
+      createdAt: now,
+      updatedAt: now,
+      statusChangedAt: now,
+    }),
+  );
 }
 
 function requireTask(ex: Executor, id: number): TaskRow {
@@ -129,22 +160,8 @@ export function createTaskService(db: Db) {
         if (parent.parentId !== null) {
           throw invalidField("id", "A subtask cannot have subtasks of its own");
         }
-        if (parent.updatedAt !== input.baseUpdatedAt) {
-          throw stale(`Task ${parent.identifier} changed since it was loaded`);
-        }
-        const now = Date.now();
-        const identifiers = allocateIdentifiers(tx, input.subtasks.length);
-        input.subtasks.forEach((subtask, i) => {
-          insertTask(tx, {
-            ...subtask,
-            identifier: identifiers[i]!,
-            status: "todo",
-            parentId: parent.id,
-            createdAt: now,
-            updatedAt: now,
-            statusChangedAt: now,
-          });
-        });
+        assertUnchanged(parent, input.baseUpdatedAt);
+        insertSubtasks(tx, parent.id, input.subtasks, Date.now());
         return toDetail(tx, parent);
       });
     },

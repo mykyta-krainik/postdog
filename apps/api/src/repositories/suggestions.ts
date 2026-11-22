@@ -2,6 +2,7 @@ import {
   AGENT_LIMITS,
   suggestionSchema,
   type Suggestion,
+  type SuggestionPayload,
   type SuggestionStatus,
   type SuggestionTargetType,
 } from "@postdog/shared";
@@ -90,6 +91,32 @@ export function resolveSuggestion(
     const suggestion = toSuggestion(row);
     recomputeAiState(tx, suggestionTaskIds(suggestion), now);
     return suggestion;
+  });
+}
+
+/**
+ * Moves a pending suggestion to applied and stores the payload the user accepted, which may
+ * be an edited version. Undefined when it is missing or no longer pending. aiState is
+ * recomputed for the tasks of both payloads, so a task dropped from a related group is too.
+ */
+export function applySuggestion(
+  ex: Executor,
+  id: number,
+  payload: SuggestionPayload,
+  now: number,
+): Suggestion | undefined {
+  return ex.transaction((tx) => {
+    const before = findSuggestion(tx, id);
+    const row = tx
+      .update(agentSuggestions)
+      .set({ status: "applied", payload, resolvedAt: now })
+      .where(and(eq(agentSuggestions.id, id), eq(agentSuggestions.status, "pending")))
+      .returning()
+      .get();
+    if (!before || !row) return undefined;
+    const applied = toSuggestion(row);
+    recomputeAiState(tx, [...suggestionTaskIds(before), ...suggestionTaskIds(applied)], now);
+    return applied;
   });
 }
 

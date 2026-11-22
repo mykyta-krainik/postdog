@@ -6,6 +6,7 @@ import { createAgentController } from "./controllers/agents";
 import { createLinkController } from "./controllers/links";
 import { createNoteController } from "./controllers/notes";
 import { createSettingsController } from "./controllers/settings";
+import { createSuggestionController } from "./controllers/suggestions";
 import { createTaskController } from "./controllers/tasks";
 import type { Db } from "./db/client";
 import { aiEnabledGuard } from "./middleware/aiEnabledGuard";
@@ -14,11 +15,13 @@ import { agentRoutes } from "./routes/agents";
 import { linkRoutes } from "./routes/links";
 import { noteRoutes } from "./routes/notes";
 import { settingsRoutes } from "./routes/settings";
+import { suggestionRoutes } from "./routes/suggestions";
 import { taskRoutes } from "./routes/tasks";
 import { createAgentRunService } from "./services/agentRuns";
 import { createLinkService } from "./services/links";
 import { createNoteService } from "./services/notes";
 import { createSettingsService } from "./services/settings";
+import { createSuggestionService } from "./services/suggestions";
 import { createTaskService } from "./services/tasks";
 
 /** Twenty subtasks with full 10,000-character descriptions exceed Express's 100 kB default. */
@@ -47,6 +50,13 @@ export function createApp(db: Db, deps: AppDeps = {}): Express {
   app.use(
     "/api/agents",
     agentRoutes(createAgentController(runs, agents), agents, aiEnabledGuard(settings)),
+  );
+  app.use(
+    "/api/suggestions",
+    suggestionRoutes(
+      createSuggestionController(createSuggestionService(db)),
+      aiEnabledGuard(settings),
+    ),
   );
   app.use(notFoundHandler);
   app.use(errorHandler);

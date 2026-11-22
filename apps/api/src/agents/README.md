@@ -137,6 +137,7 @@ Agents coordinate through two tables: `agent_claims` (which run is working on a 
 | `findSuggestion(ex, id)`, `listSuggestions(ex, filter)`               | Read suggestions, oldest first. A task `targetId` also matches related suggestions that list the task.                                                                                       |
 | `listPendingSuggestionsOfTask(ex, taskId)`                            | What task detail returns as `pendingSuggestions`.                                                                                                                                            |
 | `resolveSuggestion(ex, id, status, now)`                              | Moves a `pending` suggestion to `rejected`, `applied`, `superseded` or `rolled_back` and sets `resolvedAt`. Returns `undefined` when it is missing or no longer pending.                     |
+| `applySuggestion(ex, id, payload, now)`                               | Moves a `pending` suggestion to `applied` and stores the payload the user accepted. Recomputes `aiState` for the tasks of the stored and of the accepted payload.                            |
 | `supersedeSuggestionsOfTasks(ex, taskIds, now)`                       | Supersedes every pending suggestion that affects the tasks. Deleting a task calls it for the task and its subtasks.                                                                          |
 | `listTaskIdsInCooldown(ex, now)`                                      | Tasks affected by a suggestion rejected or rolled back within `AGENT_LIMITS.rejectedCooldownMs`.                                                                                             |
 | `recomputeAiState(ex, taskIds, now)`, `recomputeAllAiStates(ex, now)` | In `src/repositories/aiState.ts`. The functions above call them.                                                                                                                             |
@@ -149,6 +150,25 @@ Agents coordinate through two tables: `agent_claims` (which run is working on a 
 - `get_task` returns `claimedBy: { runId, agent }` or `null`. `search_tasks` and the Planner's candidate table do not have `claimedBy` yet. The Planner sees a claimed task as `aiState: processing`.
 
 The test fixtures in `test/suggestionFixtures.ts` (`createTestDb`, `addTask`, `addRun`, `subtasksFor`, `clarificationFor`, `relatedOf`, `aiStateOf`) build these rows for tests.
+
+## Reviewing suggestions
+
+`services/suggestions.ts` holds the rules behind `GET /api/suggestions`, `POST /api/suggestions/:id/accept` and `POST /api/suggestions/:id/reject`. Every route sits behind `aiEnabledGuard`. Accept and reject each run in one transaction, so a failure saves nothing.
+
+Accept checks run in this order. The first one that fails decides the answer.
+
+1. `404 not_found` when the suggestion does not exist. `409 conflict` when it is no longer `pending`.
+2. `400 validation_error` for a `clarification`. The message points to `POST /api/agents/decomposer/clarify`, which answers it.
+3. With `payload` in the body, the user's edit is parsed with `parseSuggestionPayload`. A failure is `400 validation_error`, with issue paths such as `payload.subtasks.0.title`. Without `payload`, the stored one is used. The accepted payload is stored on the row.
+4. `409 conflict` when the target task is gone. `409 stale` when its `updatedAt` differs from `baseUpdatedAt`. For a related suggestion, only the target, the lowest id of the group, is compared.
+
+Then each kind applies its own rules.
+
+- `subtasks`: the target must be top-level and not done, or the answer is `409 conflict`. A subtask added after the suggestion's `createdAt` is also `409 conflict`, because the user started the split by hand. A proposed title that equals an existing subtask's title, or an earlier proposed title, is `400 validation_error` on that item. Titles are compared trimmed and case-insensitively. `insertSubtasks` from `services/tasks.ts` creates the subtasks as `todo`, `medium` when the item has no priority. `POST /api/tasks/:id/subtasks` uses the same function. The parent's `updatedAt` stays as it is. The suggestion becomes `applied`, and the task's other pending `subtasks` and `clarification` suggestions become `superseded`. Related suggestions that list the task stay pending, because links do not depend on subtasks.
+- `related`: `duplicates` creates `duplicates` links from the newer task to the older one. The newer task has the larger `createdAt`, or the larger id on a tie. `overlaps` creates `relates` links from the target. A group of more than two tasks is linked as a star. The target, the lowest id, gets one link to every other task. A star needs N - 1 links where every pair would need N(N - 1)/2, and it shows the whole group on the target's detail page. A pair that already has a link of that type, in either direction, is skipped. `createdBy` is `agent:<runId>` of the run that made the suggestion. No task's `updatedAt` changes. An edited payload may change the relation and the reason and drop tasks, but it must keep the target and list only tasks of the group, or the answer is `400 validation_error` on `payload.taskIds`.
+- `mark_stale` rows cannot exist yet, because `suggestionSchema` rejects the kind and `insertSuggestion` refuses them. The Docs reviewer adds the kind and its accept rule in phase 6.
+
+Reject answers `404` or `409 conflict` like accept. Otherwise the suggestion becomes `rejected` with `resolvedAt`, and `aiState` is recomputed for every task it affects. `listTaskIdsInCooldown` reads the rejected row, so the Decomposer leaves those tasks alone for 7 days.
 
 ## Langfuse
 
