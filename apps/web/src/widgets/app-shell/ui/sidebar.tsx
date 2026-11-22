@@ -8,16 +8,22 @@ import { routes } from "@/shared/config";
 import { cn } from "@/shared/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
 import { Wordmark } from "@/shared/ui/wordmark";
+import { UnreadCountBadge, useUnreadCount } from "@/entities/notification";
 import { useSettings } from "@/entities/settings";
 import { isActive, navItemsFor } from "../config/nav";
 
 /** Labels hide on the tablet rail until it is expanded. Desktop always shows them. */
 const RAIL_HIDDEN = "md:max-lg:group-data-[expanded=false]/sidebar:sr-only";
 
+/** On the collapsed tablet rail the badge sits on the icon's corner. */
+const RAIL_CORNER =
+  "ml-auto md:max-lg:group-data-[expanded=false]/sidebar:absolute md:max-lg:group-data-[expanded=false]/sidebar:-top-1 md:max-lg:group-data-[expanded=false]/sidebar:right-0";
+
 /** Tablet: a collapsible icon rail. Desktop: the full sidebar. Hidden on mobile. */
 export function Sidebar() {
   const pathname = usePathname();
   const { aiEnabled } = useSettings();
+  const unread = useUnreadCount(aiEnabled);
   const [expanded, setExpanded] = useState(false);
   const ToggleIcon = expanded ? PanelLeftClose : PanelLeftOpen;
 
@@ -35,7 +41,7 @@ export function Sidebar() {
       </Link>
 
       <nav aria-label="Main" className="flex flex-col gap-0.5 px-2 pt-1">
-        {navItemsFor(aiEnabled).map(({ href, label, icon: Icon }) => {
+        {navItemsFor(aiEnabled).map(({ href, label, icon: Icon, unread: showsUnread }) => {
           const active = isActive(pathname, href);
           return (
             <Tooltip key={href}>
@@ -44,13 +50,14 @@ export function Sidebar() {
                   href={href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium outline-none",
+                    "relative flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium outline-none",
                     "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-1 focus-visible:ring-ring",
                     active && "bg-sidebar-accent text-sidebar-accent-foreground",
                   )}
                 >
                   <Icon className="size-4 shrink-0" aria-hidden />
                   <span className={RAIL_HIDDEN}>{label}</span>
+                  {showsUnread && <UnreadCountBadge count={unread} className={RAIL_CORNER} />}
                 </Link>
               </TooltipTrigger>
               {!expanded && (
