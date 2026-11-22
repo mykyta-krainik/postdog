@@ -57,13 +57,27 @@ Every route under `/api/agents` answers `403 ai_disabled` while `aiEnabled` is f
 
 Runs are asynchronous. A `run` route answers `{ runId }` at once, and the client polls `GET /api/agents/runs/:id` until `status` is no longer `running`.
 
+## Endpoints in phase 3
+
+Every route under `/api/agents` and `/api/suggestions` answers `403 ai_disabled` while `aiEnabled` is false.
+
+| Method and path                       | Request                            | Success                                               |
+| ------------------------------------- | ---------------------------------- | ----------------------------------------------------- |
+| `POST /api/agents/decomposer/run`     | body `decomposerRunInputSchema`    | 202 `startRunResponseSchema`                          |
+| `POST /api/agents/decomposer/clarify` | body `clarifyInputSchema`          | 202 `startRunResponseSchema`                          |
+| `GET /api/suggestions`                | query `listSuggestionsQuerySchema` | 200 `listSuggestionsResponseSchema`, oldest first     |
+| `POST /api/suggestions/:id/accept`    | body `acceptSuggestionInputSchema` | 200 `acceptSuggestionResponseSchema`                  |
+| `POST /api/suggestions/:id/reject`    |                                    | 200 `rejectSuggestionResponseSchema` (the suggestion) |
+
+`GET /api/tasks/:id` also returns `pendingSuggestions` (see Suggestions).
+
 ## Errors
 
 | Code                         | Status | Returned when                                                                                                                           |
 | ---------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `validation_error`           | 400    | A body, query or param fails its schema, or an id in the body breaks a rule: an unknown task, a subtask of a subtask, a link to itself. |
 | `not_found`                  | 404    | The `:id` in the path does not exist.                                                                                                   |
-| `conflict`                   | 409    | The new link already exists, or the run to cancel is not running.                                                                       |
+| `conflict`                   | 409    | The new link already exists, the run to cancel is not running, or the suggestion to accept or reject is no longer `pending`.            |
 | `stale`                      | 409    | `baseUpdatedAt` differs from the target task's `updatedAt`.                                                                             |
 | `ai_disabled`                | 403    | An agent or suggestion route is called while `aiEnabled` is false.                                                                      |
 | `agent_failed`, `step_limit` |        | Reserved. A failed run is still a 200 response, with its reason in `AgentRun.error` (see Agent runs).                                   |
@@ -95,7 +109,7 @@ When a schema fails, `details` matches `validationErrorDetailsSchema`. Each issu
 - `error` is `null` unless `status` is `failed` or `cancelled`. Its `code` comes from `AGENT_ERROR_CODES`, not `ERROR_CODES`. `internal_error` means the agent code itself crashed, not the model or a limit.
 - `trace` holds one `TraceStep` per step, 1-based. `input` is a truncated string, and `tokens` is set on `llm` steps only.
 - `llm` records the model layer the run used. `GET /api/agents/info` returns the one in use now, for the "Mock AI" badge.
-- `input` and `output` are `unknown` on `agentRunSchema`. To read them, parse the run with `plannerRunSchema` or `statusUpdaterRunSchema`, picked by `agent`.
+- `input` and `output` are `unknown` on `agentRunSchema`. To read them, parse the run with `plannerRunSchema`, `statusUpdaterRunSchema` or `decomposerRunSchema`, picked by `agent`.
 - `AGENT_LIMITS` in `config.ts` holds the loop limits and the per-agent caps.
 
 ## Agent tools
@@ -110,8 +124,12 @@ The schemas a tool validates its input with live here, so the API builds each to
 | `submit_daily_plan`    | `submitDailyPlanInputSchema`    | terminal |
 | `submit_status_update` | `submitStatusUpdateInputSchema` | terminal |
 | `ask_for_notes`        | `askForNotesInputSchema`        | terminal |
+| `report_related`       | `reportRelatedInputSchema`      | terminal |
+| `propose_subtasks`     | `proposeSubtasksInputSchema`    | terminal |
+| `ask_clarification`    | `askClarificationInputSchema`   | terminal |
+| `skip`                 | `skipInputSchema`               | terminal |
 
-The Planner uses `get_task` and `search_tasks`. The Status updater uses all three read tools.
+The Planner uses `get_task` and `search_tasks`. The Status updater uses all three read tools. The Decomposer ends its related-task pass with `report_related` and each per-task loop with `propose_subtasks`, `ask_clarification` or `skip`. `proposeSubtasksInputSchema` is `subtasksPayloadSchema` and `askClarificationInputSchema` is `clarificationPayloadSchema`, and each `report_related` group is a `relatedPayloadSchema`, so the model's output and the stored payload share one schema.
 
 ## Planner
 
@@ -128,3 +146,43 @@ The Planner uses `get_task` and `search_tasks`. The Status updater uses all thre
 - `tone` overrides the tone the model picks. `notes` are saved as task notes before the run starts, which is how the UI answers `ask_for_notes`.
 - The model ends with `submit_status_update` or `ask_for_notes`.
 - `StatusUpdaterOutput` is a union on `kind`. With `update`, code has checked every task id, moved each `done` item whose task is not done to `inProgress` with a warning, added `identifier` to every item, and built `text` as Slack mrkdwn. With `needs_notes`, `tasks` lists `{ taskId, identifier, title }` for each task that needs a note, so the UI can ask for one note per task without extra fetches.
+
+## Suggestions
+
+A suggestion is one `agent_suggestions` row. The Decomposer saves one for every outcome the user reviews. `Suggestion` is a union on `kind`, so `payload` is typed by it.
+
+| `kind`          | `payload` schema             | Shape                                                                         |
+| --------------- | ---------------------------- | ----------------------------------------------------------------------------- |
+| `subtasks`      | `subtasksPayloadSchema`      | `{ subtasks: [{ title, description, priority? }] (2 to 8), rationale }`       |
+| `clarification` | `clarificationPayloadSchema` | `{ questions: string[] (1 to 3), whatIsUnclear }`                             |
+| `related`       | `relatedPayloadSchema`       | `{ relation: duplicates or overlaps, taskIds (2 or more, distinct), reason }` |
+
+- `mark_stale` is in `SUGGESTION_KINDS` for the database column only. It belongs to the Docs reviewer in phase 6, and `suggestionSchema` rejects it until then.
+- `targetType` is always `task` in phase 3. A related suggestion is one row per group. Its `targetId` is the lowest id in `payload.taskIds`, and `payload.taskIds` lists every task in the group, the target included.
+- A suggestion affects its target task and, when it is `related`, every task in `payload.taskIds`. `TaskDetail.pendingSuggestions`, the `targetId` filter of `GET /api/suggestions` and `aiState` all use this rule.
+- `status` starts at `pending` and moves once to `rejected`, `applied` or `superseded`, which sets `resolvedAt`. `rolled_back` follows `applied` in phase 4.
+- `createdAt` orders suggestions. Lists are oldest first.
+- A proposed subtask without `priority` is created as `medium`.
+
+`suggestionPayloadSchemas` maps each kind to its schema. `parseSuggestionPayload(kind, payload)` returns Zod's `safeParse` result for that kind's schema, and its issue paths are relative to the payload, such as `subtasks.0.title`. The accept endpoint parses the user's edited payload this way and reports a failure as `400 validation_error` with paths prefixed by `payload.`. Without `payload`, it applies the stored one.
+
+`baseUpdatedAt` on accept is the target task's `updatedAt` when the user loaded the suggestion.
+
+## aiState
+
+`aiState` on a task is derived from the claims and the pending suggestions that affect it. The first rule that matches wins.
+
+1. `processing`: an agent run holds an unexpired claim on the task.
+2. `clarification_pending`: a pending `clarification` suggestion affects the task.
+3. `suggestion_pending`: any other pending suggestion affects the task.
+4. `none`: nothing else matches.
+
+Rejected, applied and superseded suggestions do not count. Changing `aiState` never changes `updatedAt`.
+
+## Decomposer
+
+- `decomposerRunInputSchema`: without `taskIds`, the server picks up to `AGENT_LIMITS.maxDecomposerTasksPerRun` eligible tasks. With `taskIds`, it works on those, 1 to 10 distinct ids.
+- `clarifyInputSchema` takes `suggestionId` and exactly one of `answers` or `generateAnyway: true`. `answers` re-runs the task with the questions and answers added. `generateAnyway` re-runs it with an instruction not to ask, to assume what it must and to list those assumptions.
+- `listSuggestionsQuerySchema` defaults `status` to `pending`. With `targetId`, a related suggestion matches every task in its group.
+- `DecomposerOutput` is the run's stored output. `tasks` has one row per task the run looked at, with an `outcome` from `DECOMPOSER_OUTCOMES`, the saved `suggestionId` or `null`, and a `detail` line for the UI, such as "Skipped PD-12: being processed by decomposer run #41". `related` lists the related suggestions it saved. `counts` has one count per outcome, plus `considered`. `warnings` lists dropped items, as on every agent.
+- `AGENT_LIMITS` holds `decomposerConcurrency` (3 task loops at once), `claimTtlMs` (2 minutes), `rejectedCooldownMs` (7 days) and `maxSubtasks` (8).

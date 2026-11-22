@@ -15,4 +15,9 @@ export const AGENT_LIMITS = {
   maxPlannerCandidates: 30,
   maxStatusUpdateTasks: 15,
   statusUpdateDefaultWindowMs: 24 * 60 * 60 * 1000,
+  maxDecomposerTasksPerRun: 10,
+  decomposerConcurrency: 3,
+  claimTtlMs: 2 * 60 * 1000,
+  rejectedCooldownMs: 7 * 24 * 60 * 60 * 1000,
+  maxSubtasks: 8,
 } as const;

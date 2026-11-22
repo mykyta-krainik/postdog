@@ -5,6 +5,9 @@ import {
   LINK_TYPES,
   PRIORITIES,
   RUN_STATUSES,
+  SUGGESTION_KINDS,
+  SUGGESTION_STATUSES,
+  SUGGESTION_TARGET_TYPES,
   TASK_STATUSES,
   type AgentRunError,
   type AgentUsage,
@@ -112,9 +115,47 @@ export const agentRuns = sqliteTable(
   ],
 );
 
+export const agentSuggestions = sqliteTable(
+  "agent_suggestions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    runId: integer("run_id")
+      .notNull()
+      .references(() => agentRuns.id),
+    targetType: text("target_type", { enum: SUGGESTION_TARGET_TYPES }).notNull(),
+    targetId: integer("target_id").notNull(),
+    kind: text("kind", { enum: SUGGESTION_KINDS }).notNull(),
+    payload: text("payload", { mode: "json" }).$type<unknown>().notNull(),
+    status: text("status", { enum: SUGGESTION_STATUSES }).notNull().default("pending"),
+    createdAt: integer("created_at").notNull(),
+    resolvedAt: integer("resolved_at"),
+  },
+  (t) => [
+    index("agent_suggestions_target_status_idx").on(t.targetType, t.targetId, t.status),
+    index("agent_suggestions_run_id_idx").on(t.runId),
+  ],
+);
+
+export const agentClaims = sqliteTable(
+  "agent_claims",
+  {
+    taskId: integer("task_id")
+      .primaryKey()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    runId: integer("run_id")
+      .notNull()
+      .references(() => agentRuns.id),
+    agent: text("agent", { enum: AGENT_NAMES }).notNull(),
+    expiresAt: integer("expires_at").notNull(),
+  },
+  (t) => [index("agent_claims_run_id_idx").on(t.runId)],
+);
+
 export type TaskRow = typeof tasks.$inferSelect;
 export type NewTaskRow = typeof tasks.$inferInsert;
 export type TaskNoteRow = typeof taskNotes.$inferSelect;
 export type TaskLinkRow = typeof taskLinks.$inferSelect;
 export type AgentRunRow = typeof agentRuns.$inferSelect;
 export type NewAgentRunRow = typeof agentRuns.$inferInsert;
+export type AgentSuggestionRow = typeof agentSuggestions.$inferSelect;
+export type AgentClaimRow = typeof agentClaims.$inferSelect;

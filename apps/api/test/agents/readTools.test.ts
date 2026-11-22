@@ -52,6 +52,7 @@ describe("get_task", () => {
       priority: "medium",
       parentId: null,
       aiState: "none",
+      claimedBy: null,
       ageDays: 3,
       daysInStatus: 3,
       description: "Okta and Azure AD",

@@ -119,7 +119,36 @@ A script gets the conversation so far: `system`, `userMessage`, `turn` (1-based)
 2. Each `ctx.trace.record` saves the trace and usage on the row, so a client polling `GET /api/agents/runs/:id` sees progress.
 3. When `run` resolves, the row gets `output`, `trace`, `usage`, `finishedAt` and status `completed`. When it throws, it gets `error: { code, message }` and status `failed`, or `cancelled` for `cancelled` and `ai_disabled`. An error that is not an `AgentError` is stored as `internal_error`.
 4. Cancel and the kill switch write `cancelled` at once and abort the run. Only a row that is still `running` can be finished, so whichever outcome lands first wins.
-5. On API start, every row still `running` becomes `failed` with `interrupted`.
+5. When the run finishes or is cancelled, the run service releases every claim the run holds.
+6. On API start, every row still `running` becomes `failed` with `interrupted`, the claims of every run that is no longer running are deleted, and `aiState` is recomputed for every task.
+
+## Suggestions and claims
+
+Agents coordinate through two tables: `agent_claims` (which run is working on a task) and `agent_suggestions` (what the user has to review). The functions below, in `src/repositories/claims.ts` and `src/repositories/suggestions.ts`, are the only writers. Each one recomputes `tasks.aiState` for the tasks it touches, so an orchestrator never sets `aiState` itself.
+
+| Function                                                              | What it does                                                                                                                                                                                 |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tryClaim(ex, taskId, runId, agent, now)`                             | Claims the task until `now + AGENT_LIMITS.claimTtlMs`. Returns `{ claimed: true }`, or `{ claimed: false, heldBy: { runId, agent } }` when another run holds an unexpired claim on the task. |
+| `renewClaims(ex, runId, now)`                                         | Extends every claim the run holds. Call it after each loop step.                                                                                                                             |
+| `releaseTaskClaim(ex, taskId, runId, now)`                            | Releases one task's claim, and only when this run holds it.                                                                                                                                  |
+| `releaseClaims(ex, runId, now)`                                       | Releases every claim of the run.                                                                                                                                                             |
+| `findActiveClaim(ex, taskId, now)`, `listActiveClaims(ex, now)`       | Unexpired claims.                                                                                                                                                                            |
+| `insertSuggestion(ex, row)`                                           | Saves a `NewSuggestion` as `pending`. It parses the row with `suggestionSchema` and throws, saving nothing, when the payload does not match its kind.                                        |
+| `findSuggestion(ex, id)`, `listSuggestions(ex, filter)`               | Read suggestions, oldest first. A task `targetId` also matches related suggestions that list the task.                                                                                       |
+| `listPendingSuggestionsOfTask(ex, taskId)`                            | What task detail returns as `pendingSuggestions`.                                                                                                                                            |
+| `resolveSuggestion(ex, id, status, now)`                              | Moves a `pending` suggestion to `rejected`, `applied`, `superseded` or `rolled_back` and sets `resolvedAt`. Returns `undefined` when it is missing or no longer pending.                     |
+| `supersedeSuggestionsOfTasks(ex, taskIds, now)`                       | Supersedes every pending suggestion that affects the tasks. Deleting a task calls it for the task and its subtasks.                                                                          |
+| `listTaskIdsInCooldown(ex, now)`                                      | Tasks affected by a suggestion rejected or rolled back within `AGENT_LIMITS.rejectedCooldownMs`.                                                                                             |
+| `recomputeAiState(ex, taskIds, now)`, `recomputeAllAiStates(ex, now)` | In `src/repositories/aiState.ts`. The functions above call them.                                                                                                                             |
+
+- Each function takes an `Executor` and wraps its writes in its own transaction. Inside your transaction that becomes a savepoint, so the claim or suggestion and the `aiState` change commit or roll back together with your other writes.
+- `now` is a parameter so that tests can move the clock. `insertSuggestion` uses `row.createdAt` as `now`.
+- A claim expires when `expiresAt <= now`. Every read ignores an expired claim, and `tryClaim` replaces it. Claiming a task the run already holds renews it.
+- The stored `aiState` changes only when something writes. An expired claim leaves `processing` on the task until the next write on that task or the next API start. Check eligibility with `findActiveClaim`, not with `aiState` alone.
+- `resolveSuggestion` returning `undefined` is how a second accept or reject of the same suggestion is detected. Answer it with `409 conflict`.
+- `get_task` returns `claimedBy: { runId, agent }` or `null`. `search_tasks` and the Planner's candidate table do not have `claimedBy` yet. The Planner sees a claimed task as `aiState: processing`.
+
+The test fixtures in `test/suggestionFixtures.ts` (`createTestDb`, `addTask`, `addRun`, `subtasksFor`, `clarificationFor`, `relatedOf`, `aiStateOf`) build these rows for tests.
 
 ## Langfuse
 

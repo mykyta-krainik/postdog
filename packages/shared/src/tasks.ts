@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { suggestionSchema } from "./agents/suggestions";
 import { idSchema, timestampSchema } from "./common";
 import { aiStateSchema, prioritySchema, taskStatusSchema } from "./enums";
 import { taskDetailLinkSchema } from "./links";
@@ -32,6 +33,7 @@ export type TaskListItem = z.infer<typeof taskListItemSchema>;
 export const taskDetailSchema = taskSchema.extend({
   subtasks: z.array(taskListItemSchema),
   links: z.array(taskDetailLinkSchema),
+  pendingSuggestions: z.array(suggestionSchema),
 });
 export type TaskDetail = z.infer<typeof taskDetailSchema>;
 

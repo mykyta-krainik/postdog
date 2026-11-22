@@ -88,6 +88,15 @@ function containsText(needle: string): SQL {
   return sql`(instr(lower(${tasks.title}), lower(${needle})) > 0 or instr(lower(${tasks.description}), lower(${needle})) > 0)`;
 }
 
+export function listSubtaskIds(ex: Executor, parentId: number): number[] {
+  return ex
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(eq(tasks.parentId, parentId))
+    .all()
+    .map((row) => row.id);
+}
+
 export function listAllTasks(ex: Executor): TaskRow[] {
   return ex.select().from(tasks).orderBy(asc(tasks.id)).all();
 }

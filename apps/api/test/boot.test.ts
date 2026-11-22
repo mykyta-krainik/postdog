@@ -7,7 +7,19 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
 import { bootDatabase } from "../src/db/boot";
 import type { Db } from "../src/db/client";
+import { findRun } from "../src/repositories/agentRuns";
+import { listActiveClaims, tryClaim } from "../src/repositories/claims";
+import { insertSuggestion } from "../src/repositories/suggestions";
+import { updateTask } from "../src/repositories/tasks";
 import { createTask, getTask, listTasks, type Api } from "./helpers";
+import {
+  addRun,
+  addTask,
+  aiStateOf,
+  clarificationFor,
+  relatedOf,
+  subtasksFor,
+} from "./suggestionFixtures";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -71,6 +83,46 @@ describe("fresh start", () => {
 
     api = boot(path);
     expect(await listTasks(api)).toEqual([]);
+  });
+});
+
+describe("crash reconciliation", () => {
+  it("fails running runs, drops their claims and rebuilds every task's aiState", () => {
+    const path = join(dir, "postdog.db");
+    const now = 50 * DAY;
+    const { db } = bootDatabase(path, now);
+    const running = addRun(db);
+    const finished = addRun(db, "decomposer", "completed");
+    const [claimed, claimedAndAsked, suggested, grouped, stuck] = Array.from({ length: 5 }, () =>
+      addTask(db),
+    ) as [TaskDetail, TaskDetail, TaskDetail, TaskDetail, TaskDetail];
+    tryClaim(db, claimed.id, running, "decomposer", now);
+    tryClaim(db, claimedAndAsked.id, running, "decomposer", now);
+    insertSuggestion(db, clarificationFor(running, claimedAndAsked.id, now));
+    insertSuggestion(db, subtasksFor(finished, suggested.id, now));
+    insertSuggestion(db, relatedOf(finished, [suggested.id, grouped.id], now));
+    updateTask(db, stuck.id, { aiState: "processing" });
+    db.$client.close();
+
+    const restarted = bootDatabase(path, now + 1_000);
+    open.push(restarted.db);
+    expect(restarted.interrupted).toBe(1);
+    expect(findRun(restarted.db, running)).toMatchObject({
+      status: "failed",
+      error: { code: "interrupted" },
+    });
+    expect(listActiveClaims(restarted.db, now + 1_000)).toEqual([]);
+    expect(
+      [claimed, claimedAndAsked, suggested, grouped, stuck].map((t) =>
+        aiStateOf(restarted.db, t.id),
+      ),
+    ).toEqual([
+      "none",
+      "clarification_pending",
+      "suggestion_pending",
+      "suggestion_pending",
+      "none",
+    ]);
   });
 });
 
