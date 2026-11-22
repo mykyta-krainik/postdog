@@ -102,7 +102,7 @@ export function ClarificationReview({
         })}
       </ol>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-2">
         <p className="min-w-0 flex-1 text-xs text-muted-foreground">
           Not sure? Generate anyway: Postdog will make reasonable assumptions and list them.
         </p>
