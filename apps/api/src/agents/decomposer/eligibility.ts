@@ -6,6 +6,7 @@ import {
 } from "@postdog/shared";
 import type { Executor } from "../../db/client";
 import type { TaskRow } from "../../db/schema";
+import { plural } from "../../lib/text";
 import { findActiveClaim, type ClaimHolder } from "../../repositories/claims";
 import {
   listPendingSuggestionsOfTask,
@@ -35,10 +36,6 @@ export function claimedResult(task: TaskRow, holder: ClaimHolder): DecomposerTas
     "claimed",
     `Skipped ${task.identifier}: being processed by ${agent} run #${holder.runId}`,
   );
-}
-
-function plural(n: number, word: string): string {
-  return `${n} ${word}${n === 1 ? "" : "s"}`;
 }
 
 function exclusion(

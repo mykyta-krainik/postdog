@@ -1,4 +1,5 @@
 import { STALE_IN_PROGRESS_DAYS, type StatusUpdateTone } from "@postdog/shared";
+import { plural } from "../../lib/text";
 import type { StatusRow, StatusScope } from "./scope";
 
 export const STATUS_UPDATER_PROMPT_VERSION = "STATUS_UPDATER_PROMPT_V1";
@@ -58,10 +59,6 @@ export function formatTime(ms: number): string {
 
 export function escapeMarkup(text: string): string {
   return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-}
-
-function plural(n: number, word: string): string {
-  return `${n} ${word}${n === 1 ? "" : "s"}`;
 }
 
 function activity(row: StatusRow, windowStart: number): string {

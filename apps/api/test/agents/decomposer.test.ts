@@ -1,22 +1,6 @@
-import {
-  AGENT_LIMITS,
-  apiErrorBodySchema,
-  decomposerRunSchema,
-  taskDetailSchema,
-  type DecomposerOutput,
-  type DecomposerRun,
-} from "@postdog/shared";
-import request from "supertest";
+import { AGENT_LIMITS, apiErrorBodySchema, taskDetailSchema } from "@postdog/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createApp } from "../../src/app";
-import {
-  registerMockScript,
-  type MockConversation,
-  type MockTurn,
-} from "../../src/agents/core/llm";
-import { createDecomposerAgent, createDecomposerClarifyAgent } from "../../src/agents/decomposer";
-import { agentRegistry } from "../../src/agents/registry";
-import { seedDatabase } from "../../src/db/seed";
+import type { MockConversation, MockTurn } from "../../src/agents/core/llm";
 import { findActiveClaim, listActiveClaims, tryClaim } from "../../src/repositories/claims";
 import {
   findSuggestion,
@@ -36,74 +20,25 @@ import {
   relatedOf,
   subtasksFor,
 } from "../suggestionFixtures";
-import { call, script, waitForRun, type Step } from "./helpers";
+import {
+  T0,
+  ask,
+  clarify,
+  noGroups,
+  outcomes,
+  outputOf,
+  propose,
+  runDecomposer,
+  setup,
+  twoSteps,
+} from "./decomposerSetup";
+import { call, waitForRun } from "./helpers";
 
-const T0 = Date.UTC(2026, 10, 1, 9);
 const TTL = AGENT_LIMITS.claimTtlMs;
 
 afterEach(() => {
   vi.useRealTimers();
 });
-
-type TaskHandler = (taskId: number, conversation: MockConversation) => MockTurn | Promise<MockTurn>;
-
-let handlerCount = 0;
-
-function byTask(handler: TaskHandler): string {
-  const name = `test_decomposer_task_${++handlerCount}`;
-  registerMockScript(name, (conversation) =>
-    handler(Number(/^id: (\d+)$/m.exec(conversation.userMessage)![1]), conversation),
-  );
-  return name;
-}
-
-function setup(options: { seed?: boolean; related?: Step[]; task?: TaskHandler } = {}) {
-  const db = createTestDb();
-  if (options.seed) seedDatabase(db, Date.now());
-  const related = options.related && script(options.related);
-  const loops = {
-    ...(related && { related: related.name }),
-    ...(options.task && { task: byTask(options.task) }),
-  };
-  const agents = {
-    ...agentRegistry,
-    decomposer: createDecomposerAgent(loops),
-    decomposer_clarify: createDecomposerClarifyAgent(loops),
-  };
-  return { db, api: request(createApp(db, { agents })), relatedSeen: related?.seen ?? [] };
-}
-
-async function startRun(api: Api, path: string, body: object): Promise<DecomposerRun> {
-  const res = await api.post(`/api/agents/decomposer/${path}`).send(body).expect(202);
-  expect(Object.keys(res.body)).toEqual(["runId"]);
-  return decomposerRunSchema.parse(await waitForRun(api, res.body.runId as number));
-}
-
-const runDecomposer = (api: Api, body: object = {}) => startRun(api, "run", body);
-const clarify = (api: Api, body: object) => startRun(api, "clarify", body);
-
-function outputOf(run: DecomposerRun): DecomposerOutput {
-  expect(run.error).toBeNull();
-  expect(run.status).toBe("completed");
-  return run.output!;
-}
-
-function outcomes(output: DecomposerOutput): Record<string, string> {
-  return Object.fromEntries(output.tasks.map((t) => [t.title, t.outcome]));
-}
-
-const propose = (...titles: string[]) =>
-  call("propose_subtasks", {
-    subtasks: titles.map((title) => ({ title, description: "" })),
-    rationale: "Split it.",
-  });
-
-const ask = call("ask_clarification", {
-  questions: ["What does done look like?"],
-  whatIsUnclear: "No outcome.",
-});
-
-const noGroups = call("report_related", { groups: [] });
 
 describe("Decomposer on the seeded data", () => {
   it("proposes, asks, skips and finds the near-duplicate pair, saving suggestions with their aiState", async () => {
@@ -187,8 +122,6 @@ function batchIds(conversation: MockConversation): number[] {
 async function setStatus(api: Api, id: number, status: string) {
   await api.patch(`/api/tasks/${id}`).send({ status }).expect(200);
 }
-
-const twoSteps = () => propose("Step one", "Step two");
 
 describe("Decomposer eligibility", () => {
   it("reports why each picked task was left out", async () => {
@@ -724,19 +657,6 @@ describe("Decomposer output checks", () => {
       }),
     ]);
     expect(listSuggestions(db, { targetId: task.id })).toEqual([]);
-  });
-
-  it("records mode suggest and says so in the trace when Settings say auto", async () => {
-    const { db, api } = setup({ task: twoSteps });
-    const task = addTask(db, { title: "Auto please" });
-    await api.patch("/api/settings").send({ decompositionMode: "auto" }).expect(200);
-
-    const run = await runDecomposer(api);
-    expect(run.mode).toBe("suggest");
-    expect(run.trace.map((s) => s.outputSummary)).toContain(
-      "Auto mode arrives in phase 4, saved as a suggestion",
-    );
-    expect(listSuggestions(db, { targetId: task.id, status: "pending" })).toHaveLength(1);
   });
 });
 

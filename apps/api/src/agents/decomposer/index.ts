@@ -4,6 +4,8 @@ import {
   decomposerOutputSchema,
   decomposerRunInputSchema,
   type AgentWarning,
+  type Changeset,
+  type ChangesetOpType,
   type ClarifyInput,
   type DecomposerOutcome,
   type DecomposerOutput,
@@ -16,6 +18,7 @@ import type { Db } from "../../db/client";
 import type { TaskRow } from "../../db/schema";
 import { conflict, invalidField, notFound } from "../../lib/errors";
 import { logger } from "../../lib/logger";
+import { findChangesetByRun } from "../../repositories/changesets";
 import { releaseTaskClaim, renewClaims, tryClaim } from "../../repositories/claims";
 import { findSuggestion, resolveSuggestion } from "../../repositories/suggestions";
 import { findTask } from "../../repositories/tasks";
@@ -24,9 +27,10 @@ import { AgentError } from "../core/errors";
 import { registerMockScript } from "../core/llm";
 import { runAgent } from "../core/runAgent";
 import type { TraceRecorder } from "../core/trace";
-import { applierFor, appliedMode, requestedMode, type Applier, type ApplyRun } from "./apply";
+import { applierFor, decompositionMode, type ApplyRun, type RelatedApplied } from "./apply";
 import { claimedResult, selectBatch, taskResult } from "./eligibility";
 import { relatedMockScript, taskMockScript } from "./mock";
+import { notifyAutoRun, type RunWrites } from "./notify";
 import {
   DECOMPOSER_PROMPT_V1,
   DECOMPOSER_PROMPT_VERSION,
@@ -64,6 +68,7 @@ interface TaskDone {
 
 const SETTLED_OUTCOMES = new Set<DecomposerOutcome>([
   "suggested_subtasks",
+  "applied_subtasks",
   "needs_clarification",
   "skipped",
 ]);
@@ -98,15 +103,63 @@ function applyRun(ctx: AgentContext): ApplyRun {
   return { runId: ctx.runId, startedAt: ctx.startedAt, now: Date.now() };
 }
 
-function noteMode(ctx: AgentContext): void {
-  const requested = requestedMode(ctx.db);
-  if (requested === ctx.mode) return;
-  ctx.trace.record({
-    type: "validation",
-    input: { requested, applied: ctx.mode },
-    outputSummary: "Auto mode arrives in phase 4, saved as a suggestion",
-    durationMs: 0,
-  });
+/**
+ * Stage 3 for one run, in the run's mode: each result is applied in its own transaction, so
+ * a failure writes nothing of that task, and what was written is kept for the notifications.
+ */
+function createStage3(ctx: AgentContext) {
+  const applier = applierFor(ctx.mode);
+  const writes: RunWrites = { tasks: [], related: [] };
+  return {
+    writes,
+    /** A settled result also supersedes the clarification it answers, in the same transaction. */
+    task(task: TaskRow, decision: Decision, supersedes?: number): DecomposerTaskResult {
+      const run = applyRun(ctx);
+      const result = ctx.db.transaction((tx) => {
+        const applied = applier.task(tx, run, task, decision);
+        if (supersedes !== undefined && SETTLED_OUTCOMES.has(applied.outcome)) {
+          resolveSuggestion(tx, supersedes, "superseded", run.now);
+        }
+        return applied;
+      });
+      writes.tasks.push(result);
+      return result;
+    },
+    related(group: RelatedPayload): RelatedApplied {
+      const applied = ctx.db.transaction((tx) => applier.related(tx, applyRun(ctx), group));
+      if (applied.saved) {
+        const { suggestionId, applied: linked } = applied;
+        writes.related.push({
+          suggestionId,
+          relation: group.relation,
+          taskIds: group.taskIds,
+          applied: linked,
+        });
+      }
+      return applied;
+    },
+  };
+}
+
+type Stage3 = ReturnType<typeof createStage3>;
+
+/**
+ * Runs the work with a fresh stage 3. An auto run writes its notifications at the end, also
+ * when it is cancelled or fails after applying something, so applied work is never hidden.
+ */
+async function withStage3(
+  ctx: AgentContext,
+  work: (stage3: Stage3) => Promise<{ output: DecomposerOutput }>,
+): Promise<{ output: DecomposerOutput }> {
+  const stage3 = createStage3(ctx);
+  let finished = false;
+  try {
+    const result = await work(stage3);
+    finished = true;
+    return result;
+  } finally {
+    if (ctx.mode === "auto") notifyAutoRun(ctx.db, ctx.runId, stage3.writes, !finished, Date.now());
+  }
 }
 
 async function settleEach<T, R>(
@@ -137,18 +190,21 @@ function buildOutput(
   tasks: DecomposerTaskResult[],
   related: DecomposerRelatedResult[],
   warnings: AgentWarning[],
+  changeset: Changeset | undefined,
 ): DecomposerOutput {
   const count = (outcome: DecomposerOutcome) => tasks.filter((t) => t.outcome === outcome).length;
+  const ops = (type: ChangesetOpType) =>
+    changeset?.ops.filter((op) => op.type === type).length ?? 0;
   return {
     tasks,
     related,
-    changesetId: null,
+    changesetId: changeset?.id ?? null,
     counts: {
       considered: tasks.length,
       suggestedSubtasks: count("suggested_subtasks"),
       appliedSubtasks: count("applied_subtasks"),
-      createdSubtasks: 0,
-      appliedLinks: 0,
+      createdSubtasks: ops("create_task"),
+      appliedLinks: ops("create_link"),
       needsClarification: count("needs_clarification"),
       skipped: count("skipped"),
       duplicates: count("duplicate"),
@@ -220,7 +276,7 @@ function runTaskLoop(ctx: AgentContext, loop: string, job: TaskJob, trace: Trace
 async function decomposeTask(
   ctx: AgentContext,
   loop: string,
-  applier: Applier,
+  stage3: Stage3,
   job: TaskJob,
 ): Promise<TaskDone> {
   const { task } = job;
@@ -242,14 +298,7 @@ async function decomposeTask(
     const { decision, dropped } = decide(ctx, task, loopResult);
     recordDropped(trace, loopResult.toolName, dropped);
     if (ctx.signal.aborted) throw stopped(ctx.signal);
-    const run = applyRun(ctx);
-    const result = ctx.db.transaction((tx) => {
-      const applied = applier.task(tx, run, task, decision);
-      if (job.supersedes !== undefined && SETTLED_OUTCOMES.has(applied.outcome)) {
-        resolveSuggestion(tx, job.supersedes, "superseded", run.now);
-      }
-      return applied;
-    });
+    const result = stage3.task(task, decision, job.supersedes);
     trace.record({
       type: "validation",
       input: decision,
@@ -288,9 +337,8 @@ async function runBatch(
   ctx: AgentContext,
   loops: DecomposerLoops,
   input: DecomposerRunInput,
+  stage3: Stage3,
 ): Promise<{ output: DecomposerOutput }> {
-  const applier = applierFor(ctx.mode);
-  noteMode(ctx);
   const batch = selectBatch(ctx.db, input.taskIds, ctx.startedAt);
   const picked = batch.tasks.map((t) => t.identifier).join(", ");
   ctx.trace.record({
@@ -303,7 +351,8 @@ async function runBatch(
     durationMs: 0,
   });
   if (batch.tasks.length === 0) {
-    return { output: buildOutput(batch.excluded, [], [{ message: "No eligible tasks" }]) };
+    const none = [{ message: "No eligible tasks" }];
+    return { output: buildOutput(batch.excluded, [], none, undefined) };
   }
 
   const warnings: AgentWarning[] = [];
@@ -320,21 +369,11 @@ async function runBatch(
     }
   }
 
-  const related: DecomposerRelatedResult[] = [];
   const suggestionOf = new Map<RelatedPayload, number>();
   for (const group of groups) {
-    const applied = ctx.db.transaction((tx) => applier.related(tx, applyRun(ctx), group));
-    if (!applied.saved) {
-      warnings.push(applied.warning);
-      continue;
-    }
-    suggestionOf.set(group, applied.suggestionId);
-    related.push({
-      suggestionId: applied.suggestionId,
-      relation: group.relation,
-      taskIds: group.taskIds,
-      applied: false,
-    });
+    const applied = stage3.related(group);
+    if (applied.saved) suggestionOf.set(group, applied.suggestionId);
+    else warnings.push(applied.warning);
   }
 
   const batchIds = new Set(batch.tasks.map((t) => t.id));
@@ -358,7 +397,7 @@ async function runBatch(
     .filter((task) => !duplicateGroup.has(task.id))
     .map((task): TaskJob => ({ task, related: relatedNotes(ctx.db, task, groups) }));
   const settled = await settleEach(jobs, AGENT_LIMITS.decomposerConcurrency, (job) =>
-    decomposeTask(ctx, loops.task, applier, job),
+    decomposeTask(ctx, loops.task, stage3, job),
   );
   if (ctx.signal.aborted) throw stopped(ctx.signal);
 
@@ -369,8 +408,9 @@ async function runBatch(
   );
   const output = buildOutput(
     [...done.map((d) => d.result), ...duplicates, ...batch.excluded],
-    related,
+    stage3.writes.related,
     [...warnings, ...done.flatMap((d) => d.warnings)],
+    findChangesetByRun(ctx.db, ctx.runId),
   );
   failIfNothingWorked(settled, output);
   return { output };
@@ -380,9 +420,8 @@ async function runClarify(
   ctx: AgentContext,
   loops: Pick<DecomposerLoops, "task">,
   input: ClarifyInput,
+  stage3: Stage3,
 ): Promise<{ output: DecomposerOutput }> {
-  const applier = applierFor(ctx.mode);
-  noteMode(ctx);
   const suggestion = findSuggestion(ctx.db, input.suggestionId);
   if (suggestion?.kind !== "clarification" || suggestion.status !== "pending") {
     throw new AgentError(
@@ -403,11 +442,14 @@ async function runClarify(
     },
     supersedes: suggestion.id,
   };
-  const settled = await settleEach([job], 1, (j) => decomposeTask(ctx, loops.task, applier, j));
+  const settled = await settleEach([job], 1, (j) => decomposeTask(ctx, loops.task, stage3, j));
   if (ctx.signal.aborted) throw stopped(ctx.signal);
   const [only] = settled;
   if (only!.status === "rejected") throw only!.reason;
-  return { output: buildOutput([only!.value.result], [], only!.value.warnings) };
+  const { result, warnings } = only!.value;
+  return {
+    output: buildOutput([result], [], warnings, findChangesetByRun(ctx.db, ctx.runId)),
+  };
 }
 
 function prepareRun(db: Db, input: DecomposerRunInput): DecomposerRunInput {
@@ -432,8 +474,6 @@ function prepareClarify(db: Db, input: ClarifyInput): ClarifyInput {
   return input;
 }
 
-const decompositionMode = (db: Db) => appliedMode(requestedMode(db));
-
 export function createDecomposerAgent(loops: Partial<DecomposerLoops> = {}) {
   const names = { ...DECOMPOSER_LOOPS, ...loops };
   return defineAgent({
@@ -443,7 +483,7 @@ export function createDecomposerAgent(loops: Partial<DecomposerLoops> = {}) {
     output: decomposerOutputSchema,
     prepare: prepareRun,
     mode: decompositionMode,
-    run: (ctx, input) => runBatch(ctx, names, input),
+    run: (ctx, input) => withStage3(ctx, (stage3) => runBatch(ctx, names, input, stage3)),
   });
 }
 
@@ -456,7 +496,7 @@ export function createDecomposerClarifyAgent(loops: Partial<Pick<DecomposerLoops
     output: decomposerOutputSchema,
     prepare: prepareClarify,
     mode: decompositionMode,
-    run: (ctx, input) => runClarify(ctx, names, input),
+    run: (ctx, input) => withStage3(ctx, (stage3) => runClarify(ctx, names, input, stage3)),
   });
 }
 
