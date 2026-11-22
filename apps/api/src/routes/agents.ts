@@ -18,6 +18,12 @@ export function agentRoutes(
       validate({ body: registry.status_updater.input }),
       agents.runStatusUpdater,
     )
+    .post("/decomposer/run", validate({ body: registry.decomposer.input }), agents.runDecomposer)
+    .post(
+      "/decomposer/clarify",
+      validate({ body: registry.decomposer_clarify.input }),
+      agents.clarifyDecomposer,
+    )
     .get("/planner/latest", agents.plannerLatest)
     .get("/runs", validate({ query: listAgentRunsQuerySchema }), agents.list)
     .get("/runs/:id", validate(byId), agents.get)
