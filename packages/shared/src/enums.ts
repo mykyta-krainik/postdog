@@ -37,6 +37,33 @@ export const STATUS_UPDATE_TONES = ["celebrate", "neutral", "heads_up", "blocked
 export const statusUpdateToneSchema = z.enum(STATUS_UPDATE_TONES);
 export type StatusUpdateTone = z.infer<typeof statusUpdateToneSchema>;
 
+/** mark_stale belongs to the Docs reviewer (phase 6) and has no payload schema yet. */
+export const SUGGESTION_KINDS = ["subtasks", "clarification", "related", "mark_stale"] as const;
+export const suggestionKindSchema = z.enum(SUGGESTION_KINDS);
+export type SuggestionKind = z.infer<typeof suggestionKindSchema>;
+
+export const SUGGESTION_STATUSES = [
+  "pending",
+  "rejected",
+  "applied",
+  "rolled_back",
+  "superseded",
+] as const;
+export const suggestionStatusSchema = z.enum(SUGGESTION_STATUSES);
+export type SuggestionStatus = z.infer<typeof suggestionStatusSchema>;
+
+export const SUGGESTION_TARGET_TYPES = ["task", "doc"] as const;
+export const suggestionTargetTypeSchema = z.enum(SUGGESTION_TARGET_TYPES);
+export type SuggestionTargetType = z.infer<typeof suggestionTargetTypeSchema>;
+
+export const RELATED_RELATIONS = ["duplicates", "overlaps"] as const;
+export const relatedRelationSchema = z.enum(RELATED_RELATIONS);
+export type RelatedRelation = z.infer<typeof relatedRelationSchema>;
+
+export const SKIP_REASONS = ["already_atomic", "not_actionable"] as const;
+export const skipReasonSchema = z.enum(SKIP_REASONS);
+export type SkipReason = z.infer<typeof skipReasonSchema>;
+
 export const TRACE_STEP_TYPES = ["llm", "tool", "validation"] as const;
 export const traceStepTypeSchema = z.enum(TRACE_STEP_TYPES);
 export type TraceStepType = z.infer<typeof traceStepTypeSchema>;
