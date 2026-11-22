@@ -2,12 +2,13 @@
 
 import { decomposerRunSchema } from "@postdog/shared";
 import { startAgentRun, useAgentRunner } from "@/entities/agent-run";
+import { revalidateNotifications } from "@/entities/notification";
 import { revalidateSuggestions } from "@/entities/suggestion";
 
 /**
  * One default Decomposer run: the server picks up to 10 eligible to-do tasks. The task list
  * refetches when it starts, so the picked tasks show they are processing, and when it settles,
- * so the new dots appear.
+ * so the new dots, and in auto mode the new subtasks and the Inbox badge, appear.
  */
 export function useDecompose() {
   return useAgentRunner({
@@ -17,6 +18,9 @@ export function useDecompose() {
       return started;
     },
     schema: decomposerRunSchema,
-    onSettled: () => void revalidateSuggestions(),
+    onSettled: () => {
+      void revalidateSuggestions();
+      void revalidateNotifications();
+    },
   });
 }

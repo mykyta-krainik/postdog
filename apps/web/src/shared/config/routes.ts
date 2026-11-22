@@ -5,5 +5,6 @@ export const routes = {
   today: "/today",
   tasks: "/tasks",
   task: (id: number) => `/tasks?${SELECTED_TASK_PARAM}=${id}`,
+  inbox: "/inbox",
   settings: "/settings",
 } as const;

@@ -16,7 +16,12 @@ const ACTION = "h-10 px-3 text-[13px] md:h-8";
 
 const MODE_HINT: Record<DecompositionMode, string> = {
   suggest: "Suggest mode: you review every change.",
-  auto: "Auto mode: subtasks and relates links are created for you, and you can undo them.",
+  auto: "Auto mode: creates subtasks and links right away; undo from the Inbox.",
+};
+
+const MODE_DESCRIPTION: Record<DecompositionMode, string> = {
+  suggest: `Looks at up to ${AGENT_LIMITS.maxDecomposerTasksPerRun} to-do tasks and suggests subtasks. Nothing changes until you accept.`,
+  auto: `Looks at up to ${AGENT_LIMITS.maxDecomposerTasksPerRun} to-do tasks, then creates subtasks and relates links. Its questions still wait for you.`,
 };
 
 /**
@@ -53,7 +58,7 @@ export function DecomposeButton() {
         open={open}
         onOpenChange={setOpen}
         title="Decompose"
-        description={`Looks at up to ${AGENT_LIMITS.maxDecomposerTasksPerRun} to-do tasks and suggests subtasks. Nothing changes until you accept.`}
+        description={MODE_DESCRIPTION[mode]}
       >
         <div className="flex min-w-0 flex-col gap-3">
           <p className="text-xs text-muted-foreground">
