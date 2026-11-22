@@ -1,7 +1,12 @@
-import type { DecompositionMode } from "@postdog/shared";
+import { plannerInputSchema, plannerOutputSchema, type DecompositionMode } from "@postdog/shared";
+import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createApp } from "../../src/app";
+import { defineAgent } from "../../src/agents/core/definition";
+import { AgentError } from "../../src/agents/core/errors";
 import type { MockConversation, MockTurn } from "../../src/agents/core/llm";
 import { autoRunMessage, conflictMessage } from "../../src/agents/decomposer/notify";
+import { agentRegistry } from "../../src/agents/registry";
 import type { Db } from "../../src/db/client";
 import { taskLinks } from "../../src/db/schema";
 import { findRun } from "../../src/repositories/agentRuns";
@@ -16,7 +21,7 @@ import {
 } from "../../src/repositories/suggestions";
 import { listAllTasks } from "../../src/repositories/tasks";
 import { setNow, type Api } from "../helpers";
-import { addRun, addTask, aiStateOf, clarificationFor } from "../suggestionFixtures";
+import { addRun, addTask, aiStateOf, clarificationFor, createTestDb } from "../suggestionFixtures";
 import {
   T0,
   clarify,
@@ -27,7 +32,7 @@ import {
   setup,
   twoSteps,
 } from "./decomposerSetup";
-import { call } from "./helpers";
+import { call, waitForRun } from "./helpers";
 
 afterEach(() => {
   vi.useRealTimers();
@@ -468,6 +473,53 @@ describe("Decomposer auto apply", () => {
     expect(notifications(db).map((n) => [n.kind, n.title, n.changesetId])).toEqual([
       ["auto_decomposition", "Split 1 task into 3 subtasks", changeset.id],
     ]);
+  });
+});
+
+describe("Decomposer failure notifications", () => {
+  it("writes one agent_failed notification when a run fails, and no summary when nothing was applied", async () => {
+    const { db, api } = setup({ task: () => ({ text: "No." }) });
+    addTask(db, { title: "Only" });
+    await setMode(api, "auto");
+
+    const run = await runDecomposer(api);
+    expect(run.status).toBe("failed");
+    expect(notifications(db)).toEqual([
+      expect.objectContaining({
+        kind: "agent_failed",
+        title: "The Decomposer failed",
+        body: run.error!.message,
+        runId: run.id,
+        changesetId: null,
+      }),
+    ]);
+  });
+
+  it("writes none when the run is cancelled", async () => {
+    const { db, api } = setup({ task: hangs });
+    addTask(db, { title: "Only" });
+    const res = await api.post("/api/agents/decomposer/run").send({}).expect(202);
+    const runId = res.body.runId as number;
+    await until(() => listActiveClaims(db, Date.now()).length > 0, "the claim");
+    await api.post(`/api/agents/runs/${runId}/cancel`).expect(200);
+    expect((await waitForRun(api, runId)).status).toBe("cancelled");
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(notifications(db)).toEqual([]);
+  });
+
+  it("writes none for a failed Planner run", async () => {
+    const db = createTestDb();
+    const planner = defineAgent({
+      name: "planner",
+      promptVersion: "TEST_PROMPT_V1",
+      input: plannerInputSchema,
+      output: plannerOutputSchema,
+      run: () => Promise.reject(new AgentError("no_terminal_tool", "No plan.")),
+    });
+    const api = request(createApp(db, { agents: { ...agentRegistry, planner } }));
+    const res = await api.post("/api/agents/planner/run").send({}).expect(202);
+    expect((await waitForRun(api, res.body.runId as number)).status).toBe("failed");
+    expect(notifications(db)).toEqual([]);
   });
 });
 
