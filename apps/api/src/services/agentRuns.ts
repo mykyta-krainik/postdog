@@ -27,6 +27,8 @@ import {
   updateRun,
   type RunFinish,
 } from "../repositories/agentRuns";
+import { recomputeAllAiStates } from "../repositories/aiState";
+import { deleteClaimsOfStoppedRuns, releaseClaims } from "../repositories/claims";
 import { countTasksUpdatedAfter } from "../repositories/tasks";
 
 const INTERRUPTED: AgentRunError = {
@@ -34,8 +36,14 @@ const INTERRUPTED: AgentRunError = {
   message: "The API stopped while this run was in progress.",
 };
 
+/** Fails runs a crash left running, drops their claims and rebuilds every task's aiState. */
 export function reconcileInterruptedRuns(db: Db, now = Date.now()): number {
-  return failRunningRuns(db, { error: INTERRUPTED, finishedAt: now });
+  return db.transaction((tx) => {
+    const interrupted = failRunningRuns(tx, { error: INTERRUPTED, finishedAt: now });
+    deleteClaimsOfStoppedRuns(tx, now);
+    recomputeAllAiStates(tx, now);
+    return interrupted;
+  });
 }
 
 function toRunError(err: unknown, signal: AbortSignal): AgentRunError {
@@ -61,7 +69,9 @@ export function createAgentRunService(deps: { db: Db; llm: Llm; tracer: Tracer }
 
   function stop(id: number, reason: AgentError): void {
     active.get(id)?.abort(reason);
-    finishRun(db, id, { status: "cancelled", error: reason.toRunError(), finishedAt: Date.now() });
+    const now = Date.now();
+    finishRun(db, id, { status: "cancelled", error: reason.toRunError(), finishedAt: now });
+    releaseClaims(db, id, now);
   }
 
   async function execute<I, O>(definition: AgentDefinition<I, O>, ctx: AgentContext, input: I) {
@@ -81,6 +91,7 @@ export function createAgentRunService(deps: { db: Db; llm: Llm; tracer: Tracer }
       traced = { error: `${error.code}: ${error.message}` };
     }
     finishRun(db, ctx.runId, { ...finish, trace: ctx.trace.steps(), usage: ctx.trace.usage() });
+    releaseClaims(db, ctx.runId, Date.now());
     ctx.tracer.end(traced);
     await tracer.flush().catch((err: unknown) => logger.error("Langfuse flush failed", { err }));
   }
