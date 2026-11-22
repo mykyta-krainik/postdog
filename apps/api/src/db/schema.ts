@@ -1,8 +1,10 @@
 import {
   AGENT_NAMES,
   AI_STATES,
+  CHANGESET_STATUSES,
   DECOMPOSITION_MODES,
   LINK_TYPES,
+  NOTIFICATION_KINDS,
   PRIORITIES,
   RUN_STATUSES,
   SUGGESTION_KINDS,
@@ -11,6 +13,7 @@ import {
   TASK_STATUSES,
   type AgentRunError,
   type AgentUsage,
+  type ChangesetOp,
   type DecompositionMode,
   type LinkCreatedBy,
   type LlmInfo,
@@ -23,6 +26,7 @@ import {
   sqliteTable,
   text,
   unique,
+  uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
 export const tasks = sqliteTable(
@@ -151,6 +155,35 @@ export const agentClaims = sqliteTable(
   (t) => [index("agent_claims_run_id_idx").on(t.runId)],
 );
 
+export const agentChangesets = sqliteTable(
+  "agent_changesets",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    runId: integer("run_id")
+      .notNull()
+      .references(() => agentRuns.id),
+    ops: text("ops", { mode: "json" }).$type<ChangesetOp[]>().notNull(),
+    status: text("status", { enum: CHANGESET_STATUSES }).notNull().default("applied"),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [uniqueIndex("agent_changesets_run_id_unique").on(t.runId)],
+);
+
+export const notifications = sqliteTable(
+  "notifications",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    kind: text("kind", { enum: NOTIFICATION_KINDS }).notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
+    runId: integer("run_id").references(() => agentRuns.id),
+    changesetId: integer("changeset_id").references(() => agentChangesets.id),
+    readAt: integer("read_at"),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [index("notifications_read_at_created_at_idx").on(t.readAt, t.createdAt)],
+);
+
 export type TaskRow = typeof tasks.$inferSelect;
 export type NewTaskRow = typeof tasks.$inferInsert;
 export type TaskNoteRow = typeof taskNotes.$inferSelect;
@@ -159,3 +192,6 @@ export type AgentRunRow = typeof agentRuns.$inferSelect;
 export type NewAgentRunRow = typeof agentRuns.$inferInsert;
 export type AgentSuggestionRow = typeof agentSuggestions.$inferSelect;
 export type AgentClaimRow = typeof agentClaims.$inferSelect;
+export type AgentChangesetRow = typeof agentChangesets.$inferSelect;
+export type NotificationRow = typeof notifications.$inferSelect;
+export type NewNotificationRow = typeof notifications.$inferInsert;

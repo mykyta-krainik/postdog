@@ -102,7 +102,7 @@ describe("Decomposer terminal tools", () => {
 });
 
 describe("decomposerOutputSchema", () => {
-  const output: DecomposerOutput = {
+  const phase3Output = {
     tasks: [
       {
         taskId: 12,
@@ -135,7 +135,40 @@ describe("decomposerOutputSchema", () => {
     warnings: [{ taskId: 12, message: "Dropped a subtask that already exists" }],
   };
 
-  it("accepts a run summary and rejects an unknown outcome", () => {
+  it("reads an output stored before auto mode with the auto fields at their defaults", () => {
+    expect(decomposerOutputSchema.parse(phase3Output)).toEqual({
+      ...phase3Output,
+      related: [{ suggestionId: 8, relation: "overlaps", taskIds: [12, 15], applied: false }],
+      changesetId: null,
+      counts: { ...phase3Output.counts, appliedSubtasks: 0, createdSubtasks: 0, appliedLinks: 0 },
+    });
+  });
+
+  it("accepts an auto run summary and rejects an unknown outcome", () => {
+    const output: DecomposerOutput = {
+      tasks: [
+        {
+          taskId: 12,
+          identifier: "PD-12",
+          title: "Add SSO",
+          outcome: "applied_subtasks",
+          suggestionId: 7,
+          detail: "Created 4 subtasks",
+        },
+      ],
+      related: [{ suggestionId: 8, relation: "overlaps", taskIds: [12, 15], applied: true }],
+      changesetId: 2,
+      counts: {
+        ...phase3Output.counts,
+        considered: 1,
+        suggestedSubtasks: 0,
+        claimed: 0,
+        appliedSubtasks: 1,
+        createdSubtasks: 4,
+        appliedLinks: 1,
+      },
+      warnings: [],
+    };
     expect(decomposerOutputSchema.parse(output)).toEqual(output);
     const bad = { ...output, tasks: [{ ...output.tasks[0], outcome: "maybe" }] };
     expect(decomposerOutputSchema.safeParse(bad).success).toBe(false);

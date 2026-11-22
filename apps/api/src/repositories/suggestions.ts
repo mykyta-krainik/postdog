@@ -13,8 +13,13 @@ import { affectsTask, recomputeAiState } from "./aiState";
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 
-/** A new suggestion is always pending. */
-export type NewSuggestion = DistributiveOmit<Suggestion, "id" | "status" | "resolvedAt">;
+/**
+ * A new suggestion is pending, or applied when auto mode saves what it has already applied.
+ * An applied one is resolved at its `createdAt`.
+ */
+export type NewSuggestion = DistributiveOmit<Suggestion, "id" | "status" | "resolvedAt"> & {
+  status?: "pending" | "applied";
+};
 
 export type SuggestionResolution = Exclude<SuggestionStatus, "pending">;
 
@@ -36,8 +41,15 @@ export function suggestionTaskIds(suggestion: Suggestion): number[] {
 }
 
 export function insertSuggestion(ex: Executor, row: NewSuggestion): Suggestion {
+  const resolvedAt = row.status === "applied" ? row.createdAt : null;
   return ex.transaction((tx) => {
-    const suggestion = toSuggestion(tx.insert(agentSuggestions).values(row).returning().get());
+    const suggestion = toSuggestion(
+      tx
+        .insert(agentSuggestions)
+        .values({ ...row, resolvedAt })
+        .returning()
+        .get(),
+    );
     recomputeAiState(tx, suggestionTaskIds(suggestion), row.createdAt);
     return suggestion;
   });
@@ -136,6 +148,41 @@ export function supersedeSuggestionsOfTasks(
       .all()
       .map(toSuggestion);
     recomputeAiState(tx, superseded.flatMap(suggestionTaskIds), now);
+  });
+}
+
+export interface RollbackOfRun {
+  runId: number;
+  targetIds: readonly number[];
+  now: number;
+}
+
+/**
+ * Moves the run's applied suggestions whose targetId is in `targetIds` to rolled_back, which
+ * puts the tasks they affect in the cooldown of `listTaskIdsInCooldown`. Returns them.
+ */
+export function markSuggestionsRolledBack(
+  ex: Executor,
+  { runId, targetIds, now }: RollbackOfRun,
+): Suggestion[] {
+  if (targetIds.length === 0) return [];
+  return ex.transaction((tx) => {
+    const rolledBack = tx
+      .update(agentSuggestions)
+      .set({ status: "rolled_back", resolvedAt: now })
+      .where(
+        and(
+          eq(agentSuggestions.runId, runId),
+          eq(agentSuggestions.status, "applied"),
+          eq(agentSuggestions.targetType, "task"),
+          inArray(agentSuggestions.targetId, [...targetIds]),
+        ),
+      )
+      .returning()
+      .all()
+      .map(toSuggestion);
+    recomputeAiState(tx, rolledBack.flatMap(suggestionTaskIds), now);
+    return rolledBack;
   });
 }
 

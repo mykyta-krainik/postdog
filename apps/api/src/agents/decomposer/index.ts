@@ -142,9 +142,13 @@ function buildOutput(
   return {
     tasks,
     related,
+    changesetId: null,
     counts: {
       considered: tasks.length,
       suggestedSubtasks: count("suggested_subtasks"),
+      appliedSubtasks: count("applied_subtasks"),
+      createdSubtasks: 0,
+      appliedLinks: 0,
       needsClarification: count("needs_clarification"),
       skipped: count("skipped"),
       duplicates: count("duplicate"),
@@ -329,6 +333,7 @@ async function runBatch(
       suggestionId: applied.suggestionId,
       relation: group.relation,
       taskIds: group.taskIds,
+      applied: false,
     });
   }
 
