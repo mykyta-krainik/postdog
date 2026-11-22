@@ -165,7 +165,7 @@ agent_suggestions
 
 agent_changesets
   id, runId -> agent_runs, unique   one changeset per run
-  ops              json  [{ type: create_task | create_link, id, taskId, state: applied | rolled_back | kept }]   taskId = the task the op belongs to (the parent for a subtask, the lowest task id of the group for a link), so one task's part can be rolled back; state = what a rollback did to the item (kept = left in place because the user changed it or it was already gone)
+  ops              json  [{ type: create_task | create_link, id, taskId, state: applied | rolled_back | kept }]   taskId = the task the op belongs to (the parent for a subtask, the lowest task id of the group for a link), so one task's part can be rolled back; state = what a rollback did to the item (kept = left in place because the user changed it; an item the user already deleted counts as rolled_back, since it is already undone: phase 4 decision)
   status           enum  applied | rolled_back | partially_rolled_back   always derived from the ops' states
   createdAt
 

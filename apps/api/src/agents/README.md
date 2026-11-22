@@ -194,10 +194,34 @@ Auto mode records what it creates in `agent_changesets`, and the Inbox reads `no
 | `markNotificationRead(ex, id, now)`                      | Sets `readAt` once. A second call keeps the first time and returns the same notification. Returns `undefined` when the notification does not exist.    |
 
 - A subtask op's `taskId` is its parent. A link op's `taskId` is the lowest task id of the related group, which is also the `targetId` of the group's suggestion. Rolling back one task's part acts on the ops with that `taskId`, and `markSuggestionsRolledBack` with `targetIds: [taskId]` reaches the same task's suggestions.
-- `services/rollbackRules.ts` decides which created items a rollback may delete. `subtaskKeptReason(task, childCount)` returns `null` for an untouched subtask: it exists, its status is `todo` and `statusChangedAt` is `createdAt`, `updatedAt` is `createdAt`, and it has no subtasks. Otherwise it returns the first reason that applies: `not_found`, `status_changed`, `edited` or `has_children`. `linkKeptReason(link)` returns `not_found` when the link is gone, and `null` otherwise. `isUntouchedSubtask` and `isUntouchedLink` are the same checks as booleans.
-- Adding a note does not change `updatedAt`, so a subtask with notes but no other change counts as untouched, and deleting it deletes its notes.
+- `services/rollbackRules.ts` decides which created items a rollback may delete. `subtaskKeptReason(task, childCount, noteCount)` returns `null` for an untouched subtask: it exists, its status is `todo` and `statusChangedAt` is `createdAt`, `updatedAt` is `createdAt`, and it has no subtasks and no notes. Otherwise it returns the first reason that applies: `not_found`, `status_changed`, `edited`, `has_children` or `has_notes`. `linkKeptReason(link)` returns `not_found` when the link is gone, and `null` otherwise. `isUntouchedSubtask` and `isUntouchedLink` are the same checks as booleans.
+- Adding a note does not change `updatedAt`, so `has_notes` is what keeps a subtask whose only change is a note. Deleting it would delete the note.
 - Summaries are built when they are read, so a notification shows the changeset as it is now, after any rollback.
 - Boot reconciles nothing for these tables. A changeset written before a crash still describes rows that exist, so a rollback still works on it.
+
+### Notifications and rollback API
+
+`services/notifications.ts` and `services/changesets.ts` hold the rules behind these routes. None of them sits behind `aiEnabledGuard`. The spec guards only `/api/agents` and `/api/suggestions`. The client hides the Inbox when AI is off, and an undo must keep working after the user turns AI off.
+
+| Route                               | Body or query         | Answer                                                                                                                                        |
+| ----------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/notifications`            | `?unread=&limit=`     | `{ items, unreadCount }`, newest first, each with its changeset summary. `unreadCount` counts every unread notification, whatever `limit` is. |
+| `POST /api/notifications/:id/read`  | none                  | The notification with `readAt` set. A second call keeps the first `readAt`. `404 not_found` when it does not exist.                           |
+| `POST /api/changesets/:id/rollback` | `{ taskId? }` or none | `RollbackResponse`: the changeset summary after the rollback, the `deleted` counts, the `kept` items and a ready-made `message`.              |
+
+A rollback runs in one transaction, so a failure part way through deletes nothing and changes no state. It follows these rules.
+
+1. `404 not_found` when the changeset does not exist. With `taskId`, `404 not_found` when no op of the changeset has that `taskId`.
+2. Only ops in state `applied` count: all of them, or only those of `taskId`.
+3. A `create_task` op deletes its subtask when `subtaskKeptReason` returns `null`, and the op becomes `rolled_back`. The subtask's notes go with it through the cascade. Any other reason except `not_found` keeps the subtask: the op becomes `kept` and the subtask is listed in `kept` with its identifier, its title and the reason. A subtask the user already deleted (`not_found`) is undone already, so the op becomes `rolled_back` and the subtask is not listed. Pending suggestions that affect a deleted subtask become `superseded`, as with any task delete.
+4. A `create_link` op deletes its link and becomes `rolled_back`. A link the user already deleted counts as `rolled_back` too.
+5. `updateChangesetOps` stores the new op states, so the status becomes `rolled_back` when every op is rolled back, and `partially_rolled_back` otherwise.
+6. For every task with at least one op rolled back, `markSuggestionsRolledBack` moves the run's `applied` suggestions of that task to `rolled_back`, which starts the 7-day cooldown. A task whose ops were all kept keeps its suggestion `applied`. A link op's `taskId` is the target of the related group's suggestion, so the same call reaches it. The repository recomputes `aiState` for every task those suggestions affect.
+7. No task's `updatedAt` changes, the parent's included.
+
+`deleted` counts only what this call deleted, not items the user had already deleted. `rollbackMessage(deleted, kept)` builds `message`, such as "Removed 5 subtasks and 1 link. 2 subtasks were edited and kept." Zero counts are left out, and each kept reason gets its own sentence: "had their own subtasks", "had notes" or "were started or finished".
+
+A rollback is idempotent. When no op in scope is still `applied`, such as on a second call, the answer is `200` with zero `deleted` counts, an empty `kept` list and the message "Nothing left to roll back.", and nothing is written. A request without a body rolls back the whole changeset, like `{}`.
 
 ## Langfuse
 
