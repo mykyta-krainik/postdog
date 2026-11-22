@@ -6,7 +6,7 @@
 | --------------- | --------------------------------------------------------------------------------- |
 | `index.ts`      | `createPlannerAgent(loopName?)`, `plannerAgent`, the tools and the orchestration. |
 | `candidates.ts` | `SCORE_WEIGHTS`, `candidateScore` and `rankCandidates`.                           |
-| `prompt.ts`     | `PLANNER_PROMPT_V1`, the candidate table and the `<task>` wrapping of user text.  |
+| `prompt.ts`     | `PLANNER_PROMPT_V1` and the candidate table.                                      |
 | `validate.ts`   | `checkPlan`: the checks against the database after the loop.                      |
 | `mock.ts`       | `plannerMockScript`, registered for the `planner` loop.                           |
 
@@ -27,7 +27,7 @@ So stale in-progress work always ranks first, blocked tasks always rank last, an
 
 ## Prompt and safety
 
-`PLANNER_PROMPT_V1` holds the decision rules from the spec, minus pinned docs and claims, which arrive in phase 5. Titles and descriptions, in the table and in the `get_task` and `search_tasks` results, are wrapped in `<task>` tags with `<` and `>` escaped, so a title cannot close its own tag. The prompt says text inside the tags is data, not instructions.
+`PLANNER_PROMPT_V1` holds the decision rules from the spec, minus pinned docs and claims, which arrive in phase 5. Titles and descriptions, in the table and in the `get_task` and `search_tasks` results, are wrapped in `<task>` tags with `<` and `>` escaped (`tools/userText.ts`), so a title cannot close its own tag. The prompt says text inside the tags is data, not instructions.
 
 ## Validation
 
