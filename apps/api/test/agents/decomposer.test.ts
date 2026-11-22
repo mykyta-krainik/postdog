@@ -402,6 +402,35 @@ describe("Decomposer stages", () => {
     expect(aiStateOf(db, outside.id)).toBe("suggestion_pending");
   });
 
+  it("drops a related group whose tasks are already linked, in either direction", async () => {
+    let ids: number[] = [];
+    const { db, api } = setup({
+      related: [
+        () =>
+          call("report_related", {
+            groups: [{ relation: "duplicates", taskIds: ids, reason: "Same work." }],
+          }),
+      ],
+      task: twoSteps,
+    });
+    const a = addTask(db, { title: "A" });
+    const b = addTask(db, { title: "B" });
+    ids = [a.id, b.id];
+    await api
+      .post(`/api/tasks/${b.id}/links`)
+      .send({ toTaskId: a.id, type: "duplicates" })
+      .expect(201);
+
+    const output = outputOf(await runDecomposer(api));
+    expect(output.related).toEqual([]);
+    expect(output.warnings.map((w) => w.message)).toContain(
+      "Dropped a related group: its tasks are already linked.",
+    );
+    expect(listSuggestions(db, { status: "pending" }).filter((s) => s.kind === "related")).toEqual(
+      [],
+    );
+  });
+
   it("does not save a related group that another run saved while this one worked", async () => {
     let group: number[] = [];
     const { db, api } = setup({

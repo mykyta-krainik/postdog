@@ -8,6 +8,7 @@ import type {
 import type { Executor } from "../../db/client";
 import type { TaskRow } from "../../db/schema";
 import { findTask, listTasks } from "../../repositories/tasks";
+import { findLink } from "../../repositories/links";
 import { truncate } from "../core/trace";
 
 export type Decision =
@@ -66,9 +67,21 @@ export function checkRelatedGroups(
     if (taskIds.length < 2) drop("fewer than 2 valid tasks were left");
     else if (!taskIds.some((id) => batchIds.has(id))) drop("none of its tasks is in this run");
     else if (kept.some((other) => sameGroup(other.taskIds, taskIds))) drop("it repeats a group");
+    else if (isAlreadyLinked(ex, group.relation, taskIds)) drop("its tasks are already linked");
     else kept.push({ ...group, taskIds: [...taskIds].sort((a, b) => a - b) });
   }
   return { groups: kept, dropped };
+}
+
+/** Accepting a related suggestion links the lowest id to every other task (a star). */
+function isAlreadyLinked(ex: Executor, relation: RelatedPayload["relation"], taskIds: number[]) {
+  const [first, ...rest] = [...taskIds].sort((a, b) => a - b);
+  if (first === undefined) return false;
+  const type = relation === "duplicates" ? "duplicates" : "relates";
+  return rest.every(
+    (id) =>
+      findLink(ex, first, id, type) !== undefined || findLink(ex, id, first, type) !== undefined,
+  );
 }
 
 const normalize = (title: string) => title.trim().replace(/\s+/g, " ").toLowerCase();
