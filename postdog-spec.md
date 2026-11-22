@@ -160,6 +160,7 @@ agent_suggestions
   kind             enum  subtasks | clarification | related | mark_stale
   payload          json  validated by the kind's Zod schema
   status           enum  pending | rejected | applied | rolled_back | superseded
+  createdAt                           orders suggestions (oldest first)
   resolvedAt?
 
 agent_changesets
@@ -185,6 +186,7 @@ Rules
 • STALE_IN_PROGRESS_DAYS = 5, defined in packages/shared and used by the Planner and the Status updater.
 • aiState is denormalized for fast list rendering (the orange dot). It is updated in the same transaction as the suggestion or claim that causes it. A task can have several pending suggestions, so aiState is derived with this precedence: processing, then clarification_pending, then suggestion_pending, then none.
 • Suggestion payload shapes live in packages/shared/agents/*.ts. The same Zod schema validates the agent's output and the user's edited version at confirm time.
+• A suggestion affects its target task and, for a related suggestion, every task in payload.taskIds. aiState, the 7-day rule and a task's pending suggestions all use this. Deleting a task supersedes the pending suggestions that affect it or its subtasks.
 5. Backend: layered Express
 Each layer talks only to the layer below it: routes → controllers → services → repositories → DB. Agents are services: they call repositories through the tool layer and never touch Express objects.
 apps/api/src/
