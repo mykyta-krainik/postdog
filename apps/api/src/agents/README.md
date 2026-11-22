@@ -19,7 +19,7 @@ How the agent platform works, for whoever writes an agent on it. The code has no
 | `registry.ts`             | The definitions the routes run.                                                             |
 | `planner/index.ts`        | `plannerAgent`, the daily Planner (see `planner/README.md`).                                |
 | `status-updater/index.ts` | `statusUpdaterAgent`, the Slack status updater.                                             |
-| `decomposer/index.ts`     | `decomposerAgent` and `decomposerClarifyAgent`, suggest mode (see `decomposer/README.md`).  |
+| `decomposer/index.ts`     | `decomposerAgent` and `decomposerClarifyAgent`, both modes (see `decomposer/README.md`).    |
 
 Run storage and the HTTP routes live in `services/agentRuns.ts`, `controllers/agents.ts` and `routes/agents.ts`.
 
