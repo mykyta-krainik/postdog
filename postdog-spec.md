@@ -426,6 +426,7 @@ Mechanism
 • Read side: get_agent_activity() returns active claims, pending suggestions and runs from the last 24 hours. Task tools also include claimedBy and aiState on every task.
 • Reporting conflicts: the Planner's prompt tells it to treat claimed or awaiting-review tasks as "in flux". It still may recommend them, but it must say so in coordinationNotes (e.g. "PD-12 is being decomposed; review its subtasks before starting"). The UI shows these notes above the plan.
 • Stale writes: if the user edits a task while an agent is working on it, the apply step sees updatedAt > the run's start time. Suggest mode marks the suggestion superseded; auto mode skips that task and adds a conflict notification.
+  Implemented (phase 3): suggest mode does not save the suggestion at all; the run records the task's outcome as superseded with "PD-12 was edited while the Decomposer worked".
 Examples
 Situation
 What happens
