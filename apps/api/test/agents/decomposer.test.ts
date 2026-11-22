@@ -130,9 +130,13 @@ describe("Decomposer on the seeded data", () => {
       "Add rate limiting to the public API": "duplicate",
       "Rate-limit public API endpoints": "duplicate",
     });
+    expect(output.changesetId).toBeNull();
     expect(output.counts).toEqual({
       considered: 10,
       suggestedSubtasks: 5,
+      appliedSubtasks: 0,
+      createdSubtasks: 0,
+      appliedLinks: 0,
       needsClarification: 2,
       skipped: 1,
       duplicates: 2,
@@ -150,6 +154,7 @@ describe("Decomposer on the seeded data", () => {
         suggestionId: expect.any(Number),
         relation: "duplicates",
         taskIds: [rateLimit.taskId, again.taskId].sort((a, b) => a - b),
+        applied: false,
       },
     ]);
     expect(rateLimit.suggestionId).toBe(group!.suggestionId);
@@ -266,9 +271,13 @@ describe("Decomposer eligibility", () => {
     expect(outputOf(run)).toEqual({
       tasks: [],
       related: [],
+      changesetId: null,
       counts: {
         considered: 0,
         suggestedSubtasks: 0,
+        appliedSubtasks: 0,
+        createdSubtasks: 0,
+        appliedLinks: 0,
         needsClarification: 0,
         skipped: 0,
         duplicates: 0,
@@ -342,6 +351,7 @@ describe("Decomposer stages", () => {
       suggestionId: expect.any(Number),
       relation: "duplicates",
       taskIds: [a.id, b.id],
+      applied: false,
     });
     expect(findSuggestion(db, related!.suggestionId)).toMatchObject({
       kind: "related",
@@ -391,7 +401,12 @@ describe("Decomposer stages", () => {
     const output = outputOf(await runDecomposer(api, { taskIds: [a.id, b.id] }));
     expect([...seen].sort()).toEqual([a.id, b.id].sort());
     expect(output.related).toEqual([
-      { suggestionId: expect.any(Number), relation: "duplicates", taskIds: [a.id, outside.id] },
+      {
+        suggestionId: expect.any(Number),
+        relation: "duplicates",
+        taskIds: [a.id, outside.id],
+        applied: false,
+      },
     ]);
     expect(output.warnings.map((w) => w.message)).toEqual([
       "Dropped a related group: it repeats a group.",

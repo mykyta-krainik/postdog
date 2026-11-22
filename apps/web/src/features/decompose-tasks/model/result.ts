@@ -34,6 +34,7 @@ export function summaryLine(output: Pick<DecomposerOutput, "counts" | "related">
 /** How each outcome reads in the per-task list. */
 export const OUTCOME_LABEL: Record<DecomposerOutcome, string> = {
   suggested_subtasks: "Subtasks suggested",
+  applied_subtasks: "Subtasks created",
   needs_clarification: "Has a question for you",
   skipped: "Skipped",
   duplicate: "Looks like a duplicate",

@@ -18,6 +18,7 @@ import { OUTCOME_LABEL, summaryLine } from "../model/result";
 
 const OUTCOME_ICON: Record<DecomposerOutcome, { icon: LucideIcon; className: string }> = {
   suggested_subtasks: { icon: ListTree, className: "text-brand" },
+  applied_subtasks: { icon: ListTree, className: "text-brand" },
   needs_clarification: { icon: MessageCircleQuestionMark, className: "text-brand" },
   skipped: { icon: CircleSlash, className: "text-muted-foreground" },
   duplicate: { icon: Copy, className: "text-muted-foreground" },

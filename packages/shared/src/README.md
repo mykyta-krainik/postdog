@@ -160,7 +160,7 @@ A suggestion is one `agent_suggestions` row. The Decomposer saves one for every 
 - `mark_stale` is in `SUGGESTION_KINDS` for the database column only. It belongs to the Docs reviewer in phase 6, and `suggestionSchema` rejects it until then.
 - `targetType` is always `task` in phase 3. A related suggestion is one row per group. Its `targetId` is the lowest id in `payload.taskIds`, and `payload.taskIds` lists every task in the group, the target included.
 - A suggestion affects its target task and, when it is `related`, every task in `payload.taskIds`. `TaskDetail.pendingSuggestions`, the `targetId` filter of `GET /api/suggestions` and `aiState` all use this rule.
-- `status` starts at `pending` and moves once to `rejected`, `applied` or `superseded`, which sets `resolvedAt`. `rolled_back` follows `applied` in phase 4.
+- `status` starts at `pending` and moves once to `rejected`, `applied` or `superseded`, which sets `resolvedAt`. Auto mode saves what it applied directly as `applied`, with `resolvedAt` equal to `createdAt`. A rollback moves an `applied` suggestion to `rolled_back`.
 - `createdAt` orders suggestions. Lists are oldest first.
 - A proposed subtask without `priority` is created as `medium`.
 
@@ -186,3 +186,23 @@ Rejected, applied and superseded suggestions do not count. Changing `aiState` ne
 - `listSuggestionsQuerySchema` defaults `status` to `pending`. With `targetId`, a related suggestion matches every task in its group.
 - `DecomposerOutput` is the run's stored output. `tasks` has one row per task the run looked at, with an `outcome` from `DECOMPOSER_OUTCOMES`, the saved `suggestionId` or `null`, and a `detail` line for the UI, such as "Skipped PD-12: being processed by decomposer run #41". `related` lists the related suggestions it saved. `counts` has one count per outcome, plus `considered`. `warnings` lists dropped items, as on every agent.
 - `AGENT_LIMITS` holds `decomposerConcurrency` (3 task loops at once), `claimTtlMs` (2 minutes), `rejectedCooldownMs` (7 days) and `maxSubtasks` (8).
+- Auto mode adds the outcome `applied_subtasks`: the subtasks were created, recorded in the run's changeset, and the `subtasks` suggestion was saved as `applied`. `changesetId` is that changeset, or `null` when the run created nothing. `counts.appliedSubtasks` counts the tasks with that outcome, `counts.createdSubtasks` the subtasks created across them, and `counts.appliedLinks` the `relates` links created. A `related` entry has `applied: true` when auto mode linked the group.
+- An output stored before auto mode still parses: `changesetId` defaults to `null`, the three new counts to `0` and `applied` to `false`.
+
+## Changesets and notifications
+
+A changeset records what one auto-mode Decomposer run created, so the user can undo it from the Inbox. A notification is one Inbox entry.
+
+- `Changeset` is one `agent_changesets` row. Each `ChangesetOp` has a `type` (`create_task` or `create_link`), the `id` of the created task or link, the `taskId` it belongs to and a `state`. For a subtask, `taskId` is its parent. For a link, it is the lowest task id of the related group, the same task the group's suggestion targets. Rolling back one task's part acts on the ops with that `taskId`.
+- An op's `state` starts at `applied`. A rollback moves it to `rolled_back` when it deleted the item, or to `kept` when it left the item in place. `ROLLBACK_KEPT_REASONS` says why: `edited`, `has_children`, `status_changed`, or `not_found` when the item was already gone.
+- `changesetStatusOf(ops)` gives the changeset's `status`: `applied` while every op is applied, `rolled_back` once every op is rolled back, `partially_rolled_back` otherwise. The status is always derived from the ops, never set on its own.
+- `ChangesetSummary` is the read model the Inbox renders without extra calls. `tasks` has one entry per `taskId`, lowest id first, with the task's `identifier` and `title` (both `null` when the task was deleted), the number of `createdSubtasks` and `createdLinks` among its ops, and a `state`. `counts` totals the created subtasks and links of the whole changeset, whatever their state now.
+- `changesetTaskStateOf(ops)` derives a task's `state` from its ops. The first rule that matches wins.
+  1. `applied`: every op is still applied.
+  2. `rolled_back`: every op was rolled back.
+  3. `kept`: no op was rolled back, so the rollback deleted nothing of this task.
+  4. `partially_rolled_back`: some ops were rolled back and some were not.
+- `rollbackInputSchema` is the body of `POST /api/changesets/:id/rollback`. Without `taskId` it rolls back the whole changeset. With `taskId` it rolls back that task's part.
+- `RollbackResponse` holds the updated summary, the number of tasks and links `deleted`, one `kept` item per op the rollback left in place, and `message`, a sentence ready for a toast, such as "Removed 5 subtasks and 1 link. 2 subtasks were edited and kept." A kept item's `identifier` and `title` name the subtask for `create_task`, or the task the op belongs to for `create_link`, and are `null` when that task is gone.
+- `Notification` has a `kind` from `NOTIFICATION_KINDS`, a `title` and a `body`. `runId` and `changesetId` are `null` when there is none. `changeset` embeds the `ChangesetSummary` of `changesetId`, so an `auto_decomposition` entry can list its tasks and offer Rollback. `readAt` is `null` until the user reads it.
+- `listNotificationsQuerySchema` takes `unread` (`"true"` or `"false"`, default `false`, which lists every notification) and `limit` (1 to 100, default 50). `ListNotificationsResponse` is `{ items, unreadCount }`, newest first, and `unreadCount` counts every unread notification, not only the listed ones. Marking a notification read answers `markNotificationReadResponseSchema`, the notification itself.

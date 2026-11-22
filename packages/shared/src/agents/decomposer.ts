@@ -100,6 +100,9 @@ export type RejectSuggestionResponse = z.infer<typeof rejectSuggestionResponseSc
 export const DECOMPOSER_OUTCOMES = [
   // propose_subtasks passed validation; a pending subtasks suggestion was saved.
   "suggested_subtasks",
+  // Auto mode: propose_subtasks passed validation, the subtasks were created and recorded in
+  // the run's changeset, and the subtasks suggestion was saved as applied.
+  "applied_subtasks",
   // ask_clarification; a pending clarification suggestion was saved.
   "needs_clarification",
   // skip, or validation dropped every proposed subtask (duplicates of existing ones).
@@ -130,15 +133,25 @@ export const decomposerRelatedResultSchema = z.object({
   suggestionId: idSchema,
   relation: relatedRelationSchema,
   taskIds: z.array(idSchema),
+  /** Auto mode linked the group and saved its suggestion as applied. */
+  applied: z.boolean().default(false),
 });
 export type DecomposerRelatedResult = z.infer<typeof decomposerRelatedResultSchema>;
 
 export const decomposerOutputSchema = z.object({
   tasks: z.array(decomposerTaskResultSchema),
   related: z.array(decomposerRelatedResultSchema),
+  /** The auto run's changeset, null when the run created nothing. */
+  changesetId: idSchema.nullable().default(null),
   counts: z.object({
     considered: countSchema,
     suggestedSubtasks: countSchema,
+    /** Tasks with the outcome applied_subtasks. */
+    appliedSubtasks: countSchema.default(0),
+    /** Subtasks created across those tasks. */
+    createdSubtasks: countSchema.default(0),
+    /** relates links created for overlaps groups. */
+    appliedLinks: countSchema.default(0),
     needsClarification: countSchema,
     skipped: countSchema,
     duplicates: countSchema,

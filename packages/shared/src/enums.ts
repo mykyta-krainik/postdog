@@ -60,6 +60,42 @@ export const RELATED_RELATIONS = ["duplicates", "overlaps"] as const;
 export const relatedRelationSchema = z.enum(RELATED_RELATIONS);
 export type RelatedRelation = z.infer<typeof relatedRelationSchema>;
 
+export const NOTIFICATION_KINDS = ["auto_decomposition", "agent_failed", "conflict"] as const;
+export const notificationKindSchema = z.enum(NOTIFICATION_KINDS);
+export type NotificationKind = z.infer<typeof notificationKindSchema>;
+
+export const CHANGESET_STATUSES = ["applied", "rolled_back", "partially_rolled_back"] as const;
+export const changesetStatusSchema = z.enum(CHANGESET_STATUSES);
+export type ChangesetStatus = z.infer<typeof changesetStatusSchema>;
+
+export const CHANGESET_OP_TYPES = ["create_task", "create_link"] as const;
+export const changesetOpTypeSchema = z.enum(CHANGESET_OP_TYPES);
+export type ChangesetOpType = z.infer<typeof changesetOpTypeSchema>;
+
+/** kept: a rollback left the item in place, for a reason in ROLLBACK_KEPT_REASONS. */
+export const CHANGESET_OP_STATES = ["applied", "rolled_back", "kept"] as const;
+export const changesetOpStateSchema = z.enum(CHANGESET_OP_STATES);
+export type ChangesetOpState = z.infer<typeof changesetOpStateSchema>;
+
+/** One task's part of a changeset, derived from the states of its ops (see changesets.ts). */
+export const CHANGESET_TASK_STATES = [
+  "applied",
+  "rolled_back",
+  "partially_rolled_back",
+  "kept",
+] as const;
+export const changesetTaskStateSchema = z.enum(CHANGESET_TASK_STATES);
+export type ChangesetTaskState = z.infer<typeof changesetTaskStateSchema>;
+
+export const ROLLBACK_KEPT_REASONS = [
+  "edited",
+  "has_children",
+  "status_changed",
+  "not_found",
+] as const;
+export const rollbackKeptReasonSchema = z.enum(ROLLBACK_KEPT_REASONS);
+export type RollbackKeptReason = z.infer<typeof rollbackKeptReasonSchema>;
+
 export const SKIP_REASONS = ["already_atomic", "not_actionable"] as const;
 export const skipReasonSchema = z.enum(SKIP_REASONS);
 export type SkipReason = z.infer<typeof skipReasonSchema>;
