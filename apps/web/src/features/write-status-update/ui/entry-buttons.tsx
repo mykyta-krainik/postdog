@@ -3,14 +3,13 @@
 import { AGENT_LIMITS } from "@postdog/shared";
 import { LoaderCircle, MessageSquareText } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { isRunBusy } from "@/entities/agent-run";
+import { AgentDialog, isRunBusy } from "@/entities/agent-run";
 import { useSettings } from "@/entities/settings";
 import type { TaskDetail } from "@/entities/task";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 import type { StatusUpdateScope } from "../model/status-update";
 import { useStatusUpdate } from "../model/use-status-update";
-import { StatusUpdateDialog } from "./status-update-dialog";
 import { StatusUpdateFlow } from "./status-update-flow";
 
 const WINDOW_HOURS = AGENT_LIMITS.statusUpdateDefaultWindowMs / 3_600_000;
@@ -64,14 +63,9 @@ function StatusUpdateEntry({
         />
         <span className={cn(iconOnlyOnMobile && "max-md:sr-only")}>{label}</span>
       </Button>
-      <StatusUpdateDialog
-        open={open}
-        onOpenChange={setOpen}
-        title={title}
-        description={description}
-      >
+      <AgentDialog open={open} onOpenChange={setOpen} title={title} description={description}>
         <StatusUpdateFlow updater={updater} />
-      </StatusUpdateDialog>
+      </AgentDialog>
     </>
   );
 }

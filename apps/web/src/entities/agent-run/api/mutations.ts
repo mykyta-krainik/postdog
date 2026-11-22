@@ -1,6 +1,8 @@
 import {
   agentRunSchema,
   startRunResponseSchema,
+  type ClarifyInput,
+  type DecomposerRunInput,
   type PlannerInput,
   type StartRunResponse,
   type StatusUpdaterInput,
@@ -9,15 +11,17 @@ import { mutate } from "swr";
 import { ApiError, apiKey, apiRequest } from "@/shared/api";
 import { agentRunKeys } from "./keys";
 
-/** The run endpoint and request body of each agent that phase 2 can start. */
+/** The run endpoint and request body of each agent the UI can start. */
 type StartableAgents = {
   planner: PlannerInput;
   status_updater: StatusUpdaterInput;
+  decomposer: DecomposerRunInput;
 };
 
 const RUN_PATHS: Record<keyof StartableAgents, `/${string}`> = {
   planner: "/agents/planner/run",
   status_updater: "/agents/status-updater/run",
+  decomposer: "/agents/decomposer/run",
 };
 
 /** Starts a run. The API answers 202 with the run id at once; poll the run with useAgentRun. */
@@ -33,6 +37,14 @@ export function startAgentRun<Agent extends keyof StartableAgents>(
 
 export function startPlannerRun(): Promise<StartRunResponse> {
   return startAgentRun("planner", {});
+}
+
+/** Answers a clarification, or asks the Decomposer to go ahead anyway. Starts a new run for that task. */
+export function startClarifyRun(input: ClarifyInput): Promise<StartRunResponse> {
+  return apiRequest(apiKey("/agents/decomposer/clarify"), startRunResponseSchema, {
+    method: "POST",
+    body: input,
+  });
 }
 
 /**

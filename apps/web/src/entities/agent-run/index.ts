@@ -22,6 +22,7 @@ export {
   cancelRun,
   revalidatePlannerLatest,
   startAgentRun,
+  startClarifyRun,
   startPlannerRun,
 } from "./api/mutations";
 export {
@@ -33,6 +34,7 @@ export {
 } from "./api/queries";
 export { useAgentRunner, type AgentRunner } from "./api/use-agent-runner";
 
+export { AgentDialog } from "./ui/agent-dialog";
 export { AgentRunStatus } from "./ui/agent-run-status";
 export { MockAiBadge, MockAiBadgeView, SuggestedBadge } from "./ui/badges";
 export { TraceTimeline } from "./ui/trace-timeline";

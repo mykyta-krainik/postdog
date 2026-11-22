@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { MockAiBadge } from "@/entities/agent-run";
 import { MEDIA } from "@/shared/config";
 import { useMediaQuery } from "@/shared/lib/use-media-query";
 import {
@@ -12,9 +11,13 @@ import {
   DialogTitle,
 } from "@/shared/ui/dialog";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/shared/ui/sheet";
+import { MockAiBadge } from "./badges";
 
-/** A dialog from 768 px, a bottom sheet below, so the draft gets the full width of a phone. */
-export function StatusUpdateDialog({
+/**
+ * The frame of an AI action: a dialog from 768 px, a bottom sheet below, so the result gets the
+ * full width of a phone. The title carries the "Mock AI" badge.
+ */
+export function AgentDialog({
   open,
   onOpenChange,
   title,
