@@ -38,6 +38,21 @@ function lastUserText(conversation: MockConversation): string {
 }
 
 describe("runAgent", () => {
+  it("calls onStep after every model call, before its tools run", async () => {
+    const { name } = script([call("lookup", { id: 1 }), call("finish", { answer: "item 1" })]);
+    const { tools, ran } = createTestTools();
+    const events: string[] = [];
+    await runAgent({
+      ...loopDeps(),
+      name,
+      system: "You are a test agent.",
+      userMessage: "Find item 1.",
+      tools,
+      onStep: (step) => events.push(`step ${step} after ${ran.length} lookups`),
+    });
+    expect(events).toEqual(["step 1 after 0 lookups", "step 2 after 1 lookups"]);
+  });
+
   it("runs read tools and returns the terminal tool's validated input", async () => {
     const { name, seen } = script([
       call("lookup", { id: 1 }),

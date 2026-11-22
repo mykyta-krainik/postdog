@@ -23,6 +23,7 @@ export interface RunAgentParams<T extends readonly AgentTool[]> extends LoopDeps
   maxSteps?: number;
   maxOutputTokens?: number;
   wallClockMs?: number;
+  onStep?(step: number): void;
 }
 
 export type AgentResult<T extends readonly AgentTool[]> = TerminalCall<T[number]> & {
@@ -200,6 +201,7 @@ export async function runAgent<const T extends readonly AgentTool[]>(
   for (let step = 1; step <= maxSteps; step++) {
     if (loopSignal.aborted) throw stopped();
     const { calls, assistant } = await callModel(step, newInput);
+    params.onStep?.(step);
 
     if (calls.length === 0) {
       if (nudged) {
