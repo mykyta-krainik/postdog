@@ -1,5 +1,6 @@
 import {
   completedPlannerRunSchema,
+  type AgentName,
   type AgentRun,
   type AgentRunError,
   type AgentRunSummary,
@@ -29,6 +30,7 @@ import {
 } from "../repositories/agentRuns";
 import { recomputeAllAiStates } from "../repositories/aiState";
 import { deleteClaimsOfStoppedRuns, releaseClaims } from "../repositories/claims";
+import { insertNotification, type NewNotification } from "../repositories/notifications";
 import { countTasksUpdatedAfter } from "../repositories/tasks";
 
 const INTERRUPTED: AgentRunError = {
@@ -57,6 +59,26 @@ function statusOf(error: AgentRunError): RunFinish["status"] {
   return error.code === "cancelled" || error.code === "ai_disabled" ? "cancelled" : "failed";
 }
 
+/**
+ * The Inbox entry for a failed run. Only the Decomposer gets one: it may run in auto mode with
+ * nobody watching, while the other agents show their errors where the user started them.
+ */
+function failureNotification(
+  agent: AgentName,
+  runId: number,
+  error: AgentRunError,
+  now: number,
+): NewNotification | undefined {
+  if (agent !== "decomposer") return undefined;
+  return {
+    kind: "agent_failed",
+    title: "The Decomposer failed",
+    body: error.message,
+    runId,
+    createdAt: now,
+  };
+}
+
 export function createAgentRunService(deps: { db: Db; llm: Llm; tracer: Tracer }) {
   const { db, llm, tracer } = deps;
   const active = new Map<number, AbortController>();
@@ -77,6 +99,7 @@ export function createAgentRunService(deps: { db: Db; llm: Llm; tracer: Tracer }
   async function execute<I, O>(definition: AgentDefinition<I, O>, ctx: AgentContext, input: I) {
     let finish: RunFinish;
     let traced: { output?: unknown; error?: string };
+    let notification: NewNotification | undefined;
     try {
       const { output } = await definition.run(ctx, input);
       const parsed = definition.output.parse(output);
@@ -87,10 +110,18 @@ export function createAgentRunService(deps: { db: Db; llm: Llm; tracer: Tracer }
       if (error.code === "internal_error") {
         logger.error(`Agent run ${ctx.runId} (${definition.name}) crashed`, { err });
       }
-      finish = { status: statusOf(error), output: null, error, finishedAt: Date.now() };
+      const finishedAt = Date.now();
+      finish = { status: statusOf(error), output: null, error, finishedAt };
       traced = { error: `${error.code}: ${error.message}` };
+      if (finish.status === "failed") {
+        notification = failureNotification(definition.name, ctx.runId, error, finishedAt);
+      }
     }
-    finishRun(db, ctx.runId, { ...finish, trace: ctx.trace.steps(), usage: ctx.trace.usage() });
+    db.transaction((tx) => {
+      const steps = { trace: ctx.trace.steps(), usage: ctx.trace.usage() };
+      const saved = finishRun(tx, ctx.runId, { ...finish, ...steps });
+      if (saved && notification) insertNotification(tx, notification);
+    });
     releaseClaims(db, ctx.runId, Date.now());
     ctx.tracer.end(traced);
     await tracer.flush().catch((err: unknown) => logger.error("Langfuse flush failed", { err }));

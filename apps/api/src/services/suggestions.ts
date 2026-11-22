@@ -10,7 +10,7 @@ import {
   type SuggestionPayloadKind,
 } from "@postdog/shared";
 import type { Db, Executor } from "../db/client";
-import type { TaskRow } from "../db/schema";
+import type { TaskLinkRow, TaskRow } from "../db/schema";
 import { AppError, conflict, invalidField, notFound, validationError } from "../lib/errors";
 import { findLink, insertLink } from "../repositories/links";
 import {
@@ -122,6 +122,30 @@ function newerFirst(a: TaskRow, b: TaskRow): [newer: TaskRow, older: TaskRow] {
   return aIsNewer ? [a, b] : [b, a];
 }
 
+/**
+ * Links a related group as a star for the agent run: the hub to every other task, newer to
+ * older for duplicates. A pair that already has a link of that type, in either direction,
+ * is skipped. No task's updatedAt changes.
+ */
+export function linkGroup(
+  tx: Executor,
+  hub: TaskRow,
+  others: readonly TaskRow[],
+  relation: RelatedRelation,
+  runId: number,
+  now: number,
+): TaskLinkRow[] {
+  const type = LINK_TYPE_OF[relation];
+  const createdBy = `agent:${runId}` as const;
+  return others.flatMap((other) => {
+    const [from, to] = type === "duplicates" ? newerFirst(hub, other) : [hub, other];
+    if (findLink(tx, from.id, to.id, type) ?? findLink(tx, to.id, from.id, type)) return [];
+    return [
+      insertLink(tx, { fromTaskId: from.id, toTaskId: to.id, type, createdBy, createdAt: now }),
+    ];
+  });
+}
+
 function acceptRelated(
   tx: Executor,
   suggestion: SuggestionOf<"related">,
@@ -140,25 +164,14 @@ function acceptRelated(
     );
   }
   const hub = requireTarget(tx, suggestion.targetId, input.baseUpdatedAt);
-  const type = LINK_TYPE_OF[payload.relation];
-
-  const createdLinks = payload.taskIds
+  const others = payload.taskIds
     .filter((id) => id !== hub.id)
-    .flatMap((id) => {
+    .map((id) => {
       const other = findTask(tx, id);
       if (!other) throw conflict(`Task ${id} no longer exists`);
-      const [from, to] = type === "duplicates" ? newerFirst(hub, other) : [hub, other];
-      if (findLink(tx, from.id, to.id, type) ?? findLink(tx, to.id, from.id, type)) return [];
-      return [
-        insertLink(tx, {
-          fromTaskId: from.id,
-          toTaskId: to.id,
-          type,
-          createdBy: `agent:${suggestion.runId}`,
-          createdAt: now,
-        }),
-      ];
+      return other;
     });
+  const createdLinks = linkGroup(tx, hub, others, payload.relation, suggestion.runId, now);
 
   const applied = applySuggestion(tx, suggestion.id, payload, now);
   if (!applied) throw resolutionError(tx, suggestion.id);
