@@ -164,9 +164,9 @@ agent_suggestions
   resolvedAt?
 
 agent_changesets
-  id, runId -> agent_runs
-  ops              json  [{ type: create_task | create_link, id, taskId }]   taskId = the task the op belongs to (the parent for a subtask), so one task's part can be rolled back
-  status           enum  applied | rolled_back | partially_rolled_back
+  id, runId -> agent_runs, unique   one changeset per run
+  ops              json  [{ type: create_task | create_link, id, taskId, state: applied | rolled_back | kept }]   taskId = the task the op belongs to (the parent for a subtask, the lowest task id of the group for a link), so one task's part can be rolled back; state = what a rollback did to the item (kept = left in place because the user changed it or it was already gone)
+  status           enum  applied | rolled_back | partially_rolled_back   always derived from the ops' states
   createdAt
 
 agent_claims
@@ -257,7 +257,7 @@ Reject
 POST /api/changesets/:id/rollback
 { taskId? } Undo an auto-applied changeset, or only one task's part of it (see Decomposer)
 GET /api/notifications, POST /api/notifications/:id/read
-Inbox
+Inbox. Each notification with a changeset embeds its summary (one entry per task with its name, created counts and rollback state), so the Inbox needs no extra calls
 GET/PATCH /api/settings
 Settings
 Agent runs are asynchronous. A run endpoint creates the agent_runs row with status running, starts the work in the API process, and returns { runId } at once. The client polls GET /api/agents/runs/:id every second or two until the status is not running. The 60-second wall clock applies to each agent loop, not to an HTTP request, so a Decomposer batch can take several minutes. Cancel uses an in-memory map of runId to AbortController. Streaming progress over SSE is a phase-7 improvement; until then, the UI shows staged progress text from the polled trace.
