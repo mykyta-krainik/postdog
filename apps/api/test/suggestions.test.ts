@@ -5,6 +5,7 @@ import {
   listPendingSuggestionsOfTask,
   listSuggestions,
   listTaskIdsInCooldown,
+  markSuggestionsRolledBack,
   resolveSuggestion,
   type NewSuggestion,
 } from "../src/repositories/suggestions";
@@ -37,6 +38,25 @@ describe("insertSuggestion", () => {
       resolvedAt: null,
     });
     expect(findSuggestion(db, saved.id)).toEqual(saved);
+  });
+
+  it("stores an auto-applied suggestion resolved at once, with no orange dot", () => {
+    const { db, run, a, b, c } = setup();
+    const applied = insertSuggestion(db, { ...subtasksFor(run, a.id, NOW), status: "applied" });
+    const linked = insertSuggestion(db, {
+      ...relatedOf(run, [a.id, b.id], NOW),
+      status: "applied",
+    });
+    insertSuggestion(db, subtasksFor(run, c.id, NOW));
+
+    expect(applied).toMatchObject({ status: "applied", resolvedAt: NOW });
+    expect(findSuggestion(db, linked.id)).toMatchObject({ status: "applied", resolvedAt: NOW });
+    expect([a, b, c].map((t) => aiStateOf(db, t.id))).toEqual([
+      "none",
+      "none",
+      "suggestion_pending",
+    ]);
+    expect(listPendingSuggestionsOfTask(db, a.id)).toEqual([]);
   });
 
   it("rejects a payload its kind's schema rejects and stores nothing", () => {
@@ -114,11 +134,74 @@ describe("listTaskIdsInCooldown", () => {
     expect(listTaskIdsInCooldown(db, NOW)).toEqual(new Set([a.id, b.id]));
   });
 
+  it("does not hold a task whose suggestion was applied", () => {
+    const { db, run, a } = setup();
+    insertSuggestion(db, { ...subtasksFor(run, a.id, NOW), status: "applied" });
+    expect(listTaskIdsInCooldown(db, NOW + 1)).toEqual(new Set());
+  });
+
   it("holds every task of a rejected related group", () => {
     const { db, run, a, b, c } = setup();
     const related = insertSuggestion(db, relatedOf(run, [b.id, c.id], NOW, "duplicates"));
     resolveSuggestion(db, related.id, "rejected", NOW);
     expect(listTaskIdsInCooldown(db, NOW + DAY)).toEqual(new Set([b.id, c.id]));
     expect(listTaskIdsInCooldown(db, NOW + DAY).has(a.id)).toBe(false);
+  });
+});
+
+describe("markSuggestionsRolledBack", () => {
+  const applied = (s: NewSuggestion): NewSuggestion => ({ ...s, status: "applied" });
+
+  it("rolls back the run's applied suggestions for the listed targets only", () => {
+    const { db, run, a, b, c } = setup();
+    const other = addRun(db);
+    const d = addTask(db);
+    const forA = insertSuggestion(db, applied(subtasksFor(run, a.id, NOW)));
+    const forB = insertSuggestion(db, applied(subtasksFor(run, b.id, NOW)));
+    const pendingC = insertSuggestion(db, subtasksFor(run, c.id, NOW));
+    const otherRunD = insertSuggestion(db, applied(subtasksFor(other, d.id, NOW)));
+
+    const rolledBack = markSuggestionsRolledBack(db, {
+      runId: run,
+      targetIds: [a.id, c.id, d.id],
+      now: NOW + 5,
+    });
+
+    expect(rolledBack).toEqual([{ ...forA, status: "rolled_back", resolvedAt: NOW + 5 }]);
+    expect([forB, pendingC, otherRunD].map((s) => findSuggestion(db, s.id)?.status)).toEqual([
+      "applied",
+      "pending",
+      "applied",
+    ]);
+    expect(aiStateOf(db, c.id)).toBe("suggestion_pending");
+  });
+
+  it("starts the 7-day cooldown for the rolled-back tasks", () => {
+    const { db, run, a, b } = setup();
+    insertSuggestion(db, applied(subtasksFor(run, a.id, NOW)));
+    insertSuggestion(db, applied(subtasksFor(run, b.id, NOW)));
+    markSuggestionsRolledBack(db, { runId: run, targetIds: [a.id], now: NOW + DAY });
+
+    expect(listTaskIdsInCooldown(db, NOW + DAY)).toEqual(new Set([a.id]));
+    expect(listTaskIdsInCooldown(db, NOW + 8 * DAY - 1)).toEqual(new Set([a.id]));
+    expect(listTaskIdsInCooldown(db, NOW + 8 * DAY)).toEqual(new Set());
+  });
+
+  it("puts every task of a rolled-back related group in the cooldown", () => {
+    const { db, run, a, b, c } = setup();
+    insertSuggestion(db, applied(relatedOf(run, [b.id, c.id], NOW)));
+    markSuggestionsRolledBack(db, { runId: run, targetIds: [b.id], now: NOW });
+    expect(listTaskIdsInCooldown(db, NOW + 1)).toEqual(new Set([b.id, c.id]));
+    expect(listTaskIdsInCooldown(db, NOW + 1).has(a.id)).toBe(false);
+  });
+
+  it("does nothing for an empty target list or a second call", () => {
+    const { db, run, a } = setup();
+    insertSuggestion(db, applied(subtasksFor(run, a.id, NOW)));
+    expect(markSuggestionsRolledBack(db, { runId: run, targetIds: [], now: NOW })).toEqual([]);
+    expect(markSuggestionsRolledBack(db, { runId: run, targetIds: [a.id], now: NOW })).toHaveLength(
+      1,
+    );
+    expect(markSuggestionsRolledBack(db, { runId: run, targetIds: [a.id], now: NOW })).toEqual([]);
   });
 });
