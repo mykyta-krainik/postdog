@@ -1,14 +1,16 @@
 import type { AiState } from "@postdog/shared";
 
-/** What the orange dot tells the user for each aiState, or null when there is no dot. */
-export const AI_ATTENTION_HINT: Record<AiState, string | null> = {
+/** A task waits for the user (the orange dot), or an agent holds it right now. */
+export type AiDotState = { kind: "attention" | "working"; hint: string };
+
+const AI_DOT: Record<AiState, AiDotState | null> = {
   none: null,
-  processing: null,
-  suggestion_pending: "A suggestion is waiting for your review",
-  clarification_pending: "An agent has a question for you",
+  processing: { kind: "working", hint: "Postdog is working on this" },
+  suggestion_pending: { kind: "attention", hint: "Suggestions to review" },
+  clarification_pending: { kind: "attention", hint: "Waiting for your answer" },
 };
 
-/** The orange dot shows only while AI is on and the task waits for the user. */
-export function shouldShowAiDot(aiState: AiState, aiEnabled: boolean): boolean {
-  return aiEnabled && AI_ATTENTION_HINT[aiState] !== null;
+/** The dot a task row shows for its aiState, or null. Nothing shows while AI is off. */
+export function aiDotFor(aiState: AiState, aiEnabled: boolean): AiDotState | null {
+  return aiEnabled ? AI_DOT[aiState] : null;
 }

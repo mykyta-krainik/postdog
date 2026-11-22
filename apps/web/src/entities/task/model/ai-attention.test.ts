@@ -1,19 +1,31 @@
 import { AI_STATES } from "@postdog/shared";
 import { describe, expect, it } from "vitest";
-import { shouldShowAiDot } from "./ai-attention";
+import { aiDotFor } from "./ai-attention";
 
-describe("shouldShowAiDot", () => {
-  it("shows the dot for tasks that wait for the user", () => {
-    expect(shouldShowAiDot("suggestion_pending", true)).toBe(true);
-    expect(shouldShowAiDot("clarification_pending", true)).toBe(true);
+describe("aiDotFor", () => {
+  it("shows the orange dot for tasks that wait for the user", () => {
+    expect(aiDotFor("suggestion_pending", true)).toEqual({
+      kind: "attention",
+      hint: "Suggestions to review",
+    });
+    expect(aiDotFor("clarification_pending", true)).toEqual({
+      kind: "attention",
+      hint: "Waiting for your answer",
+    });
   });
 
-  it("shows no dot for idle or processing tasks", () => {
-    expect(shouldShowAiDot("none", true)).toBe(false);
-    expect(shouldShowAiDot("processing", true)).toBe(false);
+  it("shows the working variant while an agent holds the task", () => {
+    expect(aiDotFor("processing", true)).toEqual({
+      kind: "working",
+      hint: "Postdog is working on this",
+    });
   });
 
-  it("shows no dot at all while AI is off", () => {
-    expect(AI_STATES.filter((state) => shouldShowAiDot(state, false))).toEqual([]);
+  it("shows nothing for idle tasks", () => {
+    expect(aiDotFor("none", true)).toBeNull();
+  });
+
+  it("shows nothing at all while AI is off", () => {
+    expect(AI_STATES.filter((state) => aiDotFor(state, false) !== null)).toEqual([]);
   });
 });
