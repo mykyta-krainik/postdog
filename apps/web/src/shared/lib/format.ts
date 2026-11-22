@@ -37,3 +37,18 @@ const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFracti
 export function formatCompactNumber(value: number): string {
   return compact.format(value);
 }
+
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+
+/** "just now", "5 min ago", "3 h ago", "yesterday", then the short date. */
+export function formatRelativeTime(timestamp: number, now = Date.now()): string {
+  const elapsed = now - timestamp;
+  if (elapsed < MINUTE) return "just now";
+  if (elapsed < HOUR) return `${Math.floor(elapsed / MINUTE)} min ago`;
+  const day = new Date(now);
+  day.setHours(0, 0, 0, 0);
+  if (timestamp >= day.getTime()) return `${Math.floor(elapsed / HOUR)} h ago`;
+  if (timestamp >= day.getTime() - 24 * HOUR) return "yesterday";
+  return formatShortDate(timestamp, now);
+}
