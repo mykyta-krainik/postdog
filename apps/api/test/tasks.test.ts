@@ -28,6 +28,7 @@ describe("task CRUD", () => {
       statusChangedAt: 1_000,
       subtasks: [],
       links: [],
+      pendingSuggestions: [],
     });
   });
 

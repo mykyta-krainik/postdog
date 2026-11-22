@@ -36,6 +36,7 @@ function detail(id: number, subtasks: TaskListItem[] = []): TaskDetail {
     statusChangedAt: 1_000,
     subtasks,
     links: [],
+    pendingSuggestions: [],
   };
 }
 

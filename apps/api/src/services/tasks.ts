@@ -11,7 +11,18 @@ import type { NewTaskRow, TaskRow } from "../db/schema";
 import { invalidField, notFound, stale } from "../lib/errors";
 import { listLinksOfTask } from "../repositories/links";
 import { getSetting, setSetting } from "../repositories/settings";
-import { deleteTask, findTask, insertTask, listTasks, updateTask } from "../repositories/tasks";
+import {
+  listPendingSuggestionsOfTask,
+  supersedeSuggestionsOfTasks,
+} from "../repositories/suggestions";
+import {
+  deleteTask,
+  findTask,
+  insertTask,
+  listSubtaskIds,
+  listTasks,
+  updateTask,
+} from "../repositories/tasks";
 
 /** Reserves the next `count` identifiers ("PD-n") from the counter in settings. */
 export function allocateIdentifiers(ex: Executor, count: number): string[] {
@@ -52,6 +63,7 @@ function toDetail(ex: Executor, task: TaskRow): TaskDetail {
     ...task,
     subtasks: listTasks(ex, { parentId: task.id, sort: "createdAt", order: "asc" }),
     links: listLinksOfTask(ex, task.id),
+    pendingSuggestions: listPendingSuggestionsOfTask(ex, task.id),
   };
 }
 
@@ -105,7 +117,10 @@ export function createTaskService(db: Db) {
     },
 
     remove(id: number): void {
-      if (!deleteTask(db, id)) throw notFound(`Task ${id} not found`);
+      db.transaction((tx) => {
+        supersedeSuggestionsOfTasks(tx, [id, ...listSubtaskIds(tx, id)], Date.now());
+        if (!deleteTask(tx, id)) throw notFound(`Task ${id} not found`);
+      });
     },
 
     createSubtasks(id: number, input: CreateSubtasksInput): TaskDetail {
