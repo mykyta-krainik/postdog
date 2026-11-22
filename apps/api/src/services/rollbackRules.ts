@@ -11,15 +11,19 @@ export type SubtaskSnapshot = Pick<
  * may be deleted. Untouched means it still exists, its status is still todo and never changed,
  * the user never edited it (updatedAt is createdAt), and it has no subtasks of its own. The
  * first reason that applies wins, so a status change reads as status_changed, not edited.
+ * A subtask with notes is kept too: adding a note does not bump updatedAt, but deleting the
+ * subtask would delete the user's notes with it (phase 4 decision, spec 8.2).
  */
 export function subtaskKeptReason(
   task: SubtaskSnapshot | undefined,
   childCount: number,
+  noteCount = 0,
 ): RollbackKeptReason | null {
   if (!task) return "not_found";
   if (task.status !== "todo" || task.statusChangedAt !== task.createdAt) return "status_changed";
   if (task.updatedAt !== task.createdAt) return "edited";
   if (childCount > 0) return "has_children";
+  if (noteCount > 0) return "has_notes";
   return null;
 }
 
@@ -28,8 +32,12 @@ export function linkKeptReason(link: TaskLinkRow | undefined): RollbackKeptReaso
   return link ? null : "not_found";
 }
 
-export function isUntouchedSubtask(task: SubtaskSnapshot | undefined, childCount: number): boolean {
-  return subtaskKeptReason(task, childCount) === null;
+export function isUntouchedSubtask(
+  task: SubtaskSnapshot | undefined,
+  childCount: number,
+  noteCount = 0,
+): boolean {
+  return subtaskKeptReason(task, childCount, noteCount) === null;
 }
 
 export function isUntouchedLink(link: TaskLinkRow | undefined): boolean {
