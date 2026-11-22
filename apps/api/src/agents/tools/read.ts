@@ -6,6 +6,7 @@ import {
 } from "@postdog/shared";
 import type { Executor } from "../../db/client";
 import type { TaskRow } from "../../db/schema";
+import { findActiveClaim } from "../../repositories/claims";
 import { listLinksOfTask } from "../../repositories/links";
 import { listLatestNotes } from "../../repositories/notes";
 import { findTask, listTasks, searchTasks } from "../../repositories/tasks";
@@ -38,7 +39,7 @@ export function createReadTools(ex: Executor, now: () => number = Date.now) {
   const getTask = defineReadTool({
     name: "get_task",
     description: [
-      "Get one task by its numeric id: description, status, priority, age, subtasks and links (blocks, blocked_by, relates, duplicates, duplicated_by).",
+      "Get one task by its numeric id: description, status, priority, age, subtasks, links (blocks, blocked_by, relates, duplicates, duplicated_by) and claimedBy, the agent run working on it right now or null.",
       "Use it when you need details the table in the message does not show, such as the description or what blocks a task.",
       "Do not use it to find tasks by words; use search_tasks for that.",
       'Example: {"id": 12}.',
@@ -50,6 +51,7 @@ export function createReadTools(ex: Executor, now: () => number = Date.now) {
       const subtasks = listTasks(ex, { parentId: task.id, sort: "createdAt", order: "asc" });
       const links = listLinksOfTask(ex, task.id);
       const at = now();
+      const claim = findActiveClaim(ex, task.id, at);
       return {
         id: task.id,
         identifier: task.identifier,
@@ -58,6 +60,7 @@ export function createReadTools(ex: Executor, now: () => number = Date.now) {
         priority: task.priority,
         parentId: task.parentId,
         aiState: task.aiState,
+        claimedBy: claim ? { runId: claim.runId, agent: claim.agent } : null,
         ageDays: wholeDaysBetween(task.createdAt, at),
         daysInStatus: wholeDaysBetween(task.statusChangedAt, at),
         description: description.text,
