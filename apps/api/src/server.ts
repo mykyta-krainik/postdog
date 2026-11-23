@@ -1,6 +1,7 @@
 import type { AddressInfo } from "node:net";
 import { createLlm } from "./agents/core/llm";
 import { createTracer } from "./agents/core/tracer";
+import { agentRegistry } from "./agents/registry";
 import { createApp } from "./app";
 import { loadEnv } from "./config/env";
 import { bootDatabase } from "./db/boot";
@@ -20,7 +21,7 @@ logger.info(`LLM: ${llm.info.mode} (${llm.info.model})`, {
   langfuse: tracer.enabled ? "on" : "off",
 });
 
-const runs = createAgentRunService({ db, llm, tracer });
+const runs = createAgentRunService({ db, llm, tracer, agents: agentRegistry });
 const address = { host: env.API_HOST, port: env.API_PORT };
 
 listen(createApp(db, { runs }), db, address).then(

@@ -73,17 +73,17 @@ Every route under `/api/agents` and `/api/suggestions` answers `403 ai_disabled`
 
 ## Errors
 
-| Code                         | Status | Returned when                                                                                                                           |
-| ---------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `validation_error`           | 400    | A body, query or param fails its schema, or an id in the body breaks a rule: an unknown task, a subtask of a subtask, a link to itself. |
-| `not_found`                  | 404    | The `:id` in the path does not exist.                                                                                                   |
-| `conflict`                   | 409    | The new link already exists, the run to cancel is not running, or the suggestion to accept or reject is no longer `pending`.            |
-| `stale`                      | 409    | `baseUpdatedAt` differs from the target task's `updatedAt`.                                                                             |
-| `forbidden`                  | 403    | A write (any method but `GET`, `HEAD` and `OPTIONS`) carries `Sec-Fetch-Site: cross-site`.                                              |
-| `ai_disabled`                | 403    | An agent or suggestion route is called while `aiEnabled` is false.                                                                      |
-| `unsupported_media_type`     | 415    | A write without `Content-Type: application/json`, including one with no body.                                                           |
-| `agent_failed`, `step_limit` |        | Reserved. A failed run is still a 200 response, with its reason in `AgentRun.error` (see Agent runs).                                   |
-| `internal_error`             | 500    | The server failed in a way the request did not cause.                                                                                   |
+| Code                         | Status | Returned when                                                                                                                                                                          |
+| ---------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `validation_error`           | 400    | A body, query or param fails its schema, or an id in the body breaks a rule: an unknown task, a subtask of a subtask, a link to itself.                                                |
+| `not_found`                  | 404    | The `:id` in the path does not exist.                                                                                                                                                  |
+| `conflict`                   | 409    | The new link already exists, the run to cancel is not running, the agent already has a run in progress (see Agent runs), or the suggestion to accept or reject is no longer `pending`. |
+| `stale`                      | 409    | `baseUpdatedAt` differs from the target task's `updatedAt`.                                                                                                                            |
+| `forbidden`                  | 403    | A write (any method but `GET`, `HEAD` and `OPTIONS`) carries `Sec-Fetch-Site: cross-site`.                                                                                             |
+| `ai_disabled`                | 403    | An agent or suggestion route is called while `aiEnabled` is false.                                                                                                                     |
+| `unsupported_media_type`     | 415    | A write without `Content-Type: application/json`, including one with no body.                                                                                                          |
+| `agent_failed`, `step_limit` |        | Reserved. A failed run is still a 200 response, with its reason in `AgentRun.error` (see Agent runs).                                                                                  |
+| `internal_error`             | 500    | The server failed in a way the request did not cause.                                                                                                                                  |
 
 When a schema fails, `details` matches `validationErrorDetailsSchema`. Each issue has a dotted `path`, such as `subtasks.0.title`, which is also the React Hook Form field name.
 
@@ -113,6 +113,7 @@ When a schema fails, `details` matches `validationErrorDetailsSchema`. Each issu
 - `llm` records the model layer the run used. `GET /api/agents/info` returns the one in use now, for the "Mock AI" badge.
 - `input` and `output` are `unknown` on `agentRunSchema`. To read them, parse the run with `plannerRunSchema`, `statusUpdaterRunSchema` or `decomposerRunSchema`, picked by `agent`.
 - `AGENT_LIMITS` in `config.ts` holds the loop limits and the per-agent caps.
+- One run per slot runs at a time: one Planner, one Decomposer batch, one clarification re-run per `suggestionId`, one Status updater per scope (per `taskId`, or one for `since`). Starting another answers `409 conflict`, such as "A Planner run is already in progress (run #12).", and saves no run. The slot frees when the run ends or is cancelled.
 
 ## Agent tools
 

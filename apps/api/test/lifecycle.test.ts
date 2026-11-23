@@ -83,8 +83,9 @@ describe("shutdown", () => {
   async function startBusyRun(tracerFor: (db: Db) => Tracer = () => noopTracer) {
     const { db } = bootDatabase(path);
     const tracer = tracerFor(db);
-    const runs = createAgentRunService({ db, llm: mockLlm, tracer });
-    const app = createApp(db, { runs, agents: { ...agentRegistry, planner: busyPlanner } });
+    const agents = { ...agentRegistry, planner: busyPlanner };
+    const runs = createAgentRunService({ db, llm: mockLlm, tracer, agents });
+    const app = createApp(db, { runs, agents });
     const { server } = await listen(app, db, { host: HOST, port: 0 });
     const res = await fetch(`http://${HOST}:${portOf(server)}/api/agents/planner/run`, {
       method: "POST",

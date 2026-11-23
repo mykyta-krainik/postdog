@@ -38,13 +38,16 @@ export interface AppDeps {
   llm?: Llm;
   tracer?: Tracer;
   agents?: AgentRegistry;
-  /** The server passes its own to stop the runs at shutdown. `llm` and `tracer` build the default. */
+  /**
+   * The server passes its own to stop the runs at shutdown. Without it, one is built from
+   * `llm`, `tracer` and `agents`.
+   */
   runs?: AgentRunService;
 }
 
 export function createApp(db: Db, deps: AppDeps = {}): Express {
   const { llm = mockLlm, tracer = noopTracer, agents = agentRegistry } = deps;
-  const runs = deps.runs ?? createAgentRunService({ db, llm, tracer });
+  const runs = deps.runs ?? createAgentRunService({ db, llm, tracer, agents });
   const settings = createSettingsService(db, runs);
   const app = express();
   app.disable("x-powered-by");
@@ -61,7 +64,7 @@ export function createApp(db: Db, deps: AppDeps = {}): Express {
   );
   app.use(
     "/api/agents",
-    agentRoutes(createAgentController(runs, agents), agents, aiEnabledGuard(settings)),
+    agentRoutes(createAgentController(runs), agents, aiEnabledGuard(settings)),
   );
   app.use(
     "/api/suggestions",
