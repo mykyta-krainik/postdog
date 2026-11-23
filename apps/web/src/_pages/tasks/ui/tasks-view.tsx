@@ -40,7 +40,7 @@ export function TasksView() {
       </section>
       <TaskDetailHost
         taskId={selectedTaskId}
-        onClose={() => setParams({ selectedTaskId: undefined })}
+        onClose={() => setParams({ selectedTaskId: undefined }, { history: "push" })}
       />
     </div>
   );
