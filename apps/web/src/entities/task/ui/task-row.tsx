@@ -21,6 +21,7 @@ export function TaskRow({ task, href, selected = false, aiEnabled }: TaskRowProp
       href={href}
       scroll={false}
       aria-current={selected ? "true" : undefined}
+      data-task-id={task.id}
       className={cn(
         "group flex h-11 items-center gap-3 border-b border-border/60 px-4 text-[13px] outline-none md:h-9 md:px-5",
         "hover:bg-accent/50 focus-visible:bg-accent/70 focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset",
