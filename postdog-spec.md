@@ -208,6 +208,7 @@ Conventions
 • One error format everywhere: { error: { code, message, details? } }. Codes include not_found, conflict, stale, ai_disabled, agent_failed, step_limit.
 • Multi-row writes run in one transaction. better-sqlite3 transactions are synchronous, so no await inside them.
 • Optimistic concurrency: the accept endpoint takes baseUpdatedAt and returns 409 stale if the target changed in the meantime. Rollback has no baseUpdatedAt; the untouched-only rule (see Decomposer) protects edited items.
+• Known limit: PATCH /api/tasks/:id takes no baseUpdatedAt and the last write wins, so two tabs editing the same task overwrite each other. Optimistic concurrency is kept to the endpoints above that take baseUpdatedAt.
 • Every route under /api/agents and /api/suggestions goes through aiEnabledGuard, which returns 403 ai_disabled when AI is off.
 • Cross-site writes are refused. The API listens on 127.0.0.1 (API_HOST) and has no auth, so a page on another site is the threat. Every write under /api (any method but GET, HEAD and OPTIONS) must send Content-Type: application/json, which a browser sends cross-site only after a CORS preflight the API never grants; anything else is 415 unsupported_media_type, and the web client sends {} when it has no body. A write with Sec-Fetch-Site: cross-site is 403 forbidden.
 Endpoints
