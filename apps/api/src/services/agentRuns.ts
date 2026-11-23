@@ -14,6 +14,7 @@ import { AgentError } from "../agents/core/errors";
 import type { Llm } from "../agents/core/llm";
 import { createTraceRecorder } from "../agents/core/trace";
 import type { Tracer } from "../agents/core/tracer";
+import type { AgentRegistry } from "../agents/registry";
 import type { Db } from "../db/client";
 import { conflict, notFound } from "../lib/errors";
 import { logger } from "../lib/logger";
@@ -79,9 +80,44 @@ function failureNotification(
   };
 }
 
-export function createAgentRunService(deps: { db: Db; llm: Llm; tracer: Tracer }) {
-  const { db, llm, tracer } = deps;
-  const active = new Map<number, AbortController>();
+export type AgentKey = keyof AgentRegistry;
+type InputOf<K extends AgentKey> =
+  AgentRegistry[K] extends AgentDefinition<infer I, unknown> ? I : never;
+
+/**
+ * Runs that share a slot cannot run at once, so a double click or a second tab gets 409
+ * instead of a second run racing the first. `busy` opens the 409 message.
+ */
+type RunSlot<I> = (input: I) => { slot: string; busy: string };
+
+const RUN_SLOTS: { [K in AgentKey]: RunSlot<InputOf<K>> } = {
+  planner: () => ({ slot: "planner", busy: "A Planner run is already in progress" }),
+  decomposer: () => ({ slot: "decomposer", busy: "A Decomposer run is already in progress" }),
+  decomposer_clarify: ({ suggestionId }) => ({
+    slot: `decomposer_clarify:${suggestionId}`,
+    busy: "A Decomposer run is already answering this clarification",
+  }),
+  status_updater: (input) => ({
+    slot: input.scope === "task" ? `status_updater:task:${input.taskId}` : "status_updater:since",
+    busy: "A Status updater run for the same scope is already in progress",
+  }),
+};
+
+export function createAgentRunService(deps: {
+  db: Db;
+  llm: Llm;
+  tracer: Tracer;
+  agents: AgentRegistry;
+}) {
+  const { db, llm, tracer, agents } = deps;
+  /** The runs this process executes: how to stop each, and its execute until it has saved. */
+  const active = new Map<number, { controller: AbortController; done: Promise<void> }>();
+  /** The run holding each slot of RUN_SLOTS. */
+  const slots = new Map<string, number>();
+
+  function freeSlot(runId: number): void {
+    for (const [slot, holder] of slots) if (holder === runId) slots.delete(slot);
+  }
 
   function requireRun(id: number) {
     const run = findRun(db, id);
@@ -90,10 +126,12 @@ export function createAgentRunService(deps: { db: Db; llm: Llm; tracer: Tracer }
   }
 
   function stop(id: number, reason: AgentError): void {
-    active.get(id)?.abort(reason);
+    active.get(id)?.controller.abort(reason);
     const now = Date.now();
-    finishRun(db, id, { status: "cancelled", error: reason.toRunError(), finishedAt: now });
+    const error = reason.toRunError();
+    finishRun(db, id, { status: statusOf(error), error, finishedAt: now });
     releaseClaims(db, id, now);
+    freeSlot(id);
   }
 
   async function execute<I, O>(definition: AgentDefinition<I, O>, ctx: AgentContext, input: I) {
@@ -123,12 +161,19 @@ export function createAgentRunService(deps: { db: Db; llm: Llm; tracer: Tracer }
       if (saved && notification) insertNotification(tx, notification);
     });
     releaseClaims(db, ctx.runId, Date.now());
+    freeSlot(ctx.runId);
     ctx.tracer.end(traced);
     await tracer.flush().catch((err: unknown) => logger.error("Langfuse flush failed", { err }));
   }
 
   return {
-    start<I, O>(definition: AgentDefinition<I, O>, body: I): StartRunResponse {
+    /** Starts the agent registered under `key`, or answers 409 while its slot is taken. */
+    start<K extends AgentKey>(key: K, body: InputOf<K>): StartRunResponse {
+      const { slot, busy } = (RUN_SLOTS[key] as RunSlot<InputOf<K>>)(body);
+      const holder = slots.get(slot);
+      if (holder !== undefined) throw conflict(`${busy} (run #${holder}).`);
+
+      const definition = agents[key] as AgentDefinition<InputOf<K>, unknown>;
       const startedAt = Date.now();
       const input = definition.prepare ? definition.prepare(db, body, startedAt) : body;
       const mode = definition.mode?.(db) ?? null;
@@ -143,7 +188,6 @@ export function createAgentRunService(deps: { db: Db; llm: Llm; tracer: Tracer }
         startedAt,
       });
       const controller = new AbortController();
-      active.set(run.id, controller);
       const runTracer = tracer.startRun({
         runId: run.id,
         agent: definition.name,
@@ -162,9 +206,11 @@ export function createAgentRunService(deps: { db: Db; llm: Llm; tracer: Tracer }
         tracer: runTracer,
         trace: createTraceRecorder((trace, usage) => updateRun(db, run.id, { trace, usage })),
       };
-      void execute(definition, ctx, input)
+      const done = execute(definition, ctx, input)
         .catch((err: unknown) => logger.error(`Agent run ${run.id} could not be saved`, { err }))
         .finally(() => active.delete(run.id));
+      active.set(run.id, { controller, done });
+      slots.set(slot, run.id);
       return { runId: run.id };
     },
 
@@ -187,6 +233,17 @@ export function createAgentRunService(deps: { db: Db; llm: Llm; tracer: Tracer }
 
     cancelAll(reason: AgentError): void {
       for (const id of listRunningRunIds(db)) stop(id, reason);
+    },
+
+    /**
+     * Fails the runs this process is executing, as the next start would, and resolves once each
+     * has saved its end. Runs of another process on the same database are left alone.
+     */
+    async interruptActive(): Promise<void> {
+      const reason = new AgentError(INTERRUPTED.code, INTERRUPTED.message);
+      const running = [...active];
+      for (const [id] of running) stop(id, reason);
+      await Promise.allSettled(running.map(([, run]) => run.done));
     },
 
     info(): AgentsInfo {

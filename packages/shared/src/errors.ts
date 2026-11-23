@@ -5,6 +5,8 @@ export const ERROR_CODES = [
   "not_found",
   "conflict",
   "stale",
+  "forbidden",
+  "unsupported_media_type",
   "ai_disabled",
   "agent_failed",
   "step_limit",

@@ -5,8 +5,9 @@ import { parseEnv } from "../src/config/env";
 const repoRoot = resolve(import.meta.dirname, "../../..");
 
 describe("parseEnv", () => {
-  it("defaults the port and puts the database under apps/api/data", () => {
+  it("defaults to port 4000 on 127.0.0.1 and puts the database under apps/api/data", () => {
     const expected = {
+      API_HOST: "127.0.0.1",
       API_PORT: 4000,
       DATABASE_PATH: resolve(repoRoot, "apps/api/data/postdog.db"),
       LLM_MOCK: false,
@@ -15,6 +16,7 @@ describe("parseEnv", () => {
     expect(parseEnv({})).toEqual(expected);
     expect(
       parseEnv({
+        API_HOST: "",
         API_PORT: "",
         DATABASE_PATH: "",
         ANTHROPIC_API_KEY: "",
@@ -31,6 +33,10 @@ describe("parseEnv", () => {
     );
     expect(parseEnv({ DATABASE_PATH: "/var/data/x.db" }).DATABASE_PATH).toBe("/var/data/x.db");
     expect(parseEnv({ DATABASE_PATH: ":memory:" }).DATABASE_PATH).toBe(":memory:");
+  });
+
+  it("binds to the host it is given, such as every interface", () => {
+    expect(parseEnv({ API_HOST: "0.0.0.0" }).API_HOST).toBe("0.0.0.0");
   });
 
   it("fails fast on a bad port", () => {

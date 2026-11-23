@@ -5,7 +5,6 @@ import {
   type AgentRun,
   type PlannerOutput,
 } from "@postdog/shared";
-import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../../src/app";
 import type { MockConversation } from "../../src/agents/core/llm";
@@ -14,7 +13,7 @@ import { agentRegistry } from "../../src/agents/registry";
 import { IN_MEMORY, openDatabase } from "../../src/db/client";
 import { migrateDatabase } from "../../src/db/migrate";
 import { seedDatabase } from "../../src/db/seed";
-import { createTask, listTasks, setNow, type Api } from "../helpers";
+import { type Api, createTask, jsonClient, listTasks, setNow } from "../helpers";
 import { call, script, waitForRun, type Step } from "./helpers";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -29,7 +28,7 @@ function setup(options: { seed?: boolean; loopName?: string } = {}): Api {
   migrateDatabase(db);
   if (options.seed) seedDatabase(db, Date.now());
   const planner = options.loopName ? createPlannerAgent(options.loopName) : agentRegistry.planner;
-  return request(createApp(db, { agents: { ...agentRegistry, planner } }));
+  return jsonClient(createApp(db, { agents: { ...agentRegistry, planner } }));
 }
 
 async function runPlanner(app: Api): Promise<AgentRun> {

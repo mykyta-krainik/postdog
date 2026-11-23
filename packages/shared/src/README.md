@@ -73,15 +73,17 @@ Every route under `/api/agents` and `/api/suggestions` answers `403 ai_disabled`
 
 ## Errors
 
-| Code                         | Status | Returned when                                                                                                                           |
-| ---------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `validation_error`           | 400    | A body, query or param fails its schema, or an id in the body breaks a rule: an unknown task, a subtask of a subtask, a link to itself. |
-| `not_found`                  | 404    | The `:id` in the path does not exist.                                                                                                   |
-| `conflict`                   | 409    | The new link already exists, the run to cancel is not running, or the suggestion to accept or reject is no longer `pending`.            |
-| `stale`                      | 409    | `baseUpdatedAt` differs from the target task's `updatedAt`.                                                                             |
-| `ai_disabled`                | 403    | An agent or suggestion route is called while `aiEnabled` is false.                                                                      |
-| `agent_failed`, `step_limit` |        | Reserved. A failed run is still a 200 response, with its reason in `AgentRun.error` (see Agent runs).                                   |
-| `internal_error`             | 500    | The server failed in a way the request did not cause.                                                                                   |
+| Code                         | Status | Returned when                                                                                                                                                                          |
+| ---------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `validation_error`           | 400    | A body, query or param fails its schema, or an id in the body breaks a rule: an unknown task, a subtask of a subtask, a link to itself.                                                |
+| `not_found`                  | 404    | The `:id` in the path does not exist.                                                                                                                                                  |
+| `conflict`                   | 409    | The new link already exists, the run to cancel is not running, the agent already has a run in progress (see Agent runs), or the suggestion to accept or reject is no longer `pending`. |
+| `stale`                      | 409    | `baseUpdatedAt` differs from the target task's `updatedAt`.                                                                                                                            |
+| `forbidden`                  | 403    | A write (any method but `GET`, `HEAD` and `OPTIONS`) carries `Sec-Fetch-Site: cross-site`.                                                                                             |
+| `ai_disabled`                | 403    | An agent or suggestion route is called while `aiEnabled` is false.                                                                                                                     |
+| `unsupported_media_type`     | 415    | A write without `Content-Type: application/json`, including one with no body.                                                                                                          |
+| `agent_failed`, `step_limit` |        | Reserved. A failed run is still a 200 response, with its reason in `AgentRun.error` (see Agent runs).                                                                                  |
+| `internal_error`             | 500    | The server failed in a way the request did not cause.                                                                                                                                  |
 
 When a schema fails, `details` matches `validationErrorDetailsSchema`. Each issue has a dotted `path`, such as `subtasks.0.title`, which is also the React Hook Form field name.
 
@@ -111,6 +113,7 @@ When a schema fails, `details` matches `validationErrorDetailsSchema`. Each issu
 - `llm` records the model layer the run used. `GET /api/agents/info` returns the one in use now, for the "Mock AI" badge.
 - `input` and `output` are `unknown` on `agentRunSchema`. To read them, parse the run with `plannerRunSchema`, `statusUpdaterRunSchema` or `decomposerRunSchema`, picked by `agent`.
 - `AGENT_LIMITS` in `config.ts` holds the loop limits and the per-agent caps.
+- One run per slot runs at a time: one Planner, one Decomposer batch, one clarification re-run per `suggestionId`, one Status updater per scope (per `taskId`, or one for `since`). Starting another answers `409 conflict`, such as "A Planner run is already in progress (run #12).", and saves no run. The slot frees when the run ends or is cancelled.
 
 ## Agent tools
 
@@ -194,7 +197,7 @@ Rejected, applied and superseded suggestions do not count. Changing `aiState` ne
 A changeset records what one auto-mode Decomposer run created, so the user can undo it from the Inbox. A notification is one Inbox entry.
 
 - `Changeset` is one `agent_changesets` row. Each `ChangesetOp` has a `type` (`create_task` or `create_link`), the `id` of the created task or link, the `taskId` it belongs to and a `state`. For a subtask, `taskId` is its parent. For a link, it is the lowest task id of the related group, the same task the group's suggestion targets. Rolling back one task's part acts on the ops with that `taskId`.
-- An op's `state` starts at `applied`. A rollback moves it to `rolled_back` when it deleted the item, or to `kept` when it left the item in place. `ROLLBACK_KEPT_REASONS` says why: `edited`, `has_children`, `status_changed`, or `not_found` when the item was already gone.
+- An op's `state` starts at `applied`. A rollback moves it to `rolled_back` when it deleted the item, or to `kept` when it left the item in place. `ROLLBACK_KEPT_REASONS` says why: `edited`, `has_children`, `has_notes`, `has_links` (a link the run did not make), `status_changed`, or `not_found` when the item was already gone.
 - `changesetStatusOf(ops)` gives the changeset's `status`: `applied` while every op is applied, `rolled_back` once every op is rolled back, `partially_rolled_back` otherwise. The status is always derived from the ops, never set on its own.
 - `ChangesetSummary` is the read model the Inbox renders without extra calls. `tasks` has one entry per `taskId`, lowest id first, with the task's `identifier` and `title` (both `null` when the task was deleted), the number of `createdSubtasks` and `createdLinks` among its ops, and a `state`. `counts` totals the created subtasks and links of the whole changeset, whatever their state now.
 - `changesetTaskStateOf(ops)` derives a task's `state` from its ops. The first rule that matches wins.

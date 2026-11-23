@@ -6,7 +6,7 @@ import {
   validationErrorDetailsSchema,
   type SubtasksPayload,
 } from "@postdog/shared";
-import request, { type Response } from "supertest";
+import type { Response } from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app";
 import { getSetting } from "../src/repositories/settings";
@@ -17,7 +17,7 @@ import {
   resolveSuggestion,
 } from "../src/repositories/suggestions";
 import { findTask, insertTask, listSubtaskIds } from "../src/repositories/tasks";
-import { getTask, setNow } from "./helpers";
+import { getTask, jsonClient, setNow } from "./helpers";
 import {
   DAY,
   addRun,
@@ -40,7 +40,7 @@ afterEach(() => {
 function setup() {
   setNow(NOW);
   const db = createTestDb();
-  return { db, api: request(createApp(db)), run: addRun(db) };
+  return { db, api: jsonClient(createApp(db)), run: addRun(db) };
 }
 
 const errorOf = (res: Response) => apiErrorBodySchema.parse(res.body).error;

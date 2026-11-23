@@ -3,12 +3,11 @@ import {
   listNotificationsResponseSchema,
   markNotificationReadResponseSchema,
 } from "@postdog/shared";
-import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app";
 import { insertChangeset } from "../src/repositories/changesets";
 import { insertNotification } from "../src/repositories/notifications";
-import { setNow } from "./helpers";
+import { jsonClient, setNow } from "./helpers";
 import { DAY, addRun, addTask, createTestDb } from "./suggestionFixtures";
 
 const NOW = 50 * DAY;
@@ -23,7 +22,7 @@ function setup() {
   const run = addRun(db);
   const notify = (title: string, createdAt: number) =>
     insertNotification(db, { kind: "conflict", title, runId: run, createdAt });
-  return { db, api: request(createApp(db)), run, notify };
+  return { db, api: jsonClient(createApp(db)), run, notify };
 }
 
 async function list(api: ReturnType<typeof setup>["api"], query = "") {

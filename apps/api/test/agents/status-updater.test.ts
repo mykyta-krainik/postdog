@@ -5,14 +5,13 @@ import {
   type StatusUpdaterRun,
   type TaskDetail,
 } from "@postdog/shared";
-import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../../src/app";
 import { agentRegistry } from "../../src/agents/registry";
 import { createStatusUpdaterAgent } from "../../src/agents/status-updater";
 import { IN_MEMORY, openDatabase } from "../../src/db/client";
 import { migrateDatabase } from "../../src/db/migrate";
-import { createTask, getTask, setNow, type Api } from "../helpers";
+import { type Api, createTask, getTask, jsonClient, setNow } from "../helpers";
 import { call, script, waitForRun, type Step } from "./helpers";
 
 const HOUR = 60 * 60 * 1000;
@@ -30,7 +29,7 @@ function setup(steps?: Step[]) {
   const agents = loop
     ? { ...agentRegistry, status_updater: createStatusUpdaterAgent(loop.name) }
     : agentRegistry;
-  return { api: request(createApp(db, { agents })), seen: loop?.seen ?? [] };
+  return { api: jsonClient(createApp(db, { agents })), seen: loop?.seen ?? [] };
 }
 
 async function runUpdater(api: Api, body: object): Promise<StatusUpdaterRun> {

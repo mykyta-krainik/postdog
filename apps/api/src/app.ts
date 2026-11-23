@@ -12,6 +12,7 @@ import { createSuggestionController } from "./controllers/suggestions";
 import { createTaskController } from "./controllers/tasks";
 import type { Db } from "./db/client";
 import { aiEnabledGuard } from "./middleware/aiEnabledGuard";
+import { crossSiteGuard } from "./middleware/crossSiteGuard";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { agentRoutes } from "./routes/agents";
 import { changesetRoutes } from "./routes/changesets";
@@ -21,7 +22,7 @@ import { notificationRoutes } from "./routes/notifications";
 import { settingsRoutes } from "./routes/settings";
 import { suggestionRoutes } from "./routes/suggestions";
 import { taskRoutes } from "./routes/tasks";
-import { createAgentRunService } from "./services/agentRuns";
+import { createAgentRunService, type AgentRunService } from "./services/agentRuns";
 import { createChangesetService } from "./services/changesets";
 import { createLinkService } from "./services/links";
 import { createNoteService } from "./services/notes";
@@ -37,14 +38,20 @@ export interface AppDeps {
   llm?: Llm;
   tracer?: Tracer;
   agents?: AgentRegistry;
+  /**
+   * The server passes its own to stop the runs at shutdown. Without it, one is built from
+   * `llm`, `tracer` and `agents`.
+   */
+  runs?: AgentRunService;
 }
 
 export function createApp(db: Db, deps: AppDeps = {}): Express {
   const { llm = mockLlm, tracer = noopTracer, agents = agentRegistry } = deps;
-  const runs = createAgentRunService({ db, llm, tracer });
+  const runs = deps.runs ?? createAgentRunService({ db, llm, tracer, agents });
   const settings = createSettingsService(db, runs);
   const app = express();
   app.disable("x-powered-by");
+  app.use("/api", crossSiteGuard);
   app.use(express.json({ limit: JSON_BODY_LIMIT }));
   app.use(
     "/api",
@@ -57,7 +64,7 @@ export function createApp(db: Db, deps: AppDeps = {}): Express {
   );
   app.use(
     "/api/agents",
-    agentRoutes(createAgentController(runs, agents), agents, aiEnabledGuard(settings)),
+    agentRoutes(createAgentController(runs), agents, aiEnabledGuard(settings)),
   );
   app.use(
     "/api/suggestions",

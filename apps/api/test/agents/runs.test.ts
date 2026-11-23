@@ -10,7 +10,6 @@ import {
   plannerOutputSchema,
   type PlannerOutput,
 } from "@postdog/shared";
-import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp, type AppDeps } from "../../src/app";
 import { defineAgent } from "../../src/agents/core/definition";
@@ -28,7 +27,8 @@ import { bootDatabase } from "../../src/db/boot";
 import { IN_MEMORY, openDatabase } from "../../src/db/client";
 import { migrateDatabase } from "../../src/db/migrate";
 import { findRun, insertRun } from "../../src/repositories/agentRuns";
-import { createTask, setNow, type Api } from "../helpers";
+import { reconcileInterruptedRuns } from "../../src/services/agentRuns";
+import { type Api, createTask, jsonClient, setNow } from "../helpers";
 import { call, createTestTools, hang, script, waitForRun, type Step } from "./helpers";
 
 afterEach(() => {
@@ -66,7 +66,7 @@ function testPlanner(steps: Step[] | (() => never)) {
 function api(planner?: ReturnType<typeof testPlanner>, deps: AppDeps = {}): Api {
   const db = openDatabase(IN_MEMORY);
   migrateDatabase(db);
-  return request(
+  return jsonClient(
     createApp(db, {
       ...deps,
       agents: { ...agentRegistry, ...(planner && { planner }) },
@@ -266,7 +266,10 @@ describe("AI kill switch", () => {
       .expect(201);
     await app.patch(`/api/tasks/${parent.id}`).send({ status: "in_progress" }).expect(200);
     await app.post(`/api/tasks/${parent.id}/notes`).send({ body: "Started" }).expect(201);
-    await app.post(`/api/tasks/${parent.id}/links`).send({ toTaskId: other.id, type: "blocks" });
+    await app
+      .post(`/api/tasks/${parent.id}/links`)
+      .send({ toTaskId: other.id, type: "blocks" })
+      .expect(201);
     const list = await app.get("/api/tasks?sort=priority").expect(200);
     expect(list.body.items.map((t: { id: number }) => t.id)).toEqual([parent.id, other.id]);
     await app.delete(`/api/tasks/${other.id}`).expect(204);
@@ -293,7 +296,7 @@ describe("boot reconcile", () => {
       first.db.$client.close();
 
       const second = bootDatabase(path, 9_000);
-      expect(second.interrupted).toBe(1);
+      expect(reconcileInterruptedRuns(second.db, 9_000)).toBe(1);
       expect(findRun(second.db, stuck.id)).toMatchObject({
         status: "failed",
         error: { code: "interrupted" },

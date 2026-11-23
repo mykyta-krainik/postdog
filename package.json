@@ -10,6 +10,7 @@
     "packages/*"
   ],
   "scripts": {
+    "build": "npm run build --workspaces --if-present",
     "dev": "concurrently --names api,web --prefix-colors blue,magenta \"npm run dev -w @postdog/api\" \"npm run dev -w @postdog/web\"",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",

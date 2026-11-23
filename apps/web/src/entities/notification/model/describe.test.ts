@@ -69,6 +69,7 @@ describe("KEPT_REASON_TEXT", () => {
     for (const reason of ROLLBACK_KEPT_REASONS) expect(KEPT_REASON_TEXT[reason]).not.toBe("");
     expect(KEPT_REASON_TEXT.has_children).toBe("has its own subtasks");
     expect(KEPT_REASON_TEXT.has_notes).toBe("has notes");
+    expect(KEPT_REASON_TEXT.has_links).toBe("has links");
     expect(KEPT_REASON_TEXT.status_changed).toBe("was started or finished");
     expect(KEPT_REASON_TEXT.edited).toBe("was edited");
   });

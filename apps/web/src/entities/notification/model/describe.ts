@@ -44,6 +44,7 @@ export const KEPT_REASON_TEXT: Record<RollbackKeptReason, string> = {
   edited: "was edited",
   has_children: "has its own subtasks",
   has_notes: "has notes",
+  has_links: "has links",
   status_changed: "was started or finished",
   not_found: "was already gone",
 };

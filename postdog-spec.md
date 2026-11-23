@@ -96,7 +96,7 @@ postdog/
   AGENT_LOG.md
   SPEC.md           this document, exported
 Scripts (root)
-• npm run dev: runs the API on port 4000 and web on port 3000 together via concurrently. On every start the API creates the data directory if needed, runs pending migrations, seeds if the database has not been seeded yet, then reconciles interrupted agent runs (see Agent coordination). A fresh clone needs no other setup.
+• npm run dev: runs the API on port 4000 and web on port 3000 together via concurrently. On every start the API creates the data directory if needed, runs pending migrations, seeds if the database has not been seeded yet, then listens and, only once it holds its port, reconciles interrupted agent runs (see Agent coordination). A start that cannot listen, such as a second npm run dev, exits without touching the runs of the API already serving. db:seed migrates and seeds only. On SIGINT or SIGTERM the API stops taking requests, fails its own runs in progress with interrupted, flushes Langfuse and closes the database, giving up after 5 seconds. A fresh clone needs no other setup.
 • npm run db:migrate, npm run db:seed, npm run db:reset (delete, migrate, seed). The seed writes every timestamp relative to the moment it runs.
 • npm test, npm run lint, npm run typecheck.
 The web app calls the API through a Next.js rewrite (/api/* → http://localhost:4000/api/*), so the browser sees a single origin and no CORS setup is needed.
@@ -208,7 +208,9 @@ Conventions
 • One error format everywhere: { error: { code, message, details? } }. Codes include not_found, conflict, stale, ai_disabled, agent_failed, step_limit.
 • Multi-row writes run in one transaction. better-sqlite3 transactions are synchronous, so no await inside them.
 • Optimistic concurrency: the accept endpoint takes baseUpdatedAt and returns 409 stale if the target changed in the meantime. Rollback has no baseUpdatedAt; the untouched-only rule (see Decomposer) protects edited items.
+• Known limit: PATCH /api/tasks/:id takes no baseUpdatedAt and the last write wins, so two tabs editing the same task overwrite each other. Optimistic concurrency is kept to the endpoints above that take baseUpdatedAt.
 • Every route under /api/agents and /api/suggestions goes through aiEnabledGuard, which returns 403 ai_disabled when AI is off.
+• Cross-site writes are refused. The API listens on 127.0.0.1 (API_HOST) and has no auth, so a page on another site is the threat. Every write under /api (any method but GET, HEAD and OPTIONS) must send Content-Type: application/json, which a browser sends cross-site only after a CORS preflight the API never grants; anything else is 415 unsupported_media_type, and the web client sends {} when it has no body. A write with Sec-Fetch-Site: cross-site is 403 forbidden.
 Endpoints
 Method + path
 Purpose
@@ -391,7 +393,7 @@ Every outcome is a row in agent_suggestions in both modes. In auto mode, outcome
 After an auto run, one notification summarizes it, e.g. "Split 4 tasks into 13 subtasks, linked 2 related tasks, 2 tasks need your answers", with a per-task list and a Rollback button.
 Hard limits in auto mode: it never edits, deletes or re-prioritizes existing tasks. It only creates subtasks and relates links.
 Clarifications: answering a clarification calls POST /agents/decomposer/clarify, which re-runs stage 2 for that one task with the questions and answers added, then applies the result according to the current mode.
-Rollback: rolling back a changeset (or a single task's part of it) deletes the subtasks and links it created, but only the ones still untouched (updatedAt == createdAt, status unchanged, no children of their own, no notes: a note does not bump updatedAt but deleting the subtask would delete it). Anything the user has since edited is kept and listed ("2 subtasks were edited and kept"); the changeset becomes partially_rolled_back. A rolled-back task isn't proposed again for 7 days.
+Rollback: rolling back a changeset (or a single task's part of it) deletes the subtasks and links it created, but only the ones still untouched (updatedAt == createdAt, status unchanged, no children of their own, no notes and no links the user made: neither bumps updatedAt, but deleting the subtask would delete them). Anything the user has since edited is kept and listed ("2 subtasks were edited and kept"); the changeset becomes partially_rolled_back. A rolled-back task isn't proposed again for 7 days.
 8.3 Status updater: async updates in Slack style (C)
 The Status updater drafts a short update the user pastes into Slack. It is read-only: it writes text and never changes tasks.
 • Scopes: one task (with its subtasks and notes), or "my update since a date" across the tasks that changed in that window (default: last 24 hours, at most 15 tasks).
@@ -421,7 +423,8 @@ Known wrong-result cases (for the README)
 9. Agent coordination
 Agents don't message each other. They coordinate through a shared record in the database (a "blackboard"): claims, pending suggestions and recent runs. Every agent can read it, and code enforces it. This is simpler than agent-to-agent messaging, easy to audit, and it still works when agents run at the same time from different tabs.
 Mechanism
-• Claims: before an agent works on a task, the orchestrator writes an agent_claims row (taskId, runId, agent, expiresAt = now + 2 minutes, renewed after every loop step) and sets aiState = processing. Claims are released when the run ends, and expired claims are ignored, so a stalled run can't lock a task forever. On API start, every run still marked running is set to failed (error: interrupted), its claims are deleted, and aiState is recomputed from the pending suggestions, so a crash never leaves a task stuck in processing.
+• Claims: before an agent works on a task, the orchestrator writes an agent_claims row (taskId, runId, agent, expiresAt = now + 2 minutes, renewed after every loop step) and sets aiState = processing. Claims are released when the run ends, and expired claims are ignored, so a stalled run can't lock a task forever. When the API starts listening, every run still marked running is set to failed (error: interrupted), its claims are deleted, and aiState is recomputed from the pending suggestions, so a crash never leaves a task stuck in processing.
+• One run at a time per agent: one Planner, one Decomposer batch, one clarification re-run per suggestion, one Status updater per scope (per task, or one for since). Starting another answers 409 conflict ("A Planner run is already in progress (run #N).") and saves no run; the slot frees when the run ends or is cancelled. Claims still guard a task between a batch and a clarification re-run.
 • Claim conflicts: if the task is already claimed, the claim fails and the orchestrator skips it, recording "Skipped PD-12: being processed by decomposer run #41".
 • Read side: get_agent_activity() returns active claims, pending suggestions and runs from the last 24 hours. Task tools also include claimedBy and aiState on every task.
 • Reporting conflicts: the Planner's prompt tells it to treat claimed or awaiting-review tasks as "in flux". It still may recommend them, but it must say so in coordinationNotes (e.g. "PD-12 is being decomposed; review its subtasks before starting"). The UI shows these notes above the plan.
@@ -492,6 +495,7 @@ LLM_MOCK=false                # true = scripted mock model (also used when the p
 LLM_MODEL=anthropic:claude-sonnet-5-5   # provider:model from the AI SDK registry
 
 # API
+API_HOST=127.0.0.1            # loopback only; the API has no auth
 API_PORT=4000
 DATABASE_PATH=./apps/api/data/postdog.db
 
