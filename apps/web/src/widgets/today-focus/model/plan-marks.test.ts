@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { EMPTY_MARKS, changedSinceText, readPlanMarks, writePlanMarks } from "./plan-marks";
+import {
+  EMPTY_MARKS,
+  changedSinceText,
+  readPlanMarks,
+  unexplainedChanges,
+  writePlanMarks,
+} from "./plan-marks";
 
 function memoryStorage(): Storage {
   const data = new Map<string, string>();
@@ -73,5 +79,20 @@ describe("changedSinceText", () => {
   it("uses the singular for one task and the plural otherwise", () => {
     expect(changedSinceText(1)).toBe("1 task changed since this plan");
     expect(changedSinceText(3)).toBe("3 tasks changed since this plan");
+  });
+});
+
+describe("unexplainedChanges", () => {
+  it("leaves out the tasks the plan's own Start buttons moved", () => {
+    expect(unexplainedChanges(3, { dismissed: [9], started: [4, 5] })).toBe(1);
+    expect(unexplainedChanges(2, { dismissed: [], started: [4, 5] })).toBe(0);
+  });
+
+  it("never goes below zero while the count from the API lags behind a Start", () => {
+    expect(unexplainedChanges(0, { dismissed: [], started: [4] })).toBe(0);
+  });
+
+  it("cannot tell a started task that was also edited later, and leaves it out too", () => {
+    expect(unexplainedChanges(1, { dismissed: [], started: [4] })).toBe(0);
   });
 });

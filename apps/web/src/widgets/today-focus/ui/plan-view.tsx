@@ -3,7 +3,11 @@
 import { AlertTriangle, History, Users } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { TraceTimeline, type CompletedPlannerRun } from "@/entities/agent-run";
+import {
+  TraceTimeline,
+  revalidatePlannerLatest,
+  type CompletedPlannerRun,
+} from "@/entities/agent-run";
 import { updateTask } from "@/entities/task";
 import { formatDateTime, formatDayTime } from "@/shared/lib/format";
 import { errorMessage } from "@/shared/lib/form-errors";
@@ -11,6 +15,7 @@ import { Button } from "@/shared/ui/button";
 import {
   changedSinceText,
   readPlanMarks,
+  unexplainedChanges,
   writePlanMarks,
   type PlanMarks,
 } from "../model/plan-marks";
@@ -54,7 +59,7 @@ export function PlanView({
 }) {
   const [marks, setMarks] = useState<PlanMarks>(() => readPlanMarks(run.id));
   const { focus, warnings, coordinationNotes } = run.output;
-  const stale = changedSinceText(changedSince);
+  const stale = changedSinceText(unexplainedChanges(changedSince, marks));
   const visible = focus.filter((item) => !marks.dismissed.includes(item.taskId));
 
   function save(next: (current: PlanMarks) => PlanMarks) {
@@ -67,10 +72,15 @@ export function PlanView({
 
   function start(taskId: number, identifier: string) {
     save((current) => ({ ...current, started: [...current.started, taskId] }));
-    updateTask(taskId, { status: "in_progress" }).catch((error: unknown) => {
-      save((current) => ({ ...current, started: current.started.filter((id) => id !== taskId) }));
-      toast.error(`${identifier} didn't start`, { description: errorMessage(error, "Try again.") });
-    });
+    updateTask(taskId, { status: "in_progress" }).then(
+      () => revalidatePlannerLatest(),
+      (error: unknown) => {
+        save((current) => ({ ...current, started: current.started.filter((id) => id !== taskId) }));
+        toast.error(`${identifier} didn't start`, {
+          description: errorMessage(error, "Try again."),
+        });
+      },
+    );
   }
 
   return (
