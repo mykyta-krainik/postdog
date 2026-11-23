@@ -81,7 +81,8 @@ function failureNotification(
 
 export function createAgentRunService(deps: { db: Db; llm: Llm; tracer: Tracer }) {
   const { db, llm, tracer } = deps;
-  const active = new Map<number, AbortController>();
+  /** The runs this process executes: how to stop each, and its execute until it has saved. */
+  const active = new Map<number, { controller: AbortController; done: Promise<void> }>();
 
   function requireRun(id: number) {
     const run = findRun(db, id);
@@ -90,9 +91,10 @@ export function createAgentRunService(deps: { db: Db; llm: Llm; tracer: Tracer }
   }
 
   function stop(id: number, reason: AgentError): void {
-    active.get(id)?.abort(reason);
+    active.get(id)?.controller.abort(reason);
     const now = Date.now();
-    finishRun(db, id, { status: "cancelled", error: reason.toRunError(), finishedAt: now });
+    const error = reason.toRunError();
+    finishRun(db, id, { status: statusOf(error), error, finishedAt: now });
     releaseClaims(db, id, now);
   }
 
@@ -143,7 +145,6 @@ export function createAgentRunService(deps: { db: Db; llm: Llm; tracer: Tracer }
         startedAt,
       });
       const controller = new AbortController();
-      active.set(run.id, controller);
       const runTracer = tracer.startRun({
         runId: run.id,
         agent: definition.name,
@@ -162,9 +163,10 @@ export function createAgentRunService(deps: { db: Db; llm: Llm; tracer: Tracer }
         tracer: runTracer,
         trace: createTraceRecorder((trace, usage) => updateRun(db, run.id, { trace, usage })),
       };
-      void execute(definition, ctx, input)
+      const done = execute(definition, ctx, input)
         .catch((err: unknown) => logger.error(`Agent run ${run.id} could not be saved`, { err }))
         .finally(() => active.delete(run.id));
+      active.set(run.id, { controller, done });
       return { runId: run.id };
     },
 
@@ -187,6 +189,17 @@ export function createAgentRunService(deps: { db: Db; llm: Llm; tracer: Tracer }
 
     cancelAll(reason: AgentError): void {
       for (const id of listRunningRunIds(db)) stop(id, reason);
+    },
+
+    /**
+     * Fails the runs this process is executing, as the next start would, and resolves once each
+     * has saved its end. Runs of another process on the same database are left alone.
+     */
+    async interruptActive(): Promise<void> {
+      const reason = new AgentError(INTERRUPTED.code, INTERRUPTED.message);
+      const running = [...active];
+      for (const [id] of running) stop(id, reason);
+      await Promise.allSettled(running.map(([, run]) => run.done));
     },
 
     info(): AgentsInfo {

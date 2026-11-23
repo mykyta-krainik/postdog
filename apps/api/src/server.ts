@@ -5,13 +5,14 @@ import { createApp } from "./app";
 import { loadEnv } from "./config/env";
 import { bootDatabase } from "./db/boot";
 import { logger } from "./lib/logger";
+import { listen, shutdown } from "./lifecycle";
+import { createAgentRunService } from "./services/agentRuns";
 
 const env = loadEnv();
-const { db, seeded, interrupted } = bootDatabase(env.DATABASE_PATH);
+const { db, seeded } = bootDatabase(env.DATABASE_PATH);
 logger.info(seeded ? "Created and seeded the database" : "Database is up to date", {
   path: env.DATABASE_PATH,
 });
-if (interrupted > 0) logger.info(`Marked ${interrupted} interrupted agent runs as failed`);
 
 const llm = createLlm(env);
 const tracer = createTracer(env);
@@ -19,20 +20,28 @@ logger.info(`LLM: ${llm.info.mode} (${llm.info.model})`, {
   langfuse: tracer.enabled ? "on" : "off",
 });
 
-const server = createApp(db, { llm, tracer }).listen(env.API_PORT, env.API_HOST, (err?: Error) => {
-  if (err) {
-    logger.error(`API could not listen on ${env.API_HOST}:${env.API_PORT}`, { err });
-    process.exit(1);
-  }
-  const { address, port } = server.address() as AddressInfo;
-  logger.info(`API listening on http://${address}:${port}`);
-});
+const runs = createAgentRunService({ db, llm, tracer });
+const address = { host: env.API_HOST, port: env.API_PORT };
 
-function shutdown(): void {
-  server.close(() => {
+listen(createApp(db, { runs }), db, address).then(
+  ({ server, interrupted }) => {
+    const { address: host, port } = server.address() as AddressInfo;
+    logger.info(`API listening on http://${host}:${port}`);
+    if (interrupted > 0) logger.info(`Marked ${interrupted} interrupted agent runs as failed`);
+
+    const stop = (signal: NodeJS.Signals) => {
+      logger.info(`${signal}: stopping the runs in progress and closing the database`);
+      void shutdown({ server, runs, tracer, db }).then((result) => {
+        if (result === "timed_out") logger.error("Shutdown timed out; exiting anyway");
+        process.exit(result === "clean" ? 0 : 1);
+      });
+    };
+    process.once("SIGINT", stop);
+    process.once("SIGTERM", stop);
+  },
+  (err: unknown) => {
+    logger.error(`API could not listen on ${address.host}:${address.port}`, { err });
     db.$client.close();
-    process.exit(0);
-  });
-}
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
+    process.exit(1);
+  },
+);

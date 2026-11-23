@@ -22,7 +22,7 @@ import { notificationRoutes } from "./routes/notifications";
 import { settingsRoutes } from "./routes/settings";
 import { suggestionRoutes } from "./routes/suggestions";
 import { taskRoutes } from "./routes/tasks";
-import { createAgentRunService } from "./services/agentRuns";
+import { createAgentRunService, type AgentRunService } from "./services/agentRuns";
 import { createChangesetService } from "./services/changesets";
 import { createLinkService } from "./services/links";
 import { createNoteService } from "./services/notes";
@@ -38,11 +38,13 @@ export interface AppDeps {
   llm?: Llm;
   tracer?: Tracer;
   agents?: AgentRegistry;
+  /** The server passes its own to stop the runs at shutdown. `llm` and `tracer` build the default. */
+  runs?: AgentRunService;
 }
 
 export function createApp(db: Db, deps: AppDeps = {}): Express {
   const { llm = mockLlm, tracer = noopTracer, agents = agentRegistry } = deps;
-  const runs = createAgentRunService({ db, llm, tracer });
+  const runs = deps.runs ?? createAgentRunService({ db, llm, tracer });
   const settings = createSettingsService(db, runs);
   const app = express();
   app.disable("x-powered-by");

@@ -27,6 +27,7 @@ import { bootDatabase } from "../../src/db/boot";
 import { IN_MEMORY, openDatabase } from "../../src/db/client";
 import { migrateDatabase } from "../../src/db/migrate";
 import { findRun, insertRun } from "../../src/repositories/agentRuns";
+import { reconcileInterruptedRuns } from "../../src/services/agentRuns";
 import { type Api, createTask, jsonClient, setNow } from "../helpers";
 import { call, createTestTools, hang, script, waitForRun, type Step } from "./helpers";
 
@@ -292,7 +293,7 @@ describe("boot reconcile", () => {
       first.db.$client.close();
 
       const second = bootDatabase(path, 9_000);
-      expect(second.interrupted).toBe(1);
+      expect(reconcileInterruptedRuns(second.db, 9_000)).toBe(1);
       expect(findRun(second.db, stuck.id)).toMatchObject({
         status: "failed",
         error: { code: "interrupted" },

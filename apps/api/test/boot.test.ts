@@ -10,6 +10,7 @@ import { findRun } from "../src/repositories/agentRuns";
 import { listActiveClaims, tryClaim } from "../src/repositories/claims";
 import { insertSuggestion } from "../src/repositories/suggestions";
 import { updateTask } from "../src/repositories/tasks";
+import { reconcileInterruptedRuns } from "../src/services/agentRuns";
 import { type Api, createTask, getTask, jsonClient, listTasks } from "./helpers";
 import {
   addRun,
@@ -86,6 +87,17 @@ describe("fresh start", () => {
 });
 
 describe("crash reconciliation", () => {
+  it("leaves the runs alone when it only opens the database, as db:seed and a second start do", () => {
+    const path = join(dir, "postdog.db");
+    const first = bootDatabase(path);
+    const live = addRun(first.db);
+    open.push(first.db);
+
+    const second = bootDatabase(path);
+    open.push(second.db);
+    expect(findRun(second.db, live)?.status).toBe("running");
+  });
+
   it("fails running runs, drops their claims and rebuilds every task's aiState", () => {
     const path = join(dir, "postdog.db");
     const now = 50 * DAY;
@@ -105,7 +117,7 @@ describe("crash reconciliation", () => {
 
     const restarted = bootDatabase(path, now + 1_000);
     open.push(restarted.db);
-    expect(restarted.interrupted).toBe(1);
+    expect(reconcileInterruptedRuns(restarted.db, now + 1_000)).toBe(1);
     expect(findRun(restarted.db, running)).toMatchObject({
       status: "failed",
       error: { code: "interrupted" },
