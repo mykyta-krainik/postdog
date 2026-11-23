@@ -11,8 +11,12 @@ import type { TaskRow } from "../../db/schema";
 import { plural } from "../../lib/text";
 import { appendChangesetOps, type NewChangesetOp } from "../../repositories/changesets";
 import { getSetting } from "../../repositories/settings";
-import { insertSuggestion, listSuggestions } from "../../repositories/suggestions";
-import { findTask } from "../../repositories/tasks";
+import {
+  insertSuggestion,
+  listPendingSuggestionsOfTask,
+  listSuggestions,
+} from "../../repositories/suggestions";
+import { findTask, listSubtaskIds } from "../../repositories/tasks";
 import { linkGroup } from "../../services/suggestions";
 import { insertSubtasks } from "../../services/tasks";
 import { truncate } from "../core/trace";
@@ -30,7 +34,8 @@ export type RelatedApplied =
 
 /**
  * Stage 3: writes one task's decision or one related group, as the run's mode says. The
- * caller runs each call in its own transaction, so a throw writes nothing of that item.
+ * caller runs each call in its own transaction, so a throw writes nothing of that item, and
+ * calls `task` only when `writeConflict` in that transaction found nothing.
  */
 export interface Applier {
   task(ex: Executor, run: ApplyRun, task: TaskRow, decision: Decision): DecomposerTaskResult;
@@ -40,6 +45,34 @@ export interface Applier {
 function staleReason(current: TaskRow | undefined, identifier: string, startedAt: number) {
   if (!current) return `${identifier} was deleted while the Decomposer worked`;
   if (current.updatedAt > startedAt) return `${identifier} was edited while the Decomposer worked`;
+  return null;
+}
+
+/**
+ * Why nothing may be written for the task now, read in the caller's transaction, or null:
+ * the user deleted, edited, finished or split it, or another run left a split or a question
+ * on it. `answering` is the clarification a rerun answers, which does not count.
+ */
+export function writeConflict(
+  ex: Executor,
+  run: ApplyRun,
+  task: TaskRow,
+  answering?: number,
+): string | null {
+  const current = findTask(ex, task.id);
+  const stale = staleReason(current, task.identifier, run.startedAt);
+  if (stale !== null || !current) return stale;
+  if (current.status === "done") return `${task.identifier} is done`;
+  const subtasks = listSubtaskIds(ex, task.id).length;
+  if (subtasks > 0) {
+    return `${task.identifier} got ${plural(subtasks, "subtask")} while the Decomposer worked`;
+  }
+  const other = listPendingSuggestionsOfTask(ex, task.id).find(
+    (s) => s.kind !== "related" && s.runId !== run.runId && s.id !== answering,
+  );
+  if (other) {
+    return `${task.identifier} already has ${other.kind} suggestion #${other.id} from run #${other.runId}`;
+  }
   return null;
 }
 
@@ -93,8 +126,6 @@ function recordOps(ex: Executor, run: ApplyRun, ops: NewChangesetOp[]): void {
 
 const suggest: Applier = {
   task(ex, run, task, decision) {
-    const stale = staleReason(findTask(ex, task.id), task.identifier, run.startedAt);
-    if (stale) return taskResult(task, "superseded", stale);
     const base = suggestionOf(run, task.id);
     switch (decision.kind) {
       case "skip":
@@ -136,8 +167,6 @@ const suggest: Applier = {
 const auto: Applier = {
   task(ex, run, task, decision) {
     if (decision.kind !== "subtasks") return suggest.task(ex, run, task, decision);
-    const stale = staleReason(findTask(ex, task.id), task.identifier, run.startedAt);
-    if (stale) return taskResult(task, "superseded", stale);
     const created = insertSubtasks(ex, task.id, decision.payload.subtasks, run.now);
     recordOps(
       ex,
