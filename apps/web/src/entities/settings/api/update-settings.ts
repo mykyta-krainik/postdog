@@ -1,7 +1,6 @@
 import { settingsSchema, type Settings, type UpdateSettingsInput } from "@postdog/shared";
 import { mutate } from "swr";
-import { apiRequest } from "@/shared/api";
-import { settingsKey } from "./use-settings";
+import { apiRequest, settingsKey } from "@/shared/api";
 
 function applyPatch(settings: Settings, patch: UpdateSettingsInput): Settings {
   const changes = Object.fromEntries(

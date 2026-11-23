@@ -1,9 +1,8 @@
 import type { Settings } from "@postdog/shared";
 import { mutate, SWRConfig } from "swr";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError } from "@/shared/api";
+import { ApiError, settingsKey } from "@/shared/api";
 import { updateSettings } from "./update-settings";
-import { settingsKey } from "./use-settings";
 
 const saved: Settings = { aiEnabled: true, decompositionMode: "suggest" };
 

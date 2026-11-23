@@ -6,7 +6,7 @@ import {
   type SuggestionPayload,
 } from "@postdog/shared";
 import { mutate } from "swr";
-import { apiKey, apiRequest } from "@/shared/api";
+import { aiRequest, apiKey, apiRequest } from "@/shared/api";
 import { suggestionKeys } from "./keys";
 
 /**
@@ -33,10 +33,12 @@ export async function acceptSuggestion(
   values: AcceptValues,
 ): Promise<AcceptSuggestionResponse> {
   try {
-    return await apiRequest(apiKey(`/suggestions/${id}/accept`), acceptSuggestionResponseSchema, {
-      method: "POST",
-      body: values,
-    });
+    return await aiRequest(
+      apiRequest(apiKey(`/suggestions/${id}/accept`), acceptSuggestionResponseSchema, {
+        method: "POST",
+        body: values,
+      }),
+    );
   } finally {
     // A conflict means someone else handled it, and a stale target has new data: both refetch.
     await revalidateSuggestions();
@@ -45,9 +47,11 @@ export async function acceptSuggestion(
 
 export async function rejectSuggestion(id: number): Promise<Suggestion> {
   try {
-    return await apiRequest(apiKey(`/suggestions/${id}/reject`), rejectSuggestionResponseSchema, {
-      method: "POST",
-    });
+    return await aiRequest(
+      apiRequest(apiKey(`/suggestions/${id}/reject`), rejectSuggestionResponseSchema, {
+        method: "POST",
+      }),
+    );
   } finally {
     await revalidateSuggestions();
   }
