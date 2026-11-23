@@ -2,7 +2,7 @@
 
 import { PRIORITIES, type Priority, type Suggestion } from "@postdog/shared";
 import { X } from "lucide-react";
-import { useId, useReducer, useState } from "react";
+import { useId, useReducer } from "react";
 import { PriorityIcon, TASK_PRIORITY_META, type TaskDetail } from "@/entities/task";
 import { Button } from "@/shared/ui/button";
 import {
@@ -157,8 +157,6 @@ export function SubtasksReview({
   task: Pick<TaskDetail, "identifier" | "updatedAt">;
 }) {
   const [draft, dispatch] = useReducer(draftReducer, suggestion.payload, initialDraft);
-  // The task as the user loaded it. Reload after a 409 stale moves it to the task as it is now.
-  const [baseUpdatedAt, setBaseUpdatedAt] = useState(task.updatedAt);
   const review = useReview(suggestion.id, task.identifier);
   const check = checkDraft(draft, suggestion.payload.rationale);
   const listError = draft.removeBlocked ? MIN_SUBTASKS_MESSAGE : !check.ok ? check.list : undefined;
@@ -167,7 +165,7 @@ export function SubtasksReview({
   const accept = () => {
     if (!check.ok) return;
     review.accept(
-      { payload: editedPayload(suggestion.payload, check.payload), baseUpdatedAt },
+      { payload: editedPayload(suggestion.payload, check.payload), baseUpdatedAt: task.updatedAt },
       `Added ${count} subtasks to ${task.identifier}`,
     );
   };
@@ -199,7 +197,6 @@ export function SubtasksReview({
         acceptLabel={`Add ${count} subtasks`}
         acceptDisabled={!check.ok}
         onAccept={accept}
-        onReload={() => setBaseUpdatedAt(task.updatedAt)}
         hint="Edit or remove any of them first. Nothing changes until you accept."
       />
     </div>

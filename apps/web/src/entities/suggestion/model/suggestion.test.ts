@@ -58,8 +58,9 @@ describe("affectedTaskIds", () => {
 describe("toReviewError", () => {
   it("explains a stale target with its identifier", () => {
     expect(toReviewError(new ApiError(409, "stale", "baseUpdatedAt differs"), "PD-12")).toEqual({
-      kind: "stale",
-      message: "PD-12 changed since this was suggested. Reload it, or run the Decomposer again.",
+      kind: "failed",
+      message:
+        "PD-12 changed while you were reviewing. Check that this still fits, then accept again.",
     });
   });
 

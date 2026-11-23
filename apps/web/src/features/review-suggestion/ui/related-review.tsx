@@ -2,7 +2,6 @@
 
 import type { Suggestion } from "@postdog/shared";
 import Link from "next/link";
-import { useState } from "react";
 import {
   StatusIcon,
   useTaskListParams,
@@ -49,9 +48,6 @@ export function RelatedReview({
   const target = group[taskIds.indexOf(suggestion.targetId)];
   const plan = relatedPlan(relation, loaded);
   const review = useReview(suggestion.id, target?.identifier ?? `Task #${suggestion.targetId}`);
-  // The target as the user first saw it. Reload after a 409 stale moves it to the target now.
-  const [baseUpdatedAt, setBaseUpdatedAt] = useState(target?.updatedAt);
-  if (baseUpdatedAt === undefined && target) setBaseUpdatedAt(target.updatedAt);
 
   return (
     <div className="flex flex-col gap-3">
@@ -92,11 +88,10 @@ export function RelatedReview({
       <ReviewActions
         review={review}
         acceptLabel={plan.accept}
-        acceptDisabled={baseUpdatedAt === undefined}
+        acceptDisabled={target === undefined}
         onAccept={() => {
-          if (baseUpdatedAt !== undefined) review.accept({ baseUpdatedAt }, plan.done);
+          if (target) review.accept({ baseUpdatedAt: target.updatedAt }, plan.done);
         }}
-        onReload={() => setBaseUpdatedAt(target?.updatedAt)}
         hint={plan.explanation}
       />
     </div>

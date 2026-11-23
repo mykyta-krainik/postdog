@@ -20,7 +20,7 @@ export function revalidateSuggestions() {
 export type AcceptValues = {
   /** The user's edited payload. Leave it out to apply the stored one. */
   payload?: SuggestionPayload;
-  /** The target task's updatedAt when the user loaded the suggestion. */
+  /** The target task's updatedAt as the UI shows it when the user accepts. */
   baseUpdatedAt: number;
 };
 
