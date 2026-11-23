@@ -1,10 +1,10 @@
 import { ApiError } from "@/shared/api";
 
 /**
- * Why an accept or reject failed, for the user. `stale`: the target task changed since the
- * suggestion loaded. `handled`: the suggestion is no longer pending. `failed`: anything else.
+ * Why an accept or reject failed, for the user. `handled`: the suggestion is no longer pending.
+ * `failed`: anything else, such as a target task that changed in another tab.
  */
-export type ReviewError = { kind: "stale" | "handled" | "failed"; message: string };
+export type ReviewError = { kind: "handled" | "failed"; message: string };
 
 /** `identifier` names the target task, such as "PD-12". */
 export function toReviewError(error: unknown, identifier: string): ReviewError {
@@ -12,8 +12,8 @@ export function toReviewError(error: unknown, identifier: string): ReviewError {
     switch (error.code) {
       case "stale":
         return {
-          kind: "stale",
-          message: `${identifier} changed since this was suggested. Reload it, or run the Decomposer again.`,
+          kind: "failed",
+          message: `${identifier} changed while you were reviewing. Check that this still fits, then accept again.`,
         };
       case "conflict":
         return { kind: "handled", message: "Someone already handled this suggestion." };

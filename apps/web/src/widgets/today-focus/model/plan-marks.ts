@@ -44,6 +44,14 @@ export function writePlanMarks(runId: number, marks: PlanMarks, storage = defaul
   }
 }
 
+/**
+ * The tasks that changed since the plan, less the ones its own Start buttons moved. The API counts
+ * every task updated after the plan and cannot tell a Start from other edits.
+ */
+export function unexplainedChanges(changedSince: number, marks: PlanMarks): number {
+  return changedSince - Math.min(marks.started.length, changedSince);
+}
+
 /** "3 tasks changed since this plan", or null when nothing changed. */
 export function changedSinceText(count: number): string | null {
   if (count <= 0) return null;

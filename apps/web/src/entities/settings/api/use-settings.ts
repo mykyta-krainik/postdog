@@ -2,9 +2,7 @@
 
 import { settingsSchema } from "@postdog/shared";
 import useSWR from "swr";
-import { apiKey, fetcherFor } from "@/shared/api";
-
-export const settingsKey = apiKey("/settings");
+import { fetcherFor, settingsKey } from "@/shared/api";
 
 const fetchSettings = fetcherFor(settingsSchema);
 

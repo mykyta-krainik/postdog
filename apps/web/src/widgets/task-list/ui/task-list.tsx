@@ -33,7 +33,7 @@ export function TaskList() {
       <ListMessage
         title="Tasks didn't load"
         action={
-          <Button variant="outline" size="sm" onClick={() => void mutate()}>
+          <Button variant="outline" size="sm" className="h-10 md:h-8" onClick={() => void mutate()}>
             Try again
           </Button>
         }

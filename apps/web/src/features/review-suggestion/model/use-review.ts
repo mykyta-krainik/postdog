@@ -21,7 +21,6 @@ export type Review = {
   /** `done` is the toast once it is applied, such as "Added 4 subtasks to PD-12". */
   accept: (values: AcceptValues, done: string) => void;
   reject: () => void;
-  dismissError: () => void;
 };
 
 /**
@@ -55,6 +54,5 @@ export function useReview(suggestionId: number, identifier: string): Review {
     saving,
     accept: (values, done) => send("accept", () => acceptSuggestion(suggestionId, values), done),
     reject: () => send("reject", () => rejectSuggestion(suggestionId), "Suggestion rejected"),
-    dismissError: () => setState({ status: "idle" }),
   };
 }

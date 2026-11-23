@@ -7,6 +7,7 @@ import { useSettings } from "@/entities/settings";
 import { UnreadCountBadge, useUnreadCount } from "@/entities/notification";
 import { routes } from "@/shared/config";
 import { Button } from "@/shared/ui/button";
+import { LoadError } from "@/shared/ui/load-error";
 import { LogoMark } from "@/shared/ui/wordmark";
 
 function InboxHeader({ unread }: { unread?: number }) {
@@ -22,7 +23,7 @@ const renderTrace = (runId: number) => <AgentTrace runId={runId} defaultOpen />;
 
 /** Every notification comes from an agent, so with AI off the Inbox explains why it is empty. */
 export function InboxView() {
-  const { settings, aiEnabled } = useSettings();
+  const { settings, aiEnabled, error, isLoading, mutate } = useSettings();
   const unread = useUnreadCount(aiEnabled);
 
   if (settings && !aiEnabled) {
@@ -49,12 +50,22 @@ export function InboxView() {
   return (
     <>
       <InboxHeader unread={unread} />
-      {settings && (
+      {settings ? (
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="w-full max-w-[760px]">
             <NotificationsInbox renderTrace={renderTrace} />
           </div>
         </div>
+      ) : (
+        error && (
+          <LoadError
+            title="The Inbox didn't load"
+            error={error}
+            retrying={isLoading}
+            onRetry={() => void mutate()}
+            className="m-4 max-w-[760px] md:m-5"
+          />
+        )
       )}
     </>
   );

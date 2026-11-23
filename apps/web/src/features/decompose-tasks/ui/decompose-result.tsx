@@ -71,7 +71,7 @@ export function DecomposeResult({
         <Link
           href={routes.inbox}
           onClick={onOpenTask}
-          className="-mt-1 flex min-h-10 items-center gap-1.5 self-start rounded-md text-[13px] text-brand underline-offset-2 outline-none hover:underline focus-visible:ring-1 focus-visible:ring-ring md:min-h-6"
+          className="-mt-1 flex min-h-10 items-center gap-1.5 self-start rounded-md text-[13px] text-brand-text underline-offset-2 outline-none hover:underline focus-visible:ring-1 focus-visible:ring-ring md:min-h-6"
         >
           <Inbox className="size-3.5" aria-hidden />
           Review in Inbox

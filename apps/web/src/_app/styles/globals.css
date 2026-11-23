@@ -28,6 +28,7 @@
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-brand-soft: var(--brand-soft);
+  --color-brand-text: var(--brand-text);
 
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
@@ -74,6 +75,8 @@
   --brand: #ec8b00;
   --brand-foreground: #201300;
   --brand-soft: #fff3e0;
+  /* --brand on a light background is under 3:1, so small brand text uses this. */
+  --brand-text: #a14a06;
 
   --sidebar: #f5f5f3;
   --sidebar-foreground: #3a3a3e;
@@ -111,6 +114,7 @@
   --brand: #f5a524;
   --brand-foreground: #1c1305;
   --brand-soft: #2b2112;
+  --brand-text: var(--brand);
 
   --sidebar: #121214;
   --sidebar-foreground: #b4b4bb;

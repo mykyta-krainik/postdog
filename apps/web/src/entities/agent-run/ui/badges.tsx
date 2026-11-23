@@ -29,7 +29,7 @@ export function MockAiBadgeView({
     <Badge
       variant="outline"
       title="Agents replay scripted answers. Set a provider key and LLM_MOCK=false to use a real model."
-      className={cn("border-brand/40 font-normal text-brand", className)}
+      className={cn("border-brand/40 font-normal text-brand-text", className)}
     >
       <FlaskConical aria-hidden />
       Mock AI

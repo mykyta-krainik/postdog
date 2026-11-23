@@ -4,6 +4,7 @@ import { agentRunSchema, type AgentRun, type StartRunResponse } from "@postdog/s
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { z } from "zod";
+import { aiRequest } from "@/shared/api";
 import { errorMessage } from "@/shared/lib/form-errors";
 import { isRunBusy, toRunView, type RunnerState, type RunView } from "../model/run-view";
 import { cancelRun } from "./mutations";
@@ -51,14 +52,14 @@ export function useAgentRunner<Schema extends RunSchema = typeof agentRunSchema>
     start: () => {
       if (isRunBusy(view)) return;
       setState({ kind: "starting" });
-      start().then(
+      aiRequest(start()).then(
         ({ runId: started }) => setState({ kind: "tracking", runId: started }),
         (startError: unknown) => setState({ kind: "start_failed", error: startError }),
       );
     },
     cancel: () => {
       if (runId === undefined) return;
-      cancelRun(runId).catch((cancelError: unknown) => {
+      aiRequest(cancelRun(runId)).catch((cancelError: unknown) => {
         toast.error("The run is still going", {
           description: errorMessage(cancelError, "Cancel didn't reach the API. Try again."),
         });
