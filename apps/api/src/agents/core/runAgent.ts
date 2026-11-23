@@ -2,7 +2,14 @@ import { AGENT_LIMITS } from "@postdog/shared";
 import { generateText, type ModelMessage, type ToolResultPart } from "ai";
 import { AgentError, ToolError } from "./errors";
 import type { Llm } from "./llm";
-import { describeIssues, toToolSet, type AgentTool, type TerminalCall } from "./tool";
+import {
+  describeIssues,
+  parseStringifiedFields,
+  structuredKeys,
+  toToolSet,
+  type AgentTool,
+  type TerminalCall,
+} from "./tool";
 import { toText, truncate, type TraceRecorder } from "./trace";
 import type { RunTracer } from "./tracer";
 
@@ -55,6 +62,7 @@ export async function runAgent<const T extends readonly AgentTool[]>(
   const wallClockMs = params.wallClockMs ?? AGENT_LIMITS.wallClockMs;
 
   const byName = new Map<string, AgentTool>(tools.map((t) => [t.name, t]));
+  const structured = new Map(tools.map((t) => [t.name, structuredKeys(t)]));
   const toolNames = tools.map((t) => t.name).join(", ");
   const terminalNames = tools
     .filter((t) => t.terminal)
@@ -151,7 +159,12 @@ export async function runAgent<const T extends readonly AgentTool[]>(
     };
 
     if (!tool) return invalid(`Unknown tool "${call.toolName}". Use one of: ${toolNames}.`);
-    const parsed = tool.input.safeParse(call.input);
+    if (typeof call.input === "string") {
+      return invalid("Your arguments were not valid JSON; send a JSON object.");
+    }
+    const parsed = tool.input.safeParse(
+      parseStringifiedFields(call.input, structured.get(tool.name)!),
+    );
     if (!parsed.success) {
       return invalid(
         `Invalid input for ${tool.name}: ${describeIssues(parsed.error)}. Fix the input and call ${tool.name} again.`,

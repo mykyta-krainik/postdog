@@ -1,15 +1,29 @@
+import { submitDailyPlanInputSchema, submitStatusUpdateInputSchema } from "@postdog/shared";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
+import type { z } from "zod";
 import { AgentError } from "../../src/agents/core/errors";
 import type { Llm } from "../../src/agents/core/llm";
 import { runAgent, type RunAgentParams } from "../../src/agents/core/runAgent";
-import type { AgentTool } from "../../src/agents/core/tool";
+import { defineTerminalTool, type AgentTool } from "../../src/agents/core/tool";
 import { createTraceRecorder } from "../../src/agents/core/trace";
 import { noopRunTracer } from "../../src/agents/core/tracer";
+import { proposeSubtasks, reportRelated } from "../../src/agents/decomposer/tools";
 import { createApp } from "../../src/app";
 import { addTask, createTestDb } from "../suggestionFixtures";
-import { anthropicLlm, anthropicMessage, toolUse, type WireRequest } from "./fakeProvider";
+import {
+  anthropicLlm,
+  anthropicMessage,
+  functionCall,
+  openaiLlm,
+  openaiResponse,
+  toolUse,
+  type WireRequest,
+} from "./fakeProvider";
 import { createTestTools, waitForRun } from "./helpers";
+
+const terminal = <S extends z.ZodType>(name: string, input: S) =>
+  defineTerminalTool({ name, description: `Submit ${name}.`, input });
 
 type LoopOptions = Partial<
   Pick<RunAgentParams<readonly AgentTool[]>, "tools" | "wallClockMs" | "maxOutputTokens">
@@ -148,5 +162,83 @@ describe("an answer cut off at the output limit", () => {
       .expect(202);
     expect((await waitForRun(api, res.body.runId as number)).status).toBe("completed");
     expect(requests.map((r) => r.max_tokens)).toEqual([8192]);
+  });
+});
+
+describe("a nested field sent as a JSON string", () => {
+  const plan = { focus: [{ taskId: 3, reason: "Stale for 8 days.", signals: ["stale"] }] };
+  const split = {
+    subtasks: [
+      { title: "Add the middleware", description: "Count per key." },
+      { title: "Answer 429", description: "" },
+    ],
+    rationale: "[WIP] middleware first, then the contract.",
+  };
+  const groups = { groups: [{ relation: "overlaps", taskIds: [9, 19], reason: "Same API." }] };
+  const update = {
+    tone: "neutral",
+    toneReason: "Work is moving.",
+    headline: "[Q3] CSV export is halfway",
+    done: [{ taskId: 19, text: "Endpoint shipped" }],
+    inProgress: [],
+    blockers: [{ taskId: 15, text: "Waiting on design", ask: "Ana to review" }],
+    next: ["Wire up the download"],
+  };
+  const stringified = (value: Record<string, unknown>, keys: string[]) =>
+    Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, keys.includes(k) ? JSON.stringify(v) : v]),
+    );
+
+  for (const [tool, input, keys] of [
+    [terminal("submit_daily_plan", submitDailyPlanInputSchema), plan, ["focus"]],
+    [proposeSubtasks, split, ["subtasks"]],
+    [reportRelated, groups, ["groups"]],
+    [
+      terminal("submit_status_update", submitStatusUpdateInputSchema),
+      update,
+      ["done", "inProgress", "blockers", "next"],
+    ],
+  ] as const) {
+    it(`parses ${tool.name}.${keys.join(", ")} back, and leaves real strings alone`, async () => {
+      const { llm } = anthropicLlm([
+        anthropicMessage([toolUse(tool.name, stringified(input, [...keys]))]),
+      ]);
+      const { output } = await loop(llm, { tools: [tool] }).result;
+      expect(output).toEqual(tool.input.parse(input));
+    });
+  }
+
+  it("leaves a string that is not JSON to the schema's error", async () => {
+    const { llm, requests } = anthropicLlm([
+      anthropicMessage([toolUse("propose_subtasks", { ...split, subtasks: "[oops" })]),
+      anthropicMessage([toolUse("propose_subtasks", split)]),
+    ]);
+    await expect(loop(llm, { tools: [proposeSubtasks] }).result).resolves.toMatchObject({
+      steps: 2,
+    });
+    expect(lastToolResults(requests)[0]!.content).toMatch(
+      /^Invalid input for propose_subtasks: subtasks: Invalid input: expected array, received string/,
+    );
+  });
+});
+
+describe("tool arguments that are not valid JSON (OpenAI)", () => {
+  it("tells the model to send a JSON object, and lets it correct the call", async () => {
+    const broken = functionCall("lookup", '{"id":');
+    const { llm, requests } = openaiLlm([
+      openaiResponse([broken]),
+      openaiResponse([functionCall("finish", '{"answer":"item 1"}')]),
+    ]);
+
+    await expect(loop(llm).result).resolves.toMatchObject({ toolName: "finish", steps: 2 });
+    const outputs = (requests[1]!.input as { type: string; call_id?: string; output?: string }[])
+      .filter((item) => item.type === "function_call_output")
+      .map((item) => [item.call_id, item.output]);
+    expect(outputs).toEqual([
+      [
+        broken.call_id,
+        JSON.stringify({ error: "Your arguments were not valid JSON; send a JSON object." }),
+      ],
+    ]);
   });
 });
