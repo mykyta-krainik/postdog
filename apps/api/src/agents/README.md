@@ -130,7 +130,7 @@ A script gets the conversation so far: `system`, `userMessage`, `turn` (1-based)
 3. When `run` resolves, the row gets `output`, `trace`, `usage`, `finishedAt` and status `completed`. When it throws, it gets `error: { code, message }` and status `failed`, or `cancelled` for `cancelled` and `ai_disabled`. An error that is not an `AgentError` is stored as `internal_error`.
 4. Cancel and the kill switch write `cancelled` at once and abort the run. Only a row that is still `running` can be finished, so whichever outcome lands first wins.
 5. When the run finishes or is cancelled, the run service releases every claim the run holds.
-6. On API start, every row still `running` becomes `failed` with `interrupted`, the claims of every run that is no longer running are deleted, and `aiState` is recomputed for every task.
+6. Once the server holds its port (not at migrate or seed time, so a second process that fails to bind never touches them), every row still `running` becomes `failed` with `interrupted`, the claims of every run that is no longer running are deleted, and `aiState` is recomputed for every task.
 
 ## Suggestions and claims
 
@@ -199,7 +199,7 @@ Auto mode records what it creates in `agent_changesets`, and the Inbox reads `no
 | `markNotificationRead(ex, id, now)`                      | Sets `readAt` once. A second call keeps the first time and returns the same notification. Returns `undefined` when the notification does not exist.    |
 
 - A subtask op's `taskId` is its parent. A link op's `taskId` is the lowest task id of the related group, which is also the `targetId` of the group's suggestion. Rolling back one task's part acts on the ops with that `taskId`, and `markSuggestionsRolledBack` with `targetIds: [taskId]` reaches the same task's suggestions.
-- `services/rollbackRules.ts` decides which created items a rollback may delete. `subtaskKeptReason(task, childCount, noteCount)` returns `null` for an untouched subtask: it exists, its status is `todo` and `statusChangedAt` is `createdAt`, `updatedAt` is `createdAt`, and it has no subtasks and no notes. Otherwise it returns the first reason that applies: `not_found`, `status_changed`, `edited`, `has_children` or `has_notes`. `linkKeptReason(link)` returns `not_found` when the link is gone, and `null` otherwise. `isUntouchedSubtask` and `isUntouchedLink` are the same checks as booleans.
+- `services/rollbackRules.ts` decides which created items a rollback may delete. `subtaskKeptReason(task, childCount, noteCount, foreignLinkCount)` returns `null` for an untouched subtask: it exists, its status is `todo` and `statusChangedAt` is `createdAt`, `updatedAt` is `createdAt`, and it has no subtasks, no notes and no links the run did not make. Otherwise it returns the first reason that applies: `not_found`, `status_changed`, `edited`, `has_children`, `has_notes` or `has_links`. `linkKeptReason(link)` returns `not_found` when the link is gone, and `null` otherwise. `isUntouchedSubtask` and `isUntouchedLink` are the same checks as booleans.
 - Adding a note does not change `updatedAt`, so `has_notes` is what keeps a subtask whose only change is a note. Deleting it would delete the note.
 - Summaries are built when they are read, so a notification shows the changeset as it is now, after any rollback.
 - Boot reconciles nothing for these tables. A changeset written before a crash still describes rows that exist, so a rollback still works on it.

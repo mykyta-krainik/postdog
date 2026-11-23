@@ -44,7 +44,13 @@ export function setup(options: { seed?: boolean; related?: Step[]; task?: TaskHa
     decomposer: createDecomposerAgent(loops),
     decomposer_clarify: createDecomposerClarifyAgent(loops),
   };
-  return { db, api: jsonClient(createApp(db, { agents })), relatedSeen: related?.seen ?? [] };
+  return {
+    db,
+    api: jsonClient(createApp(db, { agents })),
+    /** A second API process on the same database: it has its own run slots, so it can overlap. */
+    otherProcess: () => jsonClient(createApp(db, { agents })),
+    relatedSeen: related?.seen ?? [],
+  };
 }
 
 export async function startRun(api: Api, path: string, body: object): Promise<DecomposerRun> {

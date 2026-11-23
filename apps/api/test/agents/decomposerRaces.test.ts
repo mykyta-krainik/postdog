@@ -51,7 +51,7 @@ describe("two Decomposer runs that both select a task", () => {
     it(`${mode}: the run that claims it second leaves it alone, without a model call`, async () => {
       const related = gate();
       const model = wordedPerCall();
-      const { db, api } = setup({
+      const { db, api, otherProcess } = setup({
         related: [
           async () => {
             await related.opened;
@@ -68,7 +68,7 @@ describe("two Decomposer runs that both select a task", () => {
         .post("/api/agents/decomposer/run")
         .send({ taskIds: [x.id, y.id] })
         .expect(202);
-      const first = await runDecomposer(api, { taskIds: [x.id] });
+      const first = await runDecomposer(otherProcess(), { taskIds: [x.id] });
       expect(outputOf(first).tasks[0]!.outcome).toBe(
         mode === "auto" ? "applied_subtasks" : "suggested_subtasks",
       );
