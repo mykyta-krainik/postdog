@@ -21,7 +21,8 @@ import { logger } from "../../lib/logger";
 import { findChangesetByRun } from "../../repositories/changesets";
 import { releaseTaskClaim, renewClaims, tryClaim } from "../../repositories/claims";
 import { findSuggestion, resolveSuggestion } from "../../repositories/suggestions";
-import { findTask } from "../../repositories/tasks";
+import { findTask, listSubtaskIds } from "../../repositories/tasks";
+import { plural } from "../../lib/text";
 import { defineAgent, type AgentContext } from "../core/definition";
 import { AgentError } from "../core/errors";
 import { registerMockScript } from "../core/llm";
@@ -496,6 +497,14 @@ function prepareClarify(db: Db, input: ClarifyInput): ClarifyInput {
   }
   if (suggestion.status !== "pending") {
     throw conflict(`Suggestion ${suggestion.id} is ${suggestion.status}, not pending`);
+  }
+  const task = findTask(db, suggestion.targetId);
+  if (task) {
+    if (task.status === "done") throw conflict(`${task.identifier} is done`);
+    const subtasks = listSubtaskIds(db, task.id).length;
+    if (subtasks > 0) {
+      throw conflict(`${task.identifier} already has ${plural(subtasks, "subtask")}`);
+    }
   }
   return input;
 }

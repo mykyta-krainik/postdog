@@ -1,11 +1,15 @@
-import { decomposerRunSchema, type DecompositionMode } from "@postdog/shared";
+import { apiErrorBodySchema, decomposerRunSchema, type DecompositionMode } from "@postdog/shared";
 import { describe, expect, it } from "vitest";
 import type { MockTurn } from "../../src/agents/core/llm";
 import type { Db } from "../../src/db/client";
-import { insertSuggestion, listSuggestions } from "../../src/repositories/suggestions";
-import { listAllTasks } from "../../src/repositories/tasks";
+import {
+  findSuggestion,
+  insertSuggestion,
+  listSuggestions,
+} from "../../src/repositories/suggestions";
+import { listAllTasks, updateTask } from "../../src/repositories/tasks";
 import type { Api } from "../helpers";
-import { addRun, addTask, subtasksFor } from "../suggestionFixtures";
+import { addRun, addTask, aiStateOf, clarificationFor, subtasksFor } from "../suggestionFixtures";
 import { noGroups, outputOf, propose, runDecomposer, setup } from "./decomposerSetup";
 import { waitForRun } from "./helpers";
 
@@ -147,4 +151,87 @@ describe("stage 3 reads the task again before it writes", () => {
       expect(subtaskSuggestions(db, x.id).map((s) => s.runId)).toEqual([other]);
     });
   }
+});
+
+describe("a clarify rerun on a task that moved on", () => {
+  const answers = [{ question: "Which users does this cover?", answer: "Admins only" }];
+
+  function pendingClarification(db: Db) {
+    const task = addTask(db, { title: "Improve performance" });
+    const suggestion = insertSuggestion(db, clarificationFor(addRun(db), task.id, Date.now()));
+    return { task, suggestion };
+  }
+
+  async function refusal(api: Api, suggestionId: number) {
+    const res = await api
+      .post("/api/agents/decomposer/clarify")
+      .send({ suggestionId, answers })
+      .expect(409);
+    return apiErrorBodySchema.parse(res.body).error;
+  }
+
+  it("answers 409 when the task is done or already has subtasks, and starts no run", async () => {
+    const { db, api } = setup();
+    await setMode(api, "auto");
+    const done = pendingClarification(db);
+    updateTask(db, done.task.id, { status: "done" });
+    const split = pendingClarification(db);
+    await api.post("/api/tasks").send({ title: "By hand", parentId: split.task.id }).expect(201);
+
+    expect(await refusal(api, done.suggestion.id)).toEqual({
+      code: "conflict",
+      message: `${done.task.identifier} is done`,
+    });
+    expect(await refusal(api, split.suggestion.id)).toEqual({
+      code: "conflict",
+      message: `${split.task.identifier} already has 1 subtask`,
+    });
+    expect(subtaskTitles(db, done.task.id)).toEqual([]);
+    expect(subtaskTitles(db, split.task.id)).toEqual(["By hand"]);
+    const runs = await api.get("/api/agents/runs").expect(200);
+    expect(runs.body.items.map((r: { id: number }) => r.id).sort()).toEqual(
+      [done.suggestion.runId, split.suggestion.runId].sort(),
+    );
+  });
+
+  it("marking the task done supersedes its pending question and split", async () => {
+    const { db, api } = setup();
+    const { task, suggestion } = pendingClarification(db);
+    const split = insertSuggestion(db, subtasksFor(addRun(db), task.id, Date.now()));
+
+    await api.patch(`/api/tasks/${task.id}`).send({ status: "done" }).expect(200);
+    expect(findSuggestion(db, suggestion.id)?.status).toBe("superseded");
+    expect(findSuggestion(db, split.id)?.status).toBe("superseded");
+    expect(aiStateOf(db, task.id)).toBe("none");
+    expect(await refusal(api, suggestion.id)).toMatchObject({ code: "conflict" });
+  });
+
+  it("auto: a subtask the user adds during the rerun wins, and the question stays open", async () => {
+    const loop = gate();
+    const { db, api } = setup({
+      task: async (): Promise<MockTurn> => {
+        await loop.opened;
+        return propose("Profile the projects page", "Cache the project list");
+      },
+    });
+    await setMode(api, "auto");
+    const { task, suggestion } = pendingClarification(db);
+
+    const res = await api
+      .post("/api/agents/decomposer/clarify")
+      .send({ suggestionId: suggestion.id, answers })
+      .expect(202);
+    await api.post("/api/tasks").send({ title: "By hand", parentId: task.id }).expect(201);
+    loop.open();
+    const run = decomposerRunSchema.parse(await waitForRun(api, res.body.runId as number));
+
+    expect(outputOf(run).tasks).toEqual([
+      expect.objectContaining({
+        outcome: "superseded",
+        detail: `${task.identifier} got 1 subtask while the Decomposer worked`,
+      }),
+    ]);
+    expect(subtaskTitles(db, task.id)).toEqual(["By hand"]);
+    expect(findSuggestion(db, suggestion.id)?.status).toBe("pending");
+  });
 });

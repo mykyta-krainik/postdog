@@ -18,7 +18,7 @@ The Decomposer splits a batch of tasks into subtasks (spec 8.2). In suggest mode
 Both answer `202 { runId }`, behind `aiEnabledGuard`. The run's `input` is the request body, its `output` is `decomposerOutputSchema`, and `agent` is `decomposer` for both.
 
 - `POST /api/agents/decomposer/run` with `{ taskIds? }`. A task id that does not exist answers 400.
-- `POST /api/agents/decomposer/clarify` with `{ suggestionId, answers }` or `{ suggestionId, generateAnyway: true }`. A missing suggestion answers 404, one that is not a clarification 400, and one that is no longer pending 409.
+- `POST /api/agents/decomposer/clarify` with `{ suggestionId, answers }` or `{ suggestionId, generateAnyway: true }`. A missing suggestion answers 404, one that is not a clarification 400, and one that is no longer pending 409. A task that is done or already has subtasks answers 409 `conflict` too, and no run starts.
 
 ## Stages
 
@@ -57,7 +57,7 @@ Stage 3 calls `writeConflict` in the transaction that would write, before the `A
 
 ## Clarify
 
-`/decomposer/clarify` re-runs stage 2 for the clarification's task with the earlier questions, what was unclear, and either the user's answers (in `<answer>` tags) or the Generate anyway instruction added to the first message. With `generateAnyway`, `ask_clarification` is not offered at all, so a call to it gets the usual unknown-tool error. The task is claimed like in a batch run, and there is no eligibility check, because the task has a pending clarification by definition.
+`/decomposer/clarify` re-runs stage 2 for the clarification's task with the earlier questions, what was unclear, and either the user's answers (in `<answer>` tags) or the Generate anyway instruction added to the first message. With `generateAnyway`, `ask_clarification` is not offered at all, so a call to it gets the usual unknown-tool error. The task is claimed like in a batch run. Stage 0's `exclusion` does not apply, because the user asked for the rerun and the task has a pending clarification by definition, but `writeConflict` does, both after the claim and before the write, with the answered clarification left out. Moving a task to done supersedes its pending `subtasks` and `clarification` suggestions (`services/tasks.ts`), so a question about finished work does not linger.
 
 The rerun applies its result in the mode Settings have when the rerun starts. In auto mode, a subtasks result is created right away and recorded in the rerun's own changeset, and the rerun writes its own notifications. The old clarification is marked `superseded` in the same transaction that saves the new result, and only when the result is settled: a new subtasks or clarification suggestion, created subtasks, or a skip. When the rerun fails, loses the claim to another run, or finds the task edited, the clarification stays pending, so the user does not lose the question and can answer again.
 
