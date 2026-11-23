@@ -1,10 +1,16 @@
 import { apiErrorBodySchema, validationErrorDetailsSchema } from "@postdog/shared";
-import { beforeEach, describe, expect, it } from "vitest";
-import { createTask, createTestApi, type Api } from "./helpers";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createApp } from "../src/app";
+import { logger } from "../src/lib/logger";
+import { createTask, createTestApi, jsonClient, type Api } from "./helpers";
+import { createTestDb } from "./suggestionFixtures";
 
 let api: Api;
 beforeEach(() => {
   api = createTestApi();
+});
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 function validationIssues(body: unknown) {
@@ -67,6 +73,20 @@ describe("error responses", () => {
       .post(`/api/tasks/${task.id}/subtasks`)
       .send({ subtasks, baseUpdatedAt: task.updatedAt })
       .expect(201);
+  });
+
+  it("hides what went wrong on the server behind a bare 500", async () => {
+    vi.spyOn(logger, "error").mockImplementation(() => {});
+    const db = createTestDb();
+    const broken = jsonClient(createApp(db));
+    db.$client.close();
+
+    const res = await broken.get("/api/tasks").expect(500);
+    expect(res.body).toEqual({
+      error: { code: "internal_error", message: "Internal server error" },
+    });
+    expect(res.text).not.toMatch(/database|stack|\.ts:\d+/i);
+    expect(logger.error).toHaveBeenCalledOnce();
   });
 
   it("answers an unknown route with 404 not_found", async () => {

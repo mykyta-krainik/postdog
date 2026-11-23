@@ -266,7 +266,10 @@ describe("AI kill switch", () => {
       .expect(201);
     await app.patch(`/api/tasks/${parent.id}`).send({ status: "in_progress" }).expect(200);
     await app.post(`/api/tasks/${parent.id}/notes`).send({ body: "Started" }).expect(201);
-    await app.post(`/api/tasks/${parent.id}/links`).send({ toTaskId: other.id, type: "blocks" });
+    await app
+      .post(`/api/tasks/${parent.id}/links`)
+      .send({ toTaskId: other.id, type: "blocks" })
+      .expect(201);
     const list = await app.get("/api/tasks?sort=priority").expect(200);
     expect(list.body.items.map((t: { id: number }) => t.id)).toEqual([parent.id, other.id]);
     await app.delete(`/api/tasks/${other.id}`).expect(204);
