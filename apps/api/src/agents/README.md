@@ -49,7 +49,7 @@ Usage is not returned by `run`. The run service sums the tokens of every `llm` s
 `runAgent({ name, system, userMessage, tools, maxSteps?, maxOutputTokens?, wallClockMs?, onStep?, signal, trace, llm, tracer })` calls the model one step at a time.
 
 - `name` names the loop. The mock model looks its script up by this name, and Langfuse names each generation after it. An agent with several loops can use names such as `decomposer:related`.
-- A tool call with invalid input or an unknown tool name gets an error tool result that tells the model what to fix, and the loop goes on. Two invalid calls in a row fail the run with `validation_failed`.
+- A tool call with invalid input or an unknown tool name gets an error tool result that tells the model what to fix, and the loop goes on. The count is per step, because real models send several calls in one step: two steps in a row in which every call is invalid fail the run with `validation_failed` (`AGENT_LIMITS.maxConsecutiveValidationErrors`), and a step with one valid call starts the count again.
 - A read tool runs, and its return value goes back as a JSON tool result. A `ToolError` it throws goes back as an error tool result. Any other error it throws fails the run with `internal_error`.
 - Calling the same read tool with the same input twice in a row returns the first result again, with a note that the model already has it.
 - The first valid terminal tool call ends the loop. `runAgent` resolves to `{ toolName, output, steps }`, where `output` is the terminal tool's parsed input. With several terminal tools, `toolName` narrows `output`.

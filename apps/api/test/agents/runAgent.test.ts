@@ -155,6 +155,20 @@ describe("runAgent", () => {
     expect(trace.steps().filter((s) => s.type === "validation")).toHaveLength(2);
   });
 
+  it("counts a step whose parallel calls are all invalid once", async () => {
+    const { name, seen } = script([
+      {
+        toolCalls: [
+          { toolName: "lookup", input: { id: "one" } },
+          { toolName: "nope", input: {} },
+        ],
+      },
+      call("finish", { answer: "fixed" }),
+    ]);
+    await expect(loop(name).result).resolves.toMatchObject({ output: { answer: "fixed" } });
+    expect(seen[1]!.lastResults.map((r) => r.isError)).toEqual([true, true]);
+  });
+
   it("returns the cached result with a note when a call repeats its input", async () => {
     const { name, seen } = script([
       call("lookup", { id: 7 }),

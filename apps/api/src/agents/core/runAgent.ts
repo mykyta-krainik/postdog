@@ -66,7 +66,7 @@ export async function runAgent<const T extends readonly AgentTool[]>(
   const messages: ModelMessage[] = [{ role: "user", content: userMessage }];
 
   let nudged = false;
-  let invalidStreak = 0;
+  let invalidSteps = 0;
   let previous: { key: string; output: ToolOutput } | undefined;
 
   const stopped = (): AgentError => {
@@ -220,6 +220,7 @@ export async function runAgent<const T extends readonly AgentTool[]>(
 
     const results: ToolResultPart[] = [];
     let lastInvalid = "";
+    let anyValid = false;
     for (const call of calls) {
       if (loopSignal.aborted) throw stopped();
       const outcome = await runTool(call);
@@ -230,12 +231,8 @@ export async function runAgent<const T extends readonly AgentTool[]>(
           steps: step,
         } as AgentResult<T>;
       }
-      if (outcome.kind === "invalid") {
-        invalidStreak += 1;
-        lastInvalid = outcome.message;
-      } else {
-        invalidStreak = 0;
-      }
+      if (outcome.kind === "invalid") lastInvalid = outcome.message;
+      else anyValid = true;
       results.push({
         type: "tool-result",
         toolCallId: call.toolCallId,
@@ -246,10 +243,11 @@ export async function runAgent<const T extends readonly AgentTool[]>(
             : outcome.output,
       });
     }
-    if (invalidStreak >= AGENT_LIMITS.maxConsecutiveValidationErrors) {
+    invalidSteps = anyValid ? 0 : invalidSteps + 1;
+    if (invalidSteps >= AGENT_LIMITS.maxConsecutiveValidationErrors) {
       throw new AgentError(
         "validation_failed",
-        `The model sent invalid tool calls ${invalidStreak} times in a row. Last error: ${truncate(lastInvalid, 300)}`,
+        `The model sent only invalid tool calls in ${invalidSteps} steps in a row. Last error: ${truncate(lastInvalid, 300)}`,
       );
     }
     messages.push(
