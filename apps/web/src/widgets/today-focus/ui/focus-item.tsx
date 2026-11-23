@@ -34,12 +34,12 @@ export function FocusItem({
     <li className="flex gap-3 border-b border-border/60 py-3 pr-2 pl-4 md:gap-4 md:pr-3 md:pl-5">
       <span
         aria-hidden
-        className="w-4 shrink-0 pt-0.5 text-right text-[15px] leading-6 font-semibold text-brand tabular-nums"
+        className="w-4 shrink-0 pt-0.5 text-right text-[15px] leading-6 font-semibold text-brand-text tabular-nums"
       >
         {rank}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <div className="flex h-6 min-w-0 items-center gap-2">
+        <div className="flex h-10 min-w-0 items-center gap-2 md:h-6">
           {task ? (
             <>
               <PriorityIcon priority={task.priority} />
@@ -50,7 +50,7 @@ export function FocusItem({
           )}
           <Link
             href={routes.task(item.taskId)}
-            className="flex min-w-0 items-center gap-2 rounded-sm text-[13px] outline-none hover:underline focus-visible:ring-1 focus-visible:ring-ring"
+            className="flex min-w-0 items-center gap-2 self-stretch rounded-sm text-[13px] outline-none hover:underline focus-visible:ring-1 focus-visible:ring-ring"
           >
             <span className="shrink-0 text-muted-foreground tabular-nums">{item.identifier}</span>
             <span className="min-w-0 truncate font-medium text-foreground">

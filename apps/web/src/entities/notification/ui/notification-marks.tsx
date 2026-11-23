@@ -66,7 +66,7 @@ export function UnreadCountBadge({
 }
 
 const TONE_CLASS: Record<ChangesetStateTone, string> = {
-  brand: "border-brand/30 bg-brand-soft text-brand",
+  brand: "border-brand/30 bg-brand-soft text-brand-text",
   muted: "border-border bg-muted text-muted-foreground",
   done: "border-status-done/30 bg-status-done/10 text-status-done",
 };
