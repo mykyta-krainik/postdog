@@ -1,3 +1,4 @@
+import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { AgentError } from "../../src/agents/core/errors";
 import type { Llm } from "../../src/agents/core/llm";
@@ -5,13 +6,16 @@ import { runAgent, type RunAgentParams } from "../../src/agents/core/runAgent";
 import type { AgentTool } from "../../src/agents/core/tool";
 import { createTraceRecorder } from "../../src/agents/core/trace";
 import { noopRunTracer } from "../../src/agents/core/tracer";
+import { createApp } from "../../src/app";
+import { addTask, createTestDb } from "../suggestionFixtures";
 import { anthropicLlm, anthropicMessage, toolUse, type WireRequest } from "./fakeProvider";
-import { createTestTools } from "./helpers";
+import { createTestTools, waitForRun } from "./helpers";
 
-function loop(
-  llm: Llm,
-  extra: Partial<Pick<RunAgentParams<readonly AgentTool[]>, "tools" | "wallClockMs">> = {},
-) {
+type LoopOptions = Partial<
+  Pick<RunAgentParams<readonly AgentTool[]>, "tools" | "wallClockMs" | "maxOutputTokens">
+>;
+
+function loop(llm: Llm, extra: LoopOptions = {}) {
   const trace = createTraceRecorder();
   const result = runAgent({
     signal: new AbortController().signal,
@@ -23,6 +27,7 @@ function loop(
     userMessage: "Find item 1.",
     tools: extra.tools ?? createTestTools().tools,
     wallClockMs: extra.wallClockMs,
+    maxOutputTokens: extra.maxOutputTokens,
   });
   return { result, trace };
 }
@@ -96,5 +101,52 @@ describe("runAgent on the Anthropic wire format", () => {
     ]);
 
     await expect(loop(llm).result).resolves.toMatchObject({ steps: 4 });
+  });
+});
+
+describe("an answer cut off at the output limit", () => {
+  it("sends the loop's cap, 4,096 tokens by default", async () => {
+    const finish = anthropicMessage([toolUse("finish", { answer: "item 1" })]);
+    const byDefault = anthropicLlm([finish]);
+    await loop(byDefault.llm).result;
+    const raised = anthropicLlm([finish]);
+    await loop(raised.llm, { maxOutputTokens: 8192 }).result;
+    expect([byDefault.requests[0]!.max_tokens, raised.requests[0]!.max_tokens]).toEqual([
+      4096, 8192,
+    ]);
+  });
+
+  for (const [what, content] of [
+    ["in text", [{ type: "text", text: "Here is a very long plan" }]],
+    ["inside a tool call", [toolUse("finish", {})]],
+  ] as const) {
+    it(`fails at once with llm_error and says so, when it is cut ${what}`, async () => {
+      const { llm, requests } = anthropicLlm([anthropicMessage([...content], "max_tokens", 4096)]);
+
+      const err = await failure(loop(llm).result);
+      expect(err.code).toBe("llm_error");
+      expect(err.message).toBe(
+        "The model's answer was cut off at 4096 tokens, the output limit of one step.",
+      );
+      expect(requests).toHaveLength(1);
+    });
+  }
+
+  it("gives the Decomposer's task loop 8,192 tokens, room for 8 subtasks", async () => {
+    const db = createTestDb();
+    const task = addTask(db, { title: "Add SSO" });
+    const { llm, requests } = anthropicLlm([
+      anthropicMessage([
+        toolUse("skip", { reason: "already_atomic", explanation: "One config change." }),
+      ]),
+    ]);
+    const api = request(createApp(db, { llm }));
+
+    const res = await api
+      .post("/api/agents/decomposer/run")
+      .send({ taskIds: [task.id] })
+      .expect(202);
+    expect((await waitForRun(api, res.body.runId as number)).status).toBe("completed");
+    expect(requests.map((r) => r.max_tokens)).toEqual([8192]);
   });
 });

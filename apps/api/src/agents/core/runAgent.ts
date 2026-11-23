@@ -6,7 +6,7 @@ import { describeIssues, toToolSet, type AgentTool, type TerminalCall } from "./
 import { toText, truncate, type TraceRecorder } from "./trace";
 import type { RunTracer } from "./tracer";
 
-export const DEFAULT_MAX_OUTPUT_TOKENS = 2048;
+export const DEFAULT_MAX_OUTPUT_TOKENS = 4096;
 
 export interface LoopDeps {
   signal: AbortSignal;
@@ -125,6 +125,12 @@ export async function runAgent<const T extends readonly AgentTool[]>(
       durationMs: performance.now() - started,
       tokens,
     });
+    if (result.finishReason === "length") {
+      throw new AgentError(
+        "llm_error",
+        `The model's answer was cut off at ${maxOutputTokens} tokens, the output limit of one step.`,
+      );
+    }
     const assistant = result.response.messages.find((m) => m.role === "assistant");
     return { calls, assistant };
   };

@@ -56,6 +56,8 @@ import {
 import { checkProposal, checkRelatedGroups, type Decision, type Dropped } from "./validate";
 
 export const DECOMPOSER_LOOPS = { related: "decomposer:related", task: "decomposer:task" };
+
+const TASK_LOOP_MAX_OUTPUT_TOKENS = 8192;
 export type DecomposerLoops = typeof DECOMPOSER_LOOPS;
 
 registerMockScript(DECOMPOSER_LOOPS.related, relatedMockScript);
@@ -273,6 +275,7 @@ function runTaskLoop(ctx: AgentContext, loop: string, job: TaskJob, trace: Trace
     system: DECOMPOSER_PROMPT_V1.task,
     userMessage: taskUserMessage(job.task, job.related, job.clarify),
     tools: [...decomposerReadTools(ctx.db), ...terminal],
+    maxOutputTokens: TASK_LOOP_MAX_OUTPUT_TOKENS,
     onStep: () => renewClaims(ctx.db, ctx.runId, Date.now()),
   });
 }

@@ -55,7 +55,7 @@ Usage is not returned by `run`. The run service sums the tokens of every `llm` s
 - The first valid terminal tool call ends the loop. `runAgent` resolves to `{ toolName, output, steps }`, where `output` is the terminal tool's parsed input. With several terminal tools, `toolName` narrows `output`.
 - `onStep(step)`, optional, runs after every model call, before that step's tools run. The Decomposer renews its claims there.
 - A reply with no tool call gets one nudge ("Finish by calling one of: ..."). A second one fails with `no_terminal_tool`.
-- Limits fail with their code: `step_limit` after `maxSteps` model calls (default `AGENT_LIMITS.maxSteps`), `timeout` after `wallClockMs` per loop (default 60 s), `llm_error` when the model call throws. `maxOutputTokens` defaults to 2,048 per call.
+- Limits fail with their code: `step_limit` after `maxSteps` model calls (default `AGENT_LIMITS.maxSteps`), `timeout` after `wallClockMs` per loop (default 60 s), `llm_error` when the model call throws. `maxOutputTokens` defaults to 4,096 per call. An answer the provider cut off at that limit (`finishReason: "length"`, Anthropic's `max_tokens`) fails the loop at once with `llm_error`, "The model's answer was cut off at 4096 tokens, the output limit of one step.", because the cut tool call or text cannot be trusted. Before this check, it surfaced as a misleading `no_terminal_tool` or `validation_failed`.
 - An abort ends the loop with the abort reason when it is an `AgentError`, otherwise with `cancelled`. The user's cancel aborts with `cancelled` and the kill switch with `ai_disabled`.
 
 Every failure is an `AgentError`. The trace so far stays in `ctx.trace` and is saved on the run.

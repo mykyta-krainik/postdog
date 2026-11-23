@@ -8,7 +8,7 @@ import {
 /** subtasksPayloadSchema's bounds. The schema stays the check; these word the messages. */
 export const MIN_SUBTASKS = 2;
 export const TITLE_MAX = 200;
-export const DESCRIPTION_MAX = 10_000;
+export const DESCRIPTION_MAX = 1500;
 
 export const MIN_SUBTASKS_MESSAGE = `A split needs at least ${MIN_SUBTASKS} subtasks. Reject the suggestion instead.`;
 

@@ -131,7 +131,10 @@ function plannedSubtasks(task: TaskFacts): ProposeSubtasksInput["subtasks"] {
   return [
     {
       title: title(`Plan: ${task.title}`),
-      description: `Write down the approach and what is out of scope.${context ? `\n\nContext: ${context}` : ""}`,
+      description: truncate(
+        `Write down the approach and what is out of scope.${context ? `\n\nContext: ${context}` : ""}`,
+        1500,
+      ),
     },
     {
       title: title(`Build: ${task.title}`),

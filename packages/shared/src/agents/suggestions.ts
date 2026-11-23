@@ -15,7 +15,7 @@ export const subtaskProposalSchema = z.object({
     .describe('A short imperative title, such as "Add the rate limit middleware".'),
   description: z
     .string()
-    .max(10_000)
+    .max(1500)
     .default("")
     .describe("What done looks like for this subtask, in markdown. May be empty."),
   priority: prioritySchema.optional().describe("low, medium or high. Leave it out for medium."),
