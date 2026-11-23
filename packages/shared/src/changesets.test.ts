@@ -142,6 +142,11 @@ describe("rollbackResponseSchema", () => {
     expect(rollbackResponseSchema.parse(response)).toEqual(response);
   });
 
+  it("accepts a subtask kept for its links", () => {
+    const linked = { ...response, kept: [{ ...response.kept[0], reason: "has_links" }] };
+    expect(rollbackResponseSchema.safeParse(linked).success).toBe(true);
+  });
+
   it("rejects an unknown kept reason", () => {
     const bad = { ...response, kept: [{ ...response.kept[0], reason: "locked" }] };
     expect(rollbackResponseSchema.safeParse(bad).success).toBe(false);

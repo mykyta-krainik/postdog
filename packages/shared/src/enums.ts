@@ -91,6 +91,7 @@ export const ROLLBACK_KEPT_REASONS = [
   "edited",
   "has_children",
   "has_notes",
+  "has_links",
   "status_changed",
   "not_found",
 ] as const;

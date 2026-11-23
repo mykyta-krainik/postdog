@@ -1,5 +1,5 @@
-import type { LinkType, TaskDetailLink } from "@postdog/shared";
-import { and, eq } from "drizzle-orm";
+import type { LinkCreatedBy, LinkType, TaskDetailLink } from "@postdog/shared";
+import { and, count, eq, ne, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import type { Executor } from "../db/client";
 import { taskLinks, tasks, type TaskLinkRow } from "../db/schema";
@@ -61,6 +61,25 @@ export function listLinksOfType(ex: Executor, type: LinkType): TaskLinkRow[] {
 
 export function insertLink(ex: Executor, row: Omit<TaskLinkRow, "id">): TaskLinkRow {
   return ex.insert(taskLinks).values(row).returning().get();
+}
+
+/** Links to or from the task that `createdBy` did not make. */
+export function countLinksNotCreatedBy(
+  ex: Executor,
+  taskId: number,
+  createdBy: LinkCreatedBy,
+): number {
+  const row = ex
+    .select({ n: count() })
+    .from(taskLinks)
+    .where(
+      and(
+        or(eq(taskLinks.fromTaskId, taskId), eq(taskLinks.toTaskId, taskId)),
+        ne(taskLinks.createdBy, createdBy),
+      ),
+    )
+    .get();
+  return row?.n ?? 0;
 }
 
 export function deleteLink(ex: Executor, id: number): boolean {

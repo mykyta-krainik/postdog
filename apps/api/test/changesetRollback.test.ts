@@ -187,6 +187,41 @@ describe("POST /api/changesets/:id/rollback", () => {
     expect(listTaskIdsInCooldown(db, LATER)).toEqual(new Set([C.id, D.id]));
   });
 
+  it("keeps a subtask linked by someone other than the run, in either direction", async () => {
+    const { db, api, run, tasks, rollback } = setup();
+    const { A, B, D, a1, a2, a3, b1 } = tasks;
+    await api
+      .post(`/api/tasks/${a1.id}/links`)
+      .send({ toTaskId: D.id, type: "blocks" })
+      .expect(201);
+    insertLink(db, {
+      fromTaskId: D.id,
+      toTaskId: a2.id,
+      type: "relates",
+      createdBy: `agent:${run + 1}`,
+      createdAt: LATER,
+    });
+    insertLink(db, {
+      fromTaskId: b1.id,
+      toTaskId: a3.id,
+      type: "relates",
+      createdBy: `agent:${run}`,
+      createdAt: NOW,
+    });
+
+    const body = rolledBack(await rollback());
+
+    expect(body.kept.map((item) => [item.id, item.reason])).toEqual([
+      [a1.id, "has_links"],
+      [a2.id, "has_links"],
+    ]);
+    expect(body.message).toBe("Removed 3 subtasks and 1 link. 2 subtasks had links and were kept.");
+    expect(listSubtaskIds(db, A.id)).toEqual([a1.id, a2.id]);
+    expect(listSubtaskIds(db, B.id)).toEqual([]);
+    expect(findLink(db, a1.id, D.id, "blocks")).toBeDefined();
+    expect(findLink(db, D.id, a2.id, "relates")).toBeDefined();
+  });
+
   it("rolls back one task's part and leaves the other tasks' ops applied", async () => {
     const { db, api, tasks, link, changeset, rollback, suggestions } = setup();
     const { A, B, C } = tasks;

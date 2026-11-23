@@ -61,6 +61,9 @@ describe("subtaskKeptReason", () => {
     const { current } = setup();
     expect(subtaskKeptReason(current(), 1)).toBe("has_children");
     expect(isUntouchedSubtask(current(), 1)).toBe(false);
+    expect(subtaskKeptReason(current(), 0, 1, 1)).toBe("has_notes");
+    expect(subtaskKeptReason(current(), 0, 0, 1)).toBe("has_links");
+    expect(isUntouchedSubtask(current(), 0, 0, 1)).toBe(false);
   });
 
   it("reports a subtask that is already gone as not_found", () => {

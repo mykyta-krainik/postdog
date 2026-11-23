@@ -8,7 +8,7 @@ import type {
 import type { Db, Executor } from "../db/client";
 import { notFound } from "../lib/errors";
 import { findChangeset, summarizeChangeset, updateChangesetOps } from "../repositories/changesets";
-import { deleteLink } from "../repositories/links";
+import { countLinksNotCreatedBy, deleteLink } from "../repositories/links";
 import { listNotes } from "../repositories/notes";
 import {
   markSuggestionsRolledBack,
@@ -31,6 +31,7 @@ const KEPT_PHRASES: Record<KeptReason, [one: string, many: string]> = {
   edited: ["was edited and kept", "were edited and kept"],
   has_children: ["had its own subtasks and was kept", "had their own subtasks and were kept"],
   has_notes: ["had notes and was kept", "had notes and were kept"],
+  has_links: ["had links and was kept", "had links and were kept"],
   status_changed: ["was started or finished and kept", "were started or finished and kept"],
 };
 
@@ -55,13 +56,17 @@ export function rollbackMessage(
   return sentences.length > 0 ? sentences.join(" ") : NOTHING_TO_ROLL_BACK;
 }
 
-/** Deletes the subtask when it is untouched, the only kind a rollback may delete. */
-function undoSubtask(ex: Executor, op: ChangesetOp): Undo {
+/**
+ * Deletes the subtask when it is untouched, the only kind a rollback may delete. Links the run
+ * made do not count: the rollback removes them anyway.
+ */
+function undoSubtask(ex: Executor, op: ChangesetOp, runId: number): Undo {
   const task = findTask(ex, op.id);
   const reason = subtaskKeptReason(
     task,
     listSubtaskIds(ex, op.id).length,
     listNotes(ex, op.id).length,
+    countLinksNotCreatedBy(ex, op.id, `agent:${runId}`),
   );
   if (reason === null) return { state: "rolled_back", deleted: deleteTask(ex, op.id) };
   if (!task || reason === "not_found") return { state: "rolled_back", deleted: false };
@@ -77,7 +82,9 @@ function undoLink(ex: Executor, op: ChangesetOp): Undo {
   return { state: "rolled_back", deleted: deleteLink(ex, op.id) };
 }
 
-const UNDO_OP: Record<ChangesetOp["type"], (ex: Executor, op: ChangesetOp) => Undo> = {
+type UndoOp = (ex: Executor, op: ChangesetOp, runId: number) => Undo;
+
+const UNDO_OP: Record<ChangesetOp["type"], UndoOp> = {
   create_task: undoSubtask,
   create_link: undoLink,
 };
@@ -100,7 +107,7 @@ export function rollbackChangeset(
 
   const undone = changeset.ops
     .filter((op) => op.state === "applied" && (taskId === undefined || op.taskId === taskId))
-    .map((op) => ({ op, undo: UNDO_OP[op.type](ex, op) }));
+    .map((op) => ({ op, undo: UNDO_OP[op.type](ex, op, changeset.runId) }));
   if (undone.length === 0) {
     return {
       changeset: summarizeChangeset(ex, changeset),
