@@ -79,7 +79,9 @@ Every route under `/api/agents` and `/api/suggestions` answers `403 ai_disabled`
 | `not_found`                  | 404    | The `:id` in the path does not exist.                                                                                                   |
 | `conflict`                   | 409    | The new link already exists, the run to cancel is not running, or the suggestion to accept or reject is no longer `pending`.            |
 | `stale`                      | 409    | `baseUpdatedAt` differs from the target task's `updatedAt`.                                                                             |
+| `forbidden`                  | 403    | A write (any method but `GET`, `HEAD` and `OPTIONS`) carries `Sec-Fetch-Site: cross-site`.                                              |
 | `ai_disabled`                | 403    | An agent or suggestion route is called while `aiEnabled` is false.                                                                      |
+| `unsupported_media_type`     | 415    | A write without `Content-Type: application/json`, including one with no body.                                                           |
 | `agent_failed`, `step_limit` |        | Reserved. A failed run is still a 200 response, with its reason in `AgentRun.error` (see Agent runs).                                   |
 | `internal_error`             | 500    | The server failed in a way the request did not cause.                                                                                   |
 

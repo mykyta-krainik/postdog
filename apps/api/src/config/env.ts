@@ -14,6 +14,8 @@ const blankAsUnset = (value: unknown) => (value === "" ? undefined : value);
 const optionalText = z.preprocess(blankAsUnset, z.string().trim().min(1).optional());
 
 const envSchema = z.object({
+  /** Loopback only by default: the API has no auth, so other machines must not reach it. */
+  API_HOST: z.preprocess(blankAsUnset, z.string().trim().min(1).default("127.0.0.1")),
   API_PORT: z.preprocess(blankAsUnset, z.coerce.number().int().min(0).max(65_535).default(4000)),
   DATABASE_PATH: z
     .preprocess(blankAsUnset, z.string().trim().min(1).default("./apps/api/data/postdog.db"))

@@ -1,5 +1,4 @@
 import { decomposerRunSchema, type DecomposerOutput, type DecomposerRun } from "@postdog/shared";
-import request from "supertest";
 import { expect } from "vitest";
 import { createApp } from "../../src/app";
 import {
@@ -10,7 +9,7 @@ import {
 import { createDecomposerAgent, createDecomposerClarifyAgent } from "../../src/agents/decomposer";
 import { agentRegistry } from "../../src/agents/registry";
 import { seedDatabase } from "../../src/db/seed";
-import type { Api } from "../helpers";
+import { jsonClient, type Api } from "../helpers";
 import { createTestDb } from "../suggestionFixtures";
 import { call, script, waitForRun, type Step } from "./helpers";
 
@@ -45,7 +44,7 @@ export function setup(options: { seed?: boolean; related?: Step[]; task?: TaskHa
     decomposer: createDecomposerAgent(loops),
     decomposer_clarify: createDecomposerClarifyAgent(loops),
   };
-  return { db, api: request(createApp(db, { agents })), relatedSeen: related?.seen ?? [] };
+  return { db, api: jsonClient(createApp(db, { agents })), relatedSeen: related?.seen ?? [] };
 }
 
 export async function startRun(api: Api, path: string, body: object): Promise<DecomposerRun> {

@@ -12,6 +12,7 @@ import { createSuggestionController } from "./controllers/suggestions";
 import { createTaskController } from "./controllers/tasks";
 import type { Db } from "./db/client";
 import { aiEnabledGuard } from "./middleware/aiEnabledGuard";
+import { crossSiteGuard } from "./middleware/crossSiteGuard";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { agentRoutes } from "./routes/agents";
 import { changesetRoutes } from "./routes/changesets";
@@ -45,6 +46,7 @@ export function createApp(db: Db, deps: AppDeps = {}): Express {
   const settings = createSettingsService(db, runs);
   const app = express();
   app.disable("x-powered-by");
+  app.use("/api", crossSiteGuard);
   app.use(express.json({ limit: JSON_BODY_LIMIT }));
   app.use(
     "/api",

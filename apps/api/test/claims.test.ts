@@ -1,5 +1,4 @@
 import { plannerInputSchema, plannerOutputSchema, type AgentRun } from "@postdog/shared";
-import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
 import { defineAgent } from "../src/agents/core/definition";
@@ -15,6 +14,7 @@ import {
 } from "../src/repositories/claims";
 import { waitForRun } from "./agents/helpers";
 import { DAY, addRun, addTask, aiStateOf, createTestDb } from "./suggestionFixtures";
+import { jsonClient } from "./helpers";
 
 const NOW = 50 * DAY;
 const TTL = 2 * 60 * 1000;
@@ -164,7 +164,7 @@ describe("claims when a run ends", () => {
 
   async function startRun(db: Db, finish: Promise<void>) {
     const task = addTask(db);
-    const api = request(
+    const api = jsonClient(
       createApp(db, { agents: { ...agentRegistry, planner: claimingAgent(db, task.id, finish) } }),
     );
     const res = await api.post("/api/agents/planner/run").send({}).expect(202);

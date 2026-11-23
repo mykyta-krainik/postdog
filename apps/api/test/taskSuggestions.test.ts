@@ -1,5 +1,4 @@
 import { taskDetailSchema } from "@postdog/shared";
-import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
 import {
@@ -17,6 +16,7 @@ import {
   relatedOf,
   subtasksFor,
 } from "./suggestionFixtures";
+import { jsonClient } from "./helpers";
 
 const NOW = 50 * DAY;
 
@@ -24,7 +24,7 @@ function setup() {
   const db = createTestDb();
   return {
     db,
-    api: request(createApp(db)),
+    api: jsonClient(createApp(db)),
     run: addRun(db),
     a: addTask(db),
     b: addTask(db),

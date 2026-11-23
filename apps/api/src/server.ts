@@ -19,13 +19,13 @@ logger.info(`LLM: ${llm.info.mode} (${llm.info.model})`, {
   langfuse: tracer.enabled ? "on" : "off",
 });
 
-const server = createApp(db, { llm, tracer }).listen(env.API_PORT, (err?: Error) => {
+const server = createApp(db, { llm, tracer }).listen(env.API_PORT, env.API_HOST, (err?: Error) => {
   if (err) {
-    logger.error(`API could not listen on port ${env.API_PORT}`, { err });
+    logger.error(`API could not listen on ${env.API_HOST}:${env.API_PORT}`, { err });
     process.exit(1);
   }
-  const { port } = server.address() as AddressInfo;
-  logger.info(`API listening on http://localhost:${port}`);
+  const { address, port } = server.address() as AddressInfo;
+  logger.info(`API listening on http://${address}:${port}`);
 });
 
 function shutdown(): void {

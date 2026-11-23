@@ -10,7 +10,6 @@ import {
   plannerOutputSchema,
   type PlannerOutput,
 } from "@postdog/shared";
-import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp, type AppDeps } from "../../src/app";
 import { defineAgent } from "../../src/agents/core/definition";
@@ -28,7 +27,7 @@ import { bootDatabase } from "../../src/db/boot";
 import { IN_MEMORY, openDatabase } from "../../src/db/client";
 import { migrateDatabase } from "../../src/db/migrate";
 import { findRun, insertRun } from "../../src/repositories/agentRuns";
-import { createTask, setNow, type Api } from "../helpers";
+import { type Api, createTask, jsonClient, setNow } from "../helpers";
 import { call, createTestTools, hang, script, waitForRun, type Step } from "./helpers";
 
 afterEach(() => {
@@ -66,7 +65,7 @@ function testPlanner(steps: Step[] | (() => never)) {
 function api(planner?: ReturnType<typeof testPlanner>, deps: AppDeps = {}): Api {
   const db = openDatabase(IN_MEMORY);
   migrateDatabase(db);
-  return request(
+  return jsonClient(
     createApp(db, {
       ...deps,
       agents: { ...agentRegistry, ...(planner && { planner }) },

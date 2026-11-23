@@ -1,5 +1,4 @@
 import { plannerInputSchema, plannerOutputSchema, type DecompositionMode } from "@postdog/shared";
-import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../../src/app";
 import { defineAgent } from "../../src/agents/core/definition";
@@ -20,7 +19,7 @@ import {
   listSuggestions,
 } from "../../src/repositories/suggestions";
 import { listAllTasks } from "../../src/repositories/tasks";
-import { setNow, type Api } from "../helpers";
+import { type Api, jsonClient, setNow } from "../helpers";
 import { addRun, addTask, aiStateOf, clarificationFor, createTestDb } from "../suggestionFixtures";
 import {
   T0,
@@ -516,7 +515,7 @@ describe("Decomposer failure notifications", () => {
       output: plannerOutputSchema,
       run: () => Promise.reject(new AgentError("no_terminal_tool", "No plan.")),
     });
-    const api = request(createApp(db, { agents: { ...agentRegistry, planner } }));
+    const api = jsonClient(createApp(db, { agents: { ...agentRegistry, planner } }));
     const res = await api.post("/api/agents/planner/run").send({}).expect(202);
     expect((await waitForRun(api, res.body.runId as number)).status).toBe("failed");
     expect(notifications(db)).toEqual([]);

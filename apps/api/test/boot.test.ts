@@ -2,7 +2,6 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { listNotesResponseSchema, type TaskDetail } from "@postdog/shared";
-import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
 import { bootDatabase } from "../src/db/boot";
@@ -11,7 +10,7 @@ import { findRun } from "../src/repositories/agentRuns";
 import { listActiveClaims, tryClaim } from "../src/repositories/claims";
 import { insertSuggestion } from "../src/repositories/suggestions";
 import { updateTask } from "../src/repositories/tasks";
-import { createTask, getTask, listTasks, type Api } from "./helpers";
+import { type Api, createTask, getTask, jsonClient, listTasks } from "./helpers";
 import {
   addRun,
   addTask,
@@ -36,7 +35,7 @@ afterEach(() => {
 function boot(path: string, now?: number): Api {
   const { db } = bootDatabase(path, now);
   open.push(db);
-  return request(createApp(db));
+  return jsonClient(createApp(db));
 }
 
 function closeAll(): void {

@@ -49,6 +49,28 @@ describe("apiRequest", () => {
     );
   });
 
+  it("sends an empty JSON object on a write without a body, which the API requires", async () => {
+    const fetchMock = respondWith(204);
+    await apiRequest("/api/tasks/1", z.undefined(), { method: "DELETE" });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/tasks/1",
+      expect.objectContaining({
+        method: "DELETE",
+        body: "{}",
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+  });
+
+  it("sends a read without a body or a content type", async () => {
+    const fetchMock = respondWith(200, { aiEnabled: true, decompositionMode: "suggest" });
+    await apiRequest("/api/settings", settingsSchema);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/settings",
+      expect.objectContaining({ method: "GET", body: undefined, headers: undefined }),
+    );
+  });
+
   it("resolves a 204 with z.undefined()", async () => {
     respondWith(204);
     await expect(

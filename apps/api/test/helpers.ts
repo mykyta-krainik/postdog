@@ -5,6 +5,7 @@ import {
   type TaskDetail,
   type TaskListItem,
 } from "@postdog/shared";
+import type { Express } from "express";
 import request from "supertest";
 import { vi } from "vitest";
 import { createApp } from "../src/app";
@@ -13,11 +14,19 @@ import { migrateDatabase } from "../src/db/migrate";
 
 export type Api = ReturnType<typeof request>;
 
+/**
+ * A client for the app that, like the web app, says every request carries JSON. The API
+ * answers a write without that header with 415 (see middleware/crossSiteGuard.ts).
+ */
+export function jsonClient(app: Express): Api {
+  return request.agent(app).set("Content-Type", "application/json");
+}
+
 /** A fresh, migrated, unseeded in-memory database behind the real app. */
 export function createTestApi(): Api {
   const db = openDatabase(IN_MEMORY);
   migrateDatabase(db);
-  return request(createApp(db));
+  return jsonClient(createApp(db));
 }
 
 export async function createTask(

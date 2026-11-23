@@ -28,13 +28,15 @@ export async function apiRequest<Schema extends z.ZodType>(
   schema: Schema,
   { method = "GET", body, signal }: RequestOptions = {},
 ): Promise<z.output<Schema>> {
+  // The API answers a write without a JSON body with 415, its guard against cross-site writes.
+  const isWrite = method !== "GET";
   let response: Response;
   try {
     response = await fetch(url, {
       method,
       signal,
-      headers: body === undefined ? undefined : { "Content-Type": "application/json" },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      headers: isWrite ? { "Content-Type": "application/json" } : undefined,
+      body: isWrite ? JSON.stringify(body ?? {}) : undefined,
     });
   } catch (error) {
     if (signal?.aborted) throw error;

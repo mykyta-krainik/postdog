@@ -5,7 +5,7 @@ import {
   rollbackResponseSchema,
   type TaskDetail,
 } from "@postdog/shared";
-import request, { type Response } from "supertest";
+import type { Response } from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app";
 import { tryClaim } from "../src/repositories/claims";
@@ -20,7 +20,7 @@ import {
 } from "../src/repositories/suggestions";
 import { findTask, insertTask, listSubtaskIds } from "../src/repositories/tasks";
 import { rollbackMessage } from "../src/services/changesets";
-import { setNow } from "./helpers";
+import { jsonClient, setNow } from "./helpers";
 import {
   DAY,
   addRun,
@@ -47,7 +47,7 @@ afterEach(() => {
 function setup() {
   setNow(NOW);
   const db = createTestDb();
-  const api = request(createApp(db));
+  const api = jsonClient(createApp(db));
   const run = addRun(db);
   const subtasksOf = (parent: TaskDetail, titles: string[]) =>
     titles.map((title) => addTask(db, { title, parentId: parent.id }));
