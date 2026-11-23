@@ -14,7 +14,7 @@ How the agent platform works, for whoever writes an agent on it. The code has no
 | `core/tracer.ts`          | `Tracer` and `RunTracer`: Langfuse, or a no-op without keys.                                |
 | `core/errors.ts`          | `AgentError(code, message)` fails a run. `ToolError(message)` becomes an error tool result. |
 | `tools/read.ts`           | `createReadTools(db, now?)`: `getTask`, `searchTasks`, `getTaskNotes`.                      |
-| `tools/userText.ts`       | `wrapTask` and `tagUserText`: user text in `<task>` tags with `<` and `>` escaped.          |
+| `tools/userText.ts`       | `wrapTask` and `tagUserText`: user text in `<task>` or `<note>` tags, brackets escaped.     |
 | `context.ts`              | `computeTaskFacts` and `loadTaskFacts(db, now)`: per-task numbers computed in code.         |
 | `registry.ts`             | The definitions the routes run.                                                             |
 | `planner/index.ts`        | `plannerAgent`, the daily Planner (see `planner/README.md`).                                |
@@ -51,7 +51,7 @@ Usage is not returned by `run`. The run service sums the tokens of every `llm` s
 - `name` names the loop. The mock model looks its script up by this name, and Langfuse names each generation after it. An agent with several loops can use names such as `decomposer:related`.
 - A tool call with invalid input or an unknown tool name gets an error tool result that tells the model what to fix, and the loop goes on. The count is per step, because real models send several calls in one step: two steps in a row in which every call is invalid fail the run with `validation_failed` (`AGENT_LIMITS.maxConsecutiveValidationErrors`), and a step with one valid call starts the count again.
 - Before validation, a top-level value that is a string starting with `[` or `{`, at a key whose JSON schema is an array or an object, is parsed as JSON (`parseStringifiedFields`). Claude sometimes sends `{"subtasks": "[{...}]"}`. A string that does not parse, or sits at a key that wants a string, is left alone. Arguments that are not JSON at all (the provider hands them over as a string, as OpenAI does for `{"id":`) get "Your arguments were not valid JSON; send a JSON object." and count as an invalid call.
-- A read tool runs, and its return value goes back as a JSON tool result. A `ToolError` it throws goes back as an error tool result. Any other error it throws fails the run with `internal_error`.
+- A read tool runs, and its return value goes back as a JSON tool result. `runAgent` passes it through `tagUserText` first, so for every agent each `title` and `description` field is wrapped in `<task>` tags and each `body` (a note) in `<note>` tags. `escapeTags` turns `<` and `>` into `&lt;` and `&gt;` inside them, and also the lookalike brackets `＜ ＞ ‹ › ⟨ ⟩ 〈 〉 ﹤ ﹥ ❮ ❯`, so user text cannot close a tag. `summarize` gets the untagged value, so traces show plain text. A `ToolError` it throws goes back as an error tool result. Any other error it throws fails the run with `internal_error`.
 - Calling the same read tool with the same input twice in a row returns the first result again, with a note that the model already has it.
 - The first valid terminal tool call ends the loop. `runAgent` resolves to `{ toolName, output, steps }`, where `output` is the terminal tool's parsed input. With several terminal tools, `toolName` narrows `output`.
 - `onStep(step)`, optional, runs after every model call, before that step's tools run. The Decomposer renews its claims there.

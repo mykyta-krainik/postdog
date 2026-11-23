@@ -10,6 +10,7 @@ import {
   type AgentTool,
   type TerminalCall,
 } from "./tool";
+import { tagUserText } from "../tools/userText";
 import { toText, truncate, type TraceRecorder } from "./trace";
 import type { RunTracer } from "./tracer";
 
@@ -193,7 +194,7 @@ export async function runAgent<const T extends readonly AgentTool[]>(
     } else {
       try {
         const value = await tool.run(parsed.data);
-        output = { type: "json", value: JSON.parse(JSON.stringify(value ?? null)) };
+        output = { type: "json", value: JSON.parse(JSON.stringify(tagUserText(value) ?? null)) };
         summary = tool.summarize ? tool.summarize(value) : toText(value);
       } catch (err) {
         if (!(err instanceof ToolError)) throw err;

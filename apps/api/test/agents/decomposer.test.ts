@@ -712,7 +712,7 @@ describe("Decomposer clarify", () => {
     expect(seen[0]!.userMessage).toContain(
       "Q: Which users does this cover?\nA: <answer>Admins &lt;b&gt;only&lt;/b&gt;</answer>",
     );
-    expect(seen[0]!.userMessage).toContain("What was unclear: The scope");
+    expect(seen[0]!.userMessage).toContain("What was unclear: <task>The scope</task>");
   });
 
   it("keeps the clarification pending when the rerun fails", async () => {
@@ -721,7 +721,7 @@ describe("Decomposer clarify", () => {
 
     const run = await clarify(api, {
       suggestionId: suggestion.id,
-      answers: [{ question: "Which users?", answer: "All of them" }],
+      answers: [{ question: "Which users does this cover?", answer: "All of them" }],
     });
     expect(run.status).toBe("failed");
     expect(run.error?.code).toBe("no_terminal_tool");

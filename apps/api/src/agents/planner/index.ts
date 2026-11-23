@@ -13,7 +13,6 @@ import { defineTerminalTool } from "../core/tool";
 import { createReadTools } from "../tools/read";
 import { rankCandidates } from "./candidates";
 import { plannerMockScript } from "./mock";
-import { tagUserText } from "../tools/userText";
 import { PLANNER_PROMPT_V1, PLANNER_PROMPT_VERSION, plannerUserMessage } from "./prompt";
 import { checkPlan } from "./validate";
 
@@ -34,18 +33,7 @@ const submitDailyPlan = defineTerminalTool({
 
 function plannerTools(ex: Executor, now: number) {
   const { getTask, searchTasks } = createReadTools(ex, () => now);
-  return [
-    {
-      ...getTask,
-      run: (input: Parameters<typeof getTask.run>[0]) => tagUserText(getTask.run(input)),
-      summarize: (task: ReturnType<typeof getTask.run>) => `${task.identifier} (${task.status})`,
-    },
-    {
-      ...searchTasks,
-      run: (input: Parameters<typeof searchTasks.run>[0]) => tagUserText(searchTasks.run(input)),
-    },
-    submitDailyPlan,
-  ] as const;
+  return [getTask, searchTasks, submitDailyPlan] as const;
 }
 
 export function createPlannerAgent(loopName: string = PLANNER_LOOP) {

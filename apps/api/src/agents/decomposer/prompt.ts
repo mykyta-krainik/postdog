@@ -1,4 +1,4 @@
-import type { ClarificationAnswer, ClarificationPayload, RelatedRelation } from "@postdog/shared";
+import type { ClarificationPayload, RelatedRelation } from "@postdog/shared";
 import type { TaskRow } from "../../db/schema";
 import { escapeTags, wrapTask } from "../tools/userText";
 
@@ -74,25 +74,28 @@ export interface RelatedNote {
   reason: string;
 }
 
+/** `answers` holds the user's answer to each stored question, in the questions' order. */
 export interface ClarifyContext {
   previous: ClarificationPayload;
-  answers?: ClarificationAnswer[];
+  answers?: string[];
   generateAnyway?: boolean;
 }
 
 function clarifySection(clarify: ClarifyContext): string[] {
+  const { questions, whatIsUnclear } = clarify.previous;
   const lines = [
     "",
     "You asked about this task before.",
-    `What was unclear: ${clarify.previous.whatIsUnclear}`,
+    `What was unclear: ${wrapTask(whatIsUnclear)}`,
   ];
   if (clarify.answers) {
+    const answers = clarify.answers;
     lines.push("The user's answers:");
-    for (const { question, answer } of clarify.answers) {
-      lines.push(`Q: ${question}`, `A: <answer>${escapeTags(answer)}</answer>`);
-    }
+    questions.forEach((question, i) => {
+      lines.push(`Q: ${escapeTags(question)}`, `A: <answer>${escapeTags(answers[i]!)}</answer>`);
+    });
   } else {
-    lines.push("Your questions:", ...clarify.previous.questions.map((q) => `- ${q}`));
+    lines.push("Your questions:", ...questions.map((q) => `- ${escapeTags(q)}`));
   }
   if (clarify.generateAnyway) lines.push("", GENERATE_ANYWAY);
   return lines;
@@ -116,7 +119,7 @@ export function taskUserMessage(
     lines.push("", "Related tasks found in this batch:");
     for (const note of related) {
       lines.push(
-        `- ${note.task.id} | ${note.task.identifier} | ${note.relation} | ${wrapTask(note.task.title)} | ${note.reason}`,
+        `- ${note.task.id} | ${note.task.identifier} | ${note.relation} | ${wrapTask(note.task.title)} | ${wrapTask(note.reason)}`,
       );
     }
   }

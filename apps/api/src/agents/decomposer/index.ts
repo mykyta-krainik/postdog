@@ -467,7 +467,7 @@ async function runClarify(
     related: [],
     clarify: {
       previous: suggestion.payload,
-      answers: input.answers,
+      answers: input.answers?.map((a) => a.answer),
       generateAnyway: input.generateAnyway,
     },
     supersedes: suggestion.id,
@@ -500,6 +500,16 @@ function prepareClarify(db: Db, input: ClarifyInput): ClarifyInput {
   }
   if (suggestion.status !== "pending") {
     throw conflict(`Suggestion ${suggestion.id} is ${suggestion.status}, not pending`);
+  }
+  const { questions } = suggestion.payload;
+  const inOrder =
+    input.answers?.length === questions.length &&
+    input.answers.every((a, i) => a.question === questions[i]);
+  if (input.answers && !inOrder) {
+    throw invalidField(
+      "answers",
+      `Send one answer per question of suggestion ${suggestion.id}, in the order of its questions`,
+    );
   }
   const task = findTask(db, suggestion.targetId);
   if (task) {

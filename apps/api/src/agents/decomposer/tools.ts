@@ -4,11 +4,9 @@ import {
   reportRelatedInputSchema,
   skipInputSchema,
 } from "@postdog/shared";
-import type { z } from "zod";
 import type { Executor } from "../../db/client";
-import { defineTerminalTool, type ReadTool } from "../core/tool";
+import { defineTerminalTool } from "../core/tool";
 import { createReadTools } from "../tools/read";
-import { tagUserText } from "../tools/userText";
 
 export const reportRelated = defineTerminalTool({
   name: "report_related",
@@ -54,14 +52,7 @@ export const skip = defineTerminalTool({
   input: skipInputSchema,
 });
 
-function tagged<N extends string, S extends z.ZodType, O>(
-  tool: ReadTool<N, S, O>,
-): ReadTool<N, S, O> {
-  return { ...tool, run: (input) => tagUserText(tool.run(input)) };
-}
-
 export function decomposerReadTools(ex: Executor) {
   const { getTask, searchTasks } = createReadTools(ex);
-  const summarize = (task: ReturnType<typeof getTask.run>) => `${task.identifier} (${task.status})`;
-  return [{ ...tagged(getTask), summarize }, tagged(searchTasks)] as const;
+  return [getTask, searchTasks] as const;
 }
