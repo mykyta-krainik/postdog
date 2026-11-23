@@ -93,6 +93,19 @@ describe("checkDraft", () => {
     expect(check.ok ? undefined : check.items[0]?.title).toBe("Keep titles under 200 characters.");
   });
 
+  it("limits descriptions to 1,500 characters, the proposal schema's cap", () => {
+    const edit = (value: string) =>
+      checkDraft(
+        draftReducer(initialDraft(payload), { type: "edit", key: 1, field: "description", value }),
+        payload.rationale,
+      );
+    expect(edit("x".repeat(1500)).ok).toBe(true);
+    const check = edit("x".repeat(1501));
+    expect(check.ok ? undefined : check.items[1]?.description).toBe(
+      "Keep the description under 1,500 characters.",
+    );
+  });
+
   it("explains the minimum when a split has fewer than two subtasks", () => {
     const one = initialDraft({ ...payload, subtasks: payload.subtasks.slice(0, 1) });
     expect(checkDraft(one, payload.rationale)).toMatchObject({

@@ -138,7 +138,14 @@ function draftUpdate(
 function openSubtasksOf(output: unknown): string[] {
   const subtasks = (output as { subtasks?: { title: string; status: string }[] } | undefined)
     ?.subtasks;
-  return (subtasks ?? []).filter((s) => s.status === "todo").map((s) => s.title);
+  return (subtasks ?? [])
+    .filter((s) => s.status === "todo")
+    .map((s) =>
+      s.title
+        .replace(/^<task>|<\/task>$/g, "")
+        .replaceAll("&lt;", "<")
+        .replaceAll("&gt;", ">"),
+    );
 }
 
 export const statusUpdaterMockScript: MockScript = ({ turn, userMessage, results }) => {

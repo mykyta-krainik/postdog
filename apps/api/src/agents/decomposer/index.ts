@@ -21,14 +21,21 @@ import { logger } from "../../lib/logger";
 import { findChangesetByRun } from "../../repositories/changesets";
 import { releaseTaskClaim, renewClaims, tryClaim } from "../../repositories/claims";
 import { findSuggestion, resolveSuggestion } from "../../repositories/suggestions";
-import { findTask } from "../../repositories/tasks";
+import { findTask, listSubtaskIds } from "../../repositories/tasks";
+import { plural } from "../../lib/text";
 import { defineAgent, type AgentContext } from "../core/definition";
 import { AgentError } from "../core/errors";
 import { registerMockScript } from "../core/llm";
 import { runAgent } from "../core/runAgent";
 import type { TraceRecorder } from "../core/trace";
-import { applierFor, decompositionMode, type ApplyRun, type RelatedApplied } from "./apply";
-import { claimedResult, selectBatch, taskResult } from "./eligibility";
+import {
+  applierFor,
+  decompositionMode,
+  writeConflict,
+  type ApplyRun,
+  type RelatedApplied,
+} from "./apply";
+import { claimedResult, eligibilityCheck, exclusion, selectBatch, taskResult } from "./eligibility";
 import { relatedMockScript, taskMockScript } from "./mock";
 import { notifyAutoRun, type RunWrites } from "./notify";
 import {
@@ -49,6 +56,8 @@ import {
 import { checkProposal, checkRelatedGroups, type Decision, type Dropped } from "./validate";
 
 export const DECOMPOSER_LOOPS = { related: "decomposer:related", task: "decomposer:task" };
+
+const TASK_LOOP_MAX_OUTPUT_TOKENS = 8192;
 export type DecomposerLoops = typeof DECOMPOSER_LOOPS;
 
 registerMockScript(DECOMPOSER_LOOPS.related, relatedMockScript);
@@ -116,6 +125,8 @@ function createStage3(ctx: AgentContext) {
     task(task: TaskRow, decision: Decision, supersedes?: number): DecomposerTaskResult {
       const run = applyRun(ctx);
       const result = ctx.db.transaction((tx) => {
+        const conflict = writeConflict(tx, run, task, supersedes);
+        if (conflict) return taskResult(task, "superseded", conflict);
         const applied = applier.task(tx, run, task, decision);
         if (supersedes !== undefined && SETTLED_OUTCOMES.has(applied.outcome)) {
           resolveSuggestion(tx, supersedes, "superseded", run.now);
@@ -264,13 +275,39 @@ function runTaskLoop(ctx: AgentContext, loop: string, job: TaskJob, trace: Trace
     system: DECOMPOSER_PROMPT_V1.task,
     userMessage: taskUserMessage(job.task, job.related, job.clarify),
     tools: [...decomposerReadTools(ctx.db), ...terminal],
+    maxOutputTokens: TASK_LOOP_MAX_OUTPUT_TOKENS,
     onStep: () => renewClaims(ctx.db, ctx.runId, Date.now()),
   });
 }
 
+function leftAlone(ctx: AgentContext, result: DecomposerTaskResult): TaskDone {
+  ctx.trace.record({
+    type: "validation",
+    input: result.taskId,
+    outputSummary: result.detail,
+    durationMs: 0,
+  });
+  return { result, warnings: [] };
+}
+
 /**
- * Stage 2 and 3 for one task: claim it, run its loop, check the output and apply it.
- * When it re-runs a clarification, the old one is superseded only together with a
+ * The task read again once this run holds its claim, because another run or the user may
+ * have changed it since stage 0. A clarify rerun is held only to the write checks: the user
+ * asked for it, so stage 0's rules (todo, cooldown) do not apply.
+ */
+function recheck(ctx: AgentContext, job: TaskJob): DecomposerTaskResult | undefined {
+  const fresh = findTask(ctx.db, job.task.id);
+  if (fresh && job.supersedes === undefined) {
+    const excluded = exclusion(ctx.db, fresh, eligibilityCheck(ctx.db, ctx.runId, Date.now()));
+    if (excluded) return excluded;
+  }
+  const conflict = writeConflict(ctx.db, applyRun(ctx), job.task, job.supersedes);
+  return conflict === null ? undefined : taskResult(job.task, "superseded", conflict);
+}
+
+/**
+ * Stage 2 and 3 for one task: claim it, check it again, run its loop, check the output and
+ * apply it. When it re-runs a clarification, the old one is superseded only together with a
  * settled result; a failed loop leaves it pending.
  */
 async function decomposeTask(
@@ -282,17 +319,10 @@ async function decomposeTask(
   const { task } = job;
   if (ctx.signal.aborted) throw stopped(ctx.signal);
   const claim = tryClaim(ctx.db, task.id, ctx.runId, "decomposer", Date.now());
-  if (!claim.claimed) {
-    const result = claimedResult(task, claim.heldBy);
-    ctx.trace.record({
-      type: "validation",
-      input: task.id,
-      outputSummary: result.detail,
-      durationMs: 0,
-    });
-    return { result, warnings: [] };
-  }
+  if (!claim.claimed) return leftAlone(ctx, claimedResult(task, claim.heldBy));
   try {
+    const refused = recheck(ctx, job);
+    if (refused) return leftAlone(ctx, refused);
     const trace = traceFor(ctx.trace, task.identifier);
     const loopResult = await runTaskLoop(ctx, loop, job, trace);
     const { decision, dropped } = decide(ctx, task, loopResult);
@@ -339,7 +369,7 @@ async function runBatch(
   input: DecomposerRunInput,
   stage3: Stage3,
 ): Promise<{ output: DecomposerOutput }> {
-  const batch = selectBatch(ctx.db, input.taskIds, ctx.startedAt);
+  const batch = selectBatch(ctx.db, input.taskIds, ctx.runId, ctx.startedAt);
   const picked = batch.tasks.map((t) => t.identifier).join(", ");
   ctx.trace.record({
     type: "validation",
@@ -437,7 +467,7 @@ async function runClarify(
     related: [],
     clarify: {
       previous: suggestion.payload,
-      answers: input.answers,
+      answers: input.answers?.map((a) => a.answer),
       generateAnyway: input.generateAnyway,
     },
     supersedes: suggestion.id,
@@ -470,6 +500,24 @@ function prepareClarify(db: Db, input: ClarifyInput): ClarifyInput {
   }
   if (suggestion.status !== "pending") {
     throw conflict(`Suggestion ${suggestion.id} is ${suggestion.status}, not pending`);
+  }
+  const { questions } = suggestion.payload;
+  const inOrder =
+    input.answers?.length === questions.length &&
+    input.answers.every((a, i) => a.question === questions[i]);
+  if (input.answers && !inOrder) {
+    throw invalidField(
+      "answers",
+      `Send one answer per question of suggestion ${suggestion.id}, in the order of its questions`,
+    );
+  }
+  const task = findTask(db, suggestion.targetId);
+  if (task) {
+    if (task.status === "done") throw conflict(`${task.identifier} is done`);
+    const subtasks = listSubtaskIds(db, task.id).length;
+    if (subtasks > 0) {
+      throw conflict(`${task.identifier} already has ${plural(subtasks, "subtask")}`);
+    }
   }
   return input;
 }

@@ -2,11 +2,19 @@ import { AGENT_LIMITS } from "@postdog/shared";
 import { generateText, type ModelMessage, type ToolResultPart } from "ai";
 import { AgentError, ToolError } from "./errors";
 import type { Llm } from "./llm";
-import { describeIssues, toToolSet, type AgentTool, type TerminalCall } from "./tool";
+import {
+  describeIssues,
+  parseStringifiedFields,
+  structuredKeys,
+  toToolSet,
+  type AgentTool,
+  type TerminalCall,
+} from "./tool";
+import { tagUserText } from "../tools/userText";
 import { toText, truncate, type TraceRecorder } from "./trace";
 import type { RunTracer } from "./tracer";
 
-export const DEFAULT_MAX_OUTPUT_TOKENS = 2048;
+export const DEFAULT_MAX_OUTPUT_TOKENS = 4096;
 
 export interface LoopDeps {
   signal: AbortSignal;
@@ -55,6 +63,7 @@ export async function runAgent<const T extends readonly AgentTool[]>(
   const wallClockMs = params.wallClockMs ?? AGENT_LIMITS.wallClockMs;
 
   const byName = new Map<string, AgentTool>(tools.map((t) => [t.name, t]));
+  const structured = new Map(tools.map((t) => [t.name, structuredKeys(t)]));
   const toolNames = tools.map((t) => t.name).join(", ");
   const terminalNames = tools
     .filter((t) => t.terminal)
@@ -66,7 +75,7 @@ export async function runAgent<const T extends readonly AgentTool[]>(
   const messages: ModelMessage[] = [{ role: "user", content: userMessage }];
 
   let nudged = false;
-  let invalidStreak = 0;
+  let invalidSteps = 0;
   let previous: { key: string; output: ToolOutput } | undefined;
 
   const stopped = (): AgentError => {
@@ -125,6 +134,12 @@ export async function runAgent<const T extends readonly AgentTool[]>(
       durationMs: performance.now() - started,
       tokens,
     });
+    if (result.finishReason === "length") {
+      throw new AgentError(
+        "llm_error",
+        `The model's answer was cut off at ${maxOutputTokens} tokens, the output limit of one step.`,
+      );
+    }
     const assistant = result.response.messages.find((m) => m.role === "assistant");
     return { calls, assistant };
   };
@@ -145,7 +160,12 @@ export async function runAgent<const T extends readonly AgentTool[]>(
     };
 
     if (!tool) return invalid(`Unknown tool "${call.toolName}". Use one of: ${toolNames}.`);
-    const parsed = tool.input.safeParse(call.input);
+    if (typeof call.input === "string") {
+      return invalid("Your arguments were not valid JSON; send a JSON object.");
+    }
+    const parsed = tool.input.safeParse(
+      parseStringifiedFields(call.input, structured.get(tool.name)!),
+    );
     if (!parsed.success) {
       return invalid(
         `Invalid input for ${tool.name}: ${describeIssues(parsed.error)}. Fix the input and call ${tool.name} again.`,
@@ -174,7 +194,7 @@ export async function runAgent<const T extends readonly AgentTool[]>(
     } else {
       try {
         const value = await tool.run(parsed.data);
-        output = { type: "json", value: JSON.parse(JSON.stringify(value ?? null)) };
+        output = { type: "json", value: JSON.parse(JSON.stringify(tagUserText(value) ?? null)) };
         summary = tool.summarize ? tool.summarize(value) : toText(value);
       } catch (err) {
         if (!(err instanceof ToolError)) throw err;
@@ -220,6 +240,7 @@ export async function runAgent<const T extends readonly AgentTool[]>(
 
     const results: ToolResultPart[] = [];
     let lastInvalid = "";
+    let anyValid = false;
     for (const call of calls) {
       if (loopSignal.aborted) throw stopped();
       const outcome = await runTool(call);
@@ -230,12 +251,8 @@ export async function runAgent<const T extends readonly AgentTool[]>(
           steps: step,
         } as AgentResult<T>;
       }
-      if (outcome.kind === "invalid") {
-        invalidStreak += 1;
-        lastInvalid = outcome.message;
-      } else {
-        invalidStreak = 0;
-      }
+      if (outcome.kind === "invalid") lastInvalid = outcome.message;
+      else anyValid = true;
       results.push({
         type: "tool-result",
         toolCallId: call.toolCallId,
@@ -246,10 +263,11 @@ export async function runAgent<const T extends readonly AgentTool[]>(
             : outcome.output,
       });
     }
-    if (invalidStreak >= AGENT_LIMITS.maxConsecutiveValidationErrors) {
+    invalidSteps = anyValid ? 0 : invalidSteps + 1;
+    if (invalidSteps >= AGENT_LIMITS.maxConsecutiveValidationErrors) {
       throw new AgentError(
         "validation_failed",
-        `The model sent invalid tool calls ${invalidStreak} times in a row. Last error: ${truncate(lastInvalid, 300)}`,
+        `The model sent only invalid tool calls in ${invalidSteps} steps in a row. Last error: ${truncate(lastInvalid, 300)}`,
       );
     }
     messages.push(

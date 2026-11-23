@@ -38,11 +38,24 @@ export function claimedResult(task: TaskRow, holder: ClaimHolder): DecomposerTas
   );
 }
 
-function exclusion(
+export interface EligibilityCheck {
+  runId: number;
+  cooldown: ReadonlySet<number>;
+  now: number;
+}
+
+export function eligibilityCheck(ex: Executor, runId: number, now: number): EligibilityCheck {
+  return { runId, cooldown: listTaskIdsInCooldown(ex, now), now };
+}
+
+/**
+ * Why the task is not eligible, or undefined. The run's own claim and suggestions do not
+ * count, so a run can check a task again after it claimed it.
+ */
+export function exclusion(
   ex: Executor,
   task: TaskRow,
-  cooldown: ReadonlySet<number>,
-  now: number,
+  { runId, cooldown, now }: EligibilityCheck,
 ): DecomposerTaskResult | undefined {
   const skip = (why: string) => taskResult(task, "skipped", `Skipped ${task.identifier}: ${why}`);
   if (task.parentId !== null) return skip("it is a subtask; only top-level tasks are split");
@@ -50,8 +63,8 @@ function exclusion(
   const subtasks = listSubtaskIds(ex, task.id).length;
   if (subtasks > 0) return skip(`it already has ${plural(subtasks, "subtask")}`);
   const claim = findActiveClaim(ex, task.id, now);
-  if (claim) return claimedResult(task, claim);
-  if (listPendingSuggestionsOfTask(ex, task.id).length > 0) {
+  if (claim && claim.runId !== runId) return claimedResult(task, claim);
+  if (listPendingSuggestionsOfTask(ex, task.id).some((s) => s.runId !== runId)) {
     return skip("it has a pending suggestion to review first");
   }
   if (cooldown.has(task.id)) {
@@ -75,9 +88,10 @@ function byPriorityThenAge(a: TaskRow, b: TaskRow): number {
 export function selectBatch(
   ex: Executor,
   taskIds: readonly number[] | undefined,
+  runId: number,
   now: number,
 ): Batch {
-  const cooldown = listTaskIdsInCooldown(ex, now);
+  const check = eligibilityCheck(ex, runId, now);
   const candidates = taskIds
     ? taskIds.map((id) => findTask(ex, id)).filter((task) => task !== undefined)
     : listAllTasks(ex).filter((task) => task.parentId === null && task.status === "todo");
@@ -85,7 +99,7 @@ export function selectBatch(
   const eligible: TaskRow[] = [];
   const excluded: DecomposerTaskResult[] = [];
   for (const task of candidates) {
-    const result = exclusion(ex, task, cooldown, now);
+    const result = exclusion(ex, task, check);
     if (!result) eligible.push(task);
     else if (taskIds || result.outcome === "claimed") excluded.push(result);
   }

@@ -5,11 +5,11 @@ The Decomposer splits a batch of tasks into subtasks (spec 8.2). In suggest mode
 | File             | What it holds                                                                                                  |
 | ---------------- | -------------------------------------------------------------------------------------------------------------- |
 | `index.ts`       | `createDecomposerAgent(loops?)`, `createDecomposerClarifyAgent(loops?)`, the two agents and the orchestration. |
-| `eligibility.ts` | `selectBatch`: stage 0, which tasks the run works on and why the others are left out.                          |
+| `eligibility.ts` | `selectBatch` and `exclusion`: stage 0, which tasks the run works on and why the others are left out.          |
 | `prompt.ts`      | `DECOMPOSER_PROMPT_V1` (`related` and `task`), the batch table and the per-task message.                       |
 | `tools.ts`       | The terminal tools and the `get_task` and `search_tasks` read tools with user text in `<task>` tags.           |
 | `validate.ts`    | `checkRelatedGroups` and `checkProposal`: the checks in code after each loop.                                  |
-| `apply.ts`       | Stage 3: the `Applier` for each mode, `applierFor` and `decompositionMode`.                                    |
+| `apply.ts`       | Stage 3: `writeConflict`, the `Applier` for each mode, `applierFor` and `decompositionMode`.                   |
 | `notify.ts`      | The auto run's notifications: `notifyAutoRun` and the message builders `autoRunMessage` and `conflictMessage`. |
 | `mock.ts`        | `relatedMockScript` and `taskMockScript`, registered for the `decomposer:related` and `decomposer:task` loops. |
 
@@ -18,7 +18,7 @@ The Decomposer splits a batch of tasks into subtasks (spec 8.2). In suggest mode
 Both answer `202 { runId }`, behind `aiEnabledGuard`. The run's `input` is the request body, its `output` is `decomposerOutputSchema`, and `agent` is `decomposer` for both.
 
 - `POST /api/agents/decomposer/run` with `{ taskIds? }`. A task id that does not exist answers 400.
-- `POST /api/agents/decomposer/clarify` with `{ suggestionId, answers }` or `{ suggestionId, generateAnyway: true }`. A missing suggestion answers 404, one that is not a clarification 400, and one that is no longer pending 409.
+- `POST /api/agents/decomposer/clarify` with `{ suggestionId, answers }` or `{ suggestionId, generateAnyway: true }`. A missing suggestion answers 404, one that is not a clarification 400, and one that is no longer pending 409. A task that is done or already has subtasks answers 409 `conflict` too, and no run starts.
 
 ## Stages
 
@@ -26,7 +26,7 @@ Both answer `202 { runId }`, behind `aiEnabledGuard`. The run's `input` is the r
 
 **Stage 1, related pass (one loop).** Skipped when the batch has one task. The model gets a table of the batch (id, identifier, priority, title, a 160-character summary of the description) and `search_tasks` and `get_task`, and ends with `report_related`. Code then drops, each with a warning, ids that do not exist or are done or subtasks (unless they are in the batch), groups with fewer than 2 ids left, groups with no batch task, and groups that repeat an earlier one. If this loop fails, the run carries on without related tasks and says so in a warning. A cancel still stops the run.
 
-**Stage 2, one loop per task.** `AGENT_LIMITS.decomposerConcurrency` (3) loops run at a time, each settled on its own, so a failed loop becomes a `failed` outcome with the error's message and the other tasks go on. Tasks in a duplicates group that holds 2 or more batch tasks are left out with the outcome `duplicate` and the related suggestion's id. Every other related group the task is in is listed in its message, so the model does not propose work a related task already covers. Read tools are `get_task` and `search_tasks`. The terminal tools are `propose_subtasks`, `ask_clarification` and `skip`. Trace steps of a task loop start with the task's identifier, because loops run at the same time.
+**Stage 2, one loop per task.** `AGENT_LIMITS.decomposerConcurrency` (3) loops run at a time, each settled on its own, so a failed loop becomes a `failed` outcome with the error's message and the other tasks go on. Tasks in a duplicates group that holds 2 or more batch tasks are left out with the outcome `duplicate` and the related suggestion's id. Every other related group the task is in is listed in its message, so the model does not propose work a related task already covers. Read tools are `get_task` and `search_tasks`. The terminal tools are `propose_subtasks`, `ask_clarification` and `skip`. The loop may answer with up to 8,192 tokens per step: 8 subtasks with 1,500-character descriptions (the cap in `subtaskProposalSchema`) are about 3,500 tokens, and a model may write text before its tool call. Trace steps of a task loop start with the task's identifier, because loops run at the same time.
 
 **Stage 3, apply (code).** `applierFor(ctx.mode)` picks the `Applier`. Each task's result is applied as soon as its loop ends, while the task is still claimed. Related groups are applied right after stage 1, so a duplicate outcome can point at its suggestion. Each task and each group is applied in its own transaction, so a throw writes nothing of that item. A task whose transaction throws gets the outcome `failed`, and the other tasks go on.
 
@@ -47,17 +47,17 @@ The run completes even when some tasks fail. It fails, with the first task's err
 
 ## Claims
 
-Each stage 2 loop claims its task with `tryClaim` before it starts. When another run holds the task, the outcome is `claimed`, "Skipped PD-12: being processed by decomposer run #41", and no loop runs. `runAgent`'s `onStep` hook calls `renewClaims` after every model call. The loop releases its own claim in a `finally`, so a task's orange processing state ends as soon as its result is saved, also when the loop throws. When the run ends or is cancelled, the run service releases any claim that is left. A worker that has not started yet checks the abort signal before it claims, so a cancelled run does not claim more tasks.
+Each stage 2 loop claims its task with `tryClaim` before it starts. When another run holds the task, the outcome is `claimed`, "Skipped PD-12: being processed by decomposer run #41", and no loop runs. Once claimed, the task is read again and checked with stage 0's `exclusion` (the run's own claim and suggestions do not count) and with `writeConflict` (below), because another run may have split it since this run's stage 0. Two runs started at once, or from two tabs, both select the same task, and the one that claims it second gets `skipped` ("Skipped PD-12: it already has 3 subtasks" in auto mode, "it has a pending suggestion to review first" in suggest mode) without a model call. `runAgent`'s `onStep` hook calls `renewClaims` after every model call. The loop releases its own claim in a `finally`, so a task's orange processing state ends as soon as its result is saved, also when the loop throws. When the run ends or is cancelled, the run service releases any claim that is left. A worker that has not started yet checks the abort signal before it claims, so a cancelled run does not claim more tasks.
 
 Stage 1 takes no claims. Two runs started at the same moment can both find the same related group; the second one sees the pending suggestion and does not save it again.
 
 ## Stale writes
 
-The applier reloads the task. If its `updatedAt` is later than the run's `startedAt`, the user changed it while the model worked, and the result is not saved (outcome `superseded`). A deleted task gets the same outcome. In auto mode, the edited tasks are also listed in the run's `conflict` notification. A related group is not saved when any of its tasks was edited, and a warning says which one. Only user edits bump `updatedAt`, so the run's own claim and suggestion writes never trip this check.
+Stage 3 calls `writeConflict` in the transaction that would write, before the `Applier` runs, so both modes get the same check. It reads the task again and saves nothing (outcome `superseded`, the reason as the detail) when the task was deleted, its `updatedAt` is later than the run's `startedAt` (the user edited it), it is done, it has subtasks (the user added one by hand, which does not bump `updatedAt`), or another run left a pending `subtasks` or `clarification` suggestion on it. The clarification a rerun answers does not count. In auto mode, the superseded tasks that still exist are also listed in the run's `conflict` notification. A related group is not saved when any of its tasks was edited, and a warning says which one. Only user edits bump `updatedAt`, so the run's own claim and suggestion writes never trip this check.
 
 ## Clarify
 
-`/decomposer/clarify` re-runs stage 2 for the clarification's task with the earlier questions, what was unclear, and either the user's answers (in `<answer>` tags) or the Generate anyway instruction added to the first message. With `generateAnyway`, `ask_clarification` is not offered at all, so a call to it gets the usual unknown-tool error. The task is claimed like in a batch run, and there is no eligibility check, because the task has a pending clarification by definition.
+`/decomposer/clarify` re-runs stage 2 for the clarification's task with the earlier questions, what was unclear (in `<task>` tags), and either the user's answers (in `<answer>` tags) or the Generate anyway instruction added to the first message. Each `Q:` line is the stored question at that index, escaped; the `question` text the client sends is only checked, never put in the prompt. `answers` must hold one item per stored question, with each `question` equal to the stored one, in order, or the route answers 400 `validation_error` on `answers`. A related group's `reason` in the task message is in `<task>` tags too. With `generateAnyway`, `ask_clarification` is not offered at all, so a call to it gets the usual unknown-tool error. The task is claimed like in a batch run. Stage 0's `exclusion` does not apply, because the user asked for the rerun and the task has a pending clarification by definition, but `writeConflict` does, both after the claim and before the write, with the answered clarification left out. Moving a task to done supersedes its pending `subtasks` and `clarification` suggestions (`services/tasks.ts`), so a question about finished work does not linger.
 
 The rerun applies its result in the mode Settings have when the rerun starts. In auto mode, a subtasks result is created right away and recorded in the rerun's own changeset, and the rerun writes its own notifications. The old clarification is marked `superseded` in the same transaction that saves the new result, and only when the result is settled: a new subtasks or clarification suggestion, created subtasks, or a skip. When the rerun fails, loses the claim to another run, or finds the task edited, the clarification stays pending, so the user does not lose the question and can answer again.
 
@@ -109,5 +109,5 @@ On the seed, a default run splits 5 tasks, asks about "Improve performance" and 
 - A skipped task has no suggestion row, so the next run looks at it again.
 - Stage 1 compares the batch with itself and with what `search_tasks` finds. It does not see every open task.
 - Suggestions saved before a cancel stay pending, and subtasks and links created before a cancel stay in place.
-- Auto mode checks only the task's own `updatedAt`. A subtask that the user adds by hand during the run does not change it, so auto mode adds its subtasks next to the user's.
+- The `conflict` notification says a superseded task "was edited during the run" whatever the reason in its detail, such as a subtask the user added.
 - Nothing here has been run against a real model. The prompts are untested beyond the mock.

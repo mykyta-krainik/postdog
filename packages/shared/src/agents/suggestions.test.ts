@@ -37,7 +37,8 @@ describe("subtasksPayloadSchema", () => {
     expect(parse(subtask("a".repeat(200)))).toBe(true);
     expect(parse(subtask("a".repeat(201)))).toBe(false);
     expect(parse(subtask("   "))).toBe(false);
-    expect(parse({ title: "a", description: "d".repeat(10_001) })).toBe(false);
+    expect(parse({ title: "a", description: "d".repeat(1500) })).toBe(true);
+    expect(parse({ title: "a", description: "d".repeat(1501) })).toBe(false);
     expect(parse(subtask("a"), "r".repeat(1000))).toBe(true);
     expect(parse(subtask("a"), "r".repeat(1001))).toBe(false);
     expect(parse(subtask("a"), "  ")).toBe(false);

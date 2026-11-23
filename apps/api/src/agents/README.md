@@ -14,7 +14,7 @@ How the agent platform works, for whoever writes an agent on it. The code has no
 | `core/tracer.ts`          | `Tracer` and `RunTracer`: Langfuse, or a no-op without keys.                                |
 | `core/errors.ts`          | `AgentError(code, message)` fails a run. `ToolError(message)` becomes an error tool result. |
 | `tools/read.ts`           | `createReadTools(db, now?)`: `getTask`, `searchTasks`, `getTaskNotes`.                      |
-| `tools/userText.ts`       | `wrapTask` and `tagUserText`: user text in `<task>` tags with `<` and `>` escaped.          |
+| `tools/userText.ts`       | `wrapTask` and `tagUserText`: user text in `<task>` or `<note>` tags, brackets escaped.     |
 | `context.ts`              | `computeTaskFacts` and `loadTaskFacts(db, now)`: per-task numbers computed in code.         |
 | `registry.ts`             | The definitions the routes run.                                                             |
 | `planner/index.ts`        | `plannerAgent`, the daily Planner (see `planner/README.md`).                                |
@@ -49,13 +49,14 @@ Usage is not returned by `run`. The run service sums the tokens of every `llm` s
 `runAgent({ name, system, userMessage, tools, maxSteps?, maxOutputTokens?, wallClockMs?, onStep?, signal, trace, llm, tracer })` calls the model one step at a time.
 
 - `name` names the loop. The mock model looks its script up by this name, and Langfuse names each generation after it. An agent with several loops can use names such as `decomposer:related`.
-- A tool call with invalid input or an unknown tool name gets an error tool result that tells the model what to fix, and the loop goes on. Two invalid calls in a row fail the run with `validation_failed`.
-- A read tool runs, and its return value goes back as a JSON tool result. A `ToolError` it throws goes back as an error tool result. Any other error it throws fails the run with `internal_error`.
+- A tool call with invalid input or an unknown tool name gets an error tool result that tells the model what to fix, and the loop goes on. The count is per step, because real models send several calls in one step: two steps in a row in which every call is invalid fail the run with `validation_failed` (`AGENT_LIMITS.maxConsecutiveValidationErrors`), and a step with one valid call starts the count again.
+- Before validation, a top-level value that is a string starting with `[` or `{`, at a key whose JSON schema is an array or an object, is parsed as JSON (`parseStringifiedFields`). Claude sometimes sends `{"subtasks": "[{...}]"}`. A string that does not parse, or sits at a key that wants a string, is left alone. Arguments that are not JSON at all (the provider hands them over as a string, as OpenAI does for `{"id":`) get "Your arguments were not valid JSON; send a JSON object." and count as an invalid call.
+- A read tool runs, and its return value goes back as a JSON tool result. `runAgent` passes it through `tagUserText` first, so for every agent each `title` and `description` field is wrapped in `<task>` tags and each `body` (a note) in `<note>` tags. `escapeTags` turns `<` and `>` into `&lt;` and `&gt;` inside them, and also the lookalike brackets `＜ ＞ ‹ › ⟨ ⟩ 〈 〉 ﹤ ﹥ ❮ ❯`, so user text cannot close a tag. `summarize` gets the untagged value, so traces show plain text. A `ToolError` it throws goes back as an error tool result. Any other error it throws fails the run with `internal_error`.
 - Calling the same read tool with the same input twice in a row returns the first result again, with a note that the model already has it.
 - The first valid terminal tool call ends the loop. `runAgent` resolves to `{ toolName, output, steps }`, where `output` is the terminal tool's parsed input. With several terminal tools, `toolName` narrows `output`.
 - `onStep(step)`, optional, runs after every model call, before that step's tools run. The Decomposer renews its claims there.
 - A reply with no tool call gets one nudge ("Finish by calling one of: ..."). A second one fails with `no_terminal_tool`.
-- Limits fail with their code: `step_limit` after `maxSteps` model calls (default `AGENT_LIMITS.maxSteps`), `timeout` after `wallClockMs` per loop (default 60 s), `llm_error` when the model call throws. `maxOutputTokens` defaults to 2,048 per call.
+- Limits fail with their code: `step_limit` after `maxSteps` model calls (default `AGENT_LIMITS.maxSteps`), `timeout` after `wallClockMs` per loop (default 60 s), `llm_error` when the model call throws. `maxOutputTokens` defaults to 4,096 per call. An answer the provider cut off at that limit (`finishReason: "length"`, Anthropic's `max_tokens`) fails the loop at once with `llm_error`, "The model's answer was cut off at 4096 tokens, the output limit of one step.", because the cut tool call or text cannot be trusted. Before this check, it surfaced as a misleading `no_terminal_tool` or `validation_failed`.
 - An abort ends the loop with the abort reason when it is an `AgentError`, otherwise with `cancelled`. The user's cancel aborts with `cancelled` and the kill switch with `ai_disabled`.
 
 Every failure is an `AgentError`. The trace so far stays in `ctx.trace` and is saved on the run.
@@ -104,6 +105,10 @@ ctx.trace.record({
 ```
 
 When nothing valid is left, throw `new AgentError("nothing_valid", "...")`.
+
+## Mock vs real
+
+`createLlm` in `core/llm.ts` picks the mock model when `LLM_MOCK=true`, or when the key of the provider named in `LLM_MODEL` is empty (`ANTHROPIC_API_KEY` for `anthropic:...`, `OPENAI_API_KEY` for `openai:...`). Otherwise it uses the real model. A missing key never fails boot: the spec wants a fresh clone to work, so the API falls back to the mock and `GET /api/agents/info` reports `llm.mode: "mock"`, which the UI shows as the "Mock AI" badge. The mock's output is not a preview. In auto mode, a mock Decomposer run creates the mock's subtasks and links in the real database like a real run would, so the badge is the only sign that they came from a script. Check it before you switch auto mode on.
 
 ## Mock scripts
 

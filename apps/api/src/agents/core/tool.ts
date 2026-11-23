@@ -42,18 +42,55 @@ export function defineTerminalTool<const N extends string, S extends z.ZodType>(
 
 type JsonSchemaInput = Parameters<typeof jsonSchema>[0];
 
+function inputJsonSchema(t: AgentTool) {
+  return z.toJSONSchema(t.input, { target: "draft-7", io: "input" });
+}
+
 export function toToolSet(tools: readonly AgentTool[]): ToolSet {
   return Object.fromEntries(
     tools.map((t) => [
       t.name,
       tool({
         description: t.description,
-        inputSchema: jsonSchema(
-          z.toJSONSchema(t.input, { target: "draft-7", io: "input" }) as JsonSchemaInput,
-        ),
+        inputSchema: jsonSchema(inputJsonSchema(t) as JsonSchemaInput),
       }),
     ]),
   );
+}
+
+/** The top-level input keys whose schema is an array or an object. */
+export function structuredKeys(t: AgentTool): ReadonlySet<string> {
+  const properties = inputJsonSchema(t).properties ?? {};
+  return new Set(
+    Object.entries(properties)
+      .filter(
+        ([, schema]) =>
+          typeof schema === "object" && ["array", "object"].includes(`${schema.type}`),
+      )
+      .map(([key]) => key),
+  );
+}
+
+/**
+ * Some models send a nested array or object as a JSON string, as in {"subtasks": "[...]"}.
+ * Parses such a value back, only at the given keys, and keeps any string that is not JSON.
+ */
+export function parseStringifiedFields(input: unknown, keys: ReadonlySet<string>): unknown {
+  if (typeof input !== "object" || input === null || Array.isArray(input)) return input;
+  return Object.fromEntries(
+    Object.entries(input).map(([key, value]) => [
+      key,
+      keys.has(key) && typeof value === "string" && /^\s*[[{]/.test(value) ? parseOr(value) : value,
+    ]),
+  );
+}
+
+function parseOr(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
 }
 
 export function describeIssues(error: z.ZodError): string {

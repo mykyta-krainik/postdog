@@ -14,6 +14,7 @@ import { listLinksOfTask } from "../repositories/links";
 import { getSetting, setSetting } from "../repositories/settings";
 import {
   listPendingSuggestionsOfTask,
+  resolveSuggestion,
   supersedeSuggestionsOfTasks,
 } from "../repositories/suggestions";
 import {
@@ -141,8 +142,14 @@ export function createTaskService(db: Db) {
     update(id: number, input: UpdateTaskInput): TaskDetail {
       return db.transaction((tx) => {
         const task = requireTask(tx, id);
-        const changes = planTaskUpdate(task, input, Date.now());
+        const now = Date.now();
+        const changes = planTaskUpdate(task, input, now);
         if (changes) updateTask(tx, id, changes);
+        if (changes?.status === "done") {
+          for (const s of listPendingSuggestionsOfTask(tx, id)) {
+            if (s.kind !== "related") resolveSuggestion(tx, s.id, "superseded", now);
+          }
+        }
         return toDetail(tx, requireTask(tx, id));
       });
     },
