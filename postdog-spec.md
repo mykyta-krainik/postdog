@@ -146,6 +146,7 @@ agent_runs
   id, agent        enum  planner | decomposer | status_updater | docs_reviewer
   mode             enum  suggest | auto | null
   status           enum  running | completed | failed | cancelled
+  trigger          enum  manual | scheduled, default manual   scheduled = started by the daily runs (daily runs decision)
   input, output    json
   trace            json  array of steps (see Agent platform)
   error            text?
@@ -177,7 +178,7 @@ notifications
   title, body, runId?, changesetId?
   readAt?, createdAt
 
-settings           key/value: aiEnabled, decompositionMode, identifierCounter, seededAt
+settings           key/value: aiEnabled, decompositionMode, scheduledRunsEnabled, identifierCounter, seededAt, lastScheduledRun:<agent> (local YYYY-MM-DD the daily slot last fired)
 Rules
 • statusChangedAt is updated only when status changes. The Planner uses it for "days in this status".
 • Subtasks are ordinary tasks with parentId. Nesting is one level deep; the API rejects a subtask of a subtask.
@@ -300,7 +301,7 @@ Key screens
 • Today: the Planner's latest plan with reasons, a staleness hint ("3 tasks changed since"), and Start or Dismiss on each item.
 • Docs: a list with source and status badges; an editor (markdown with a preview toggle); "Import transcript" (paste or upload .txt / .vtt); Review docs.
 • Inbox: notifications, with Rollback on auto-decomposition entries.
-• Settings: AI on/off, decomposition mode (Suggest / Auto), theme.
+• Settings: AI on/off, daily runs on/off, decomposition mode (Suggest / Auto), theme.
 Responsive layouts
 Breakpoint
 Navigation
@@ -460,10 +461,15 @@ true
 decompositionMode
 suggest / auto
 suggest
+scheduledRunsEnabled
+true / false
+true
 Theme
 dark / light / system (stored in the browser, not the DB)
 dark
 Switching to Auto shows a confirmation that explains what Auto may do: create subtasks and relates links, nothing else, with every change undoable from the Inbox.
+Daily runs
+With scheduledRunsEnabled on, the API runs the Planner every day at 08:00 and the Status updater (scope since, the last 24 hours) at 18:00, in the API machine's local time zone (TZ changes it). The times are SCHEDULED_RUNS in packages/shared and have no UI. A scheduled run goes through the same run service as the manual buttons, which stay as they are, and its agent_runs row has trigger = scheduled. Nobody watches it, so its end reaches the Inbox as run_finished or agent_failed, and the Runs page marks it Scheduled. A slot may start up to 6 hours late, after a restart or once AI or the setting is back on, and never later or for an earlier day. It fires at most once per local date: settings key lastScheduledRun:<agent> holds that date, written in the transaction that inserts the run row. The scheduler skips a slot, with a log line and no run or notification, while AI or the setting is off, and for the rest of the day when a run of that agent is in progress or the agent has nothing to work on. With AI off, Settings still shows the Daily runs switch, disabled, and says nothing runs (daily runs decision).
 AI kill switch
 Turning AI off is enforced in two places:
 • Server: aiEnabledGuard returns 403 ai_disabled on every agent and suggestion route. Runs already in progress are cancelled.

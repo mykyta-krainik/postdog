@@ -163,6 +163,37 @@ Limits:
 - A clean stop (SIGINT or SIGTERM) fails the runs it stops and notifies each at once. A crash leaves the rows `running`, and the next boot fails and notifies them in the reconcile transaction. Boot only touches rows still `running`, so a second boot notifies nobody again.
 - The watch time lives in one process. Only the process that executes a run reads it, and the web talks to one API, so a second process on the same database changes nothing.
 
+## Scheduled runs
+
+The API starts two runs a day on its own, as the user's manual buttons would:
+
+| Slot             | Time  | Body                 |
+| ---------------- | ----- | -------------------- |
+| `planner`        | 08:00 | `{}`                 |
+| `status_updater` | 18:00 | `{ scope: "since" }` |
+
+The times are local to the machine that runs the API. Set `TZ` (for example `TZ=Europe/Berlin npm start`) to use another zone. The server logs the slots and the zone when it starts. Weekends are ordinary days.
+
+`src/scheduler.ts` holds the schedule. `listen()` in `src/lifecycle.ts` starts its timer once the server holds its port, and `shutdown()` stops the timer before anything else. Every 30 s, the timer calls the pure `dueRuns(now, lastFired)`. A slot is due from its time for `CATCH_UP_MS` (6 hours), until it has fired that day. A slot that is more than 6 hours late is skipped, so a server that was down at 8:00 plans the day until 14:00 and not after. Earlier days are never run.
+
+A scheduled run goes through `start(key, body, "scheduled")`, the same run service as `POST /api/agents/<agent>/run`. Slots, claims, traces, Langfuse and the AI kill switch work as they do for a manual run. The row gets `trigger: "scheduled"`, and the Runs page shows a **Scheduled** mark on it. Nobody started it from a client, so the run starts unwatched (see [Background runs](#background-runs)). The Inbox gets `run_finished` when it completes, or `agent_failed` when it fails.
+
+The settings table keeps `lastScheduledRun:planner` and `lastScheduledRun:status_updater`. Each holds the local date (`YYYY-MM-DD`) that the agent's slot last fired. The scheduler writes the date in the transaction that inserts the run row. A second tick or a restart reads the date and does not fire the slot again.
+
+The scheduler skips a slot in these cases. Each skip writes one info log line, no run row and no notification:
+
+| Skip                                                                       | Slot used up for the day |
+| -------------------------------------------------------------------------- | ------------------------ |
+| AI is off                                                                  | no                       |
+| `scheduledRunsEnabled` is off (**Daily runs** in Settings)                 | no                       |
+| A run of the agent is in progress (the run service's 409)                  | yes                      |
+| The Planner has no open top-level task that is ready (`readyCandidates`)   | yes                      |
+| No task changed in the Status updater's 24-hour window (`loadStatusScope`) | yes                      |
+
+When a slot is not used up, turning AI or **Daily runs** back on within its 6 hours runs it once. When a slot is used up, a task added later that day does not bring it back. The two empty checks are the same functions the agents call before they fail with `nothing_valid`.
+
+To change a time, edit `SCHEDULED_RUNS` in `packages/shared/src/config.ts`. The **Daily runs** text in Settings reads the same constant. Each agent can appear there once, because the API keeps one date per agent.
+
 ## Suggestions and claims
 
 Agents coordinate through two tables: `agent_claims` (which run is working on a task) and `agent_suggestions` (what the user has to review). The functions below, in `src/repositories/claims.ts` and `src/repositories/suggestions.ts`, are the only writers. Each one recomputes `tasks.aiState` for the tasks it touches, so an orchestrator never sets `aiState` itself.
