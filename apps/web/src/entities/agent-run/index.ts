@@ -49,6 +49,6 @@ export { useAgentRunner, type AgentRunner } from "./api/use-agent-runner";
 
 export { AgentDialog } from "./ui/agent-dialog";
 export { AgentRunStatus } from "./ui/agent-run-status";
-export { MockAiBadge, MockAiBadgeView, SuggestedBadge } from "./ui/badges";
+export { MockAiBadge, MockAiBadgeView, ScheduledBadge, SuggestedBadge } from "./ui/badges";
 export { RunStatusMark } from "./ui/run-status-mark";
 export { TraceTimeline } from "./ui/trace-timeline";
