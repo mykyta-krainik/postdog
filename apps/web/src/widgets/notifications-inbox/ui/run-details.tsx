@@ -1,12 +1,25 @@
 "use client";
 
 import { decomposerRunSchema } from "@postdog/shared";
-import { ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { useAgentRun } from "@/entities/agent-run";
 import { routes } from "@/shared/config";
 import { Button } from "@/shared/ui/button";
+
+/** A run that finished while nobody watched it: its result waits on the Runs page. */
+export function OpenRunResult({ runId }: { runId: number }) {
+  return (
+    <Link
+      href={routes.run(runId)}
+      className="-ml-1.5 flex min-h-10 items-center gap-1.5 self-start rounded-md px-1.5 text-[13px] font-medium text-brand-text underline-offset-2 outline-none hover:underline focus-visible:ring-1 focus-visible:ring-ring md:min-h-8"
+    >
+      Open result
+      <ArrowRight className="size-3.5" aria-hidden />
+    </Link>
+  );
+}
 
 /** The failed run's trace, mounted only once the user asks for it. */
 export function FailedRunTrace({

@@ -15,7 +15,7 @@ import { errorMessage } from "@/shared/lib/form-errors";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { AutoDecompositionDetails } from "./auto-decomposition-details";
-import { ConflictTasks, FailedRunTrace } from "./run-details";
+import { ConflictTasks, FailedRunTrace, OpenRunResult } from "./run-details";
 
 function KindDetails({
   notification,
@@ -29,8 +29,14 @@ function KindDetails({
     return changeset ? <AutoDecompositionDetails changeset={changeset} /> : null;
   }
   if (runId === null) return null;
-  if (kind === "agent_failed") return <FailedRunTrace runId={runId} renderTrace={renderTrace} />;
-  return <ConflictTasks runId={runId} />;
+  switch (kind) {
+    case "agent_failed":
+      return <FailedRunTrace runId={runId} renderTrace={renderTrace} />;
+    case "run_finished":
+      return <OpenRunResult runId={runId} />;
+    case "conflict":
+      return <ConflictTasks runId={runId} />;
+  }
 }
 
 /**
