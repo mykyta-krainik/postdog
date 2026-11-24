@@ -76,7 +76,7 @@ export function Sidebar() {
           onClick={() => setExpanded((value) => !value)}
           aria-expanded={expanded}
           aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
-          className="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[13px] text-muted-foreground outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-1 focus-visible:ring-ring"
+          className="flex cursor-pointer h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[13px] text-muted-foreground outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-1 focus-visible:ring-ring"
         >
           <ToggleIcon className="size-4 shrink-0" aria-hidden />
           <span className={RAIL_HIDDEN}>Collapse</span>

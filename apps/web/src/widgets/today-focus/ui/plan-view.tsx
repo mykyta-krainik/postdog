@@ -118,7 +118,7 @@ export function PlanView({
             <button
               type="button"
               onClick={onRefresh}
-              className="flex h-10 items-center gap-1.5 rounded-md px-1.5 text-xs text-brand-text outline-none hover:bg-brand-soft focus-visible:ring-1 focus-visible:ring-ring md:h-6"
+              className="flex h-10 cursor-pointer items-center gap-1.5 rounded-md px-1.5 text-xs text-brand-text outline-none hover:bg-brand-soft focus-visible:ring-1 focus-visible:ring-ring md:h-6"
             >
               <History className="size-3.5" aria-hidden />
               {stale}

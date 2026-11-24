@@ -99,7 +99,7 @@ export function TaskList() {
                 type="button"
                 onClick={() => toggle(status)}
                 aria-expanded={!isCollapsed}
-                className="flex h-10 w-full items-center gap-2 border-b border-border/60 bg-muted/70 px-4 text-left text-[13px] font-medium backdrop-blur outline-none hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset md:h-9 md:px-5"
+                className="flex cursor-pointer h-10 w-full items-center gap-2 border-b border-border/60 bg-muted/70 px-4 text-left text-[13px] font-medium backdrop-blur outline-none hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset md:h-9 md:px-5"
               >
                 <ChevronRight
                   className={cn(

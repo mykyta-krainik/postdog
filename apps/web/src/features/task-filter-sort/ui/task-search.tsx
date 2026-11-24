@@ -46,7 +46,7 @@ export function TaskSearch({ className }: { className?: string }) {
         placeholder="Search tasks"
         aria-label="Search tasks"
         maxLength={200}
-        className="h-10 w-full min-w-0 rounded-md border border-input bg-transparent pr-8 pl-8 text-[13px] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/40 md:h-8 [&::-webkit-search-cancel-button]:hidden"
+        className="h-10 cursor-pointer w-full min-w-0 rounded-md border border-input bg-transparent pr-8 pl-8 text-[13px] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/40 md:h-8 [&::-webkit-search-cancel-button]:hidden"
       />
       {value && (
         <button

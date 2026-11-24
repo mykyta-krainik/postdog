@@ -26,7 +26,7 @@ export function MobileTopBar() {
           <button
             type="button"
             aria-label={unreadBadgeText(unread) ? `Open menu, ${unread} unread` : "Open menu"}
-            className="relative flex size-10 items-center justify-center rounded-md text-sidebar-foreground outline-none hover:bg-sidebar-accent focus-visible:ring-1 focus-visible:ring-ring"
+            className="relative cursor-pointer flex size-10 items-center justify-center rounded-md text-sidebar-foreground outline-none hover:bg-sidebar-accent focus-visible:ring-1 focus-visible:ring-ring"
           >
             <Menu className="size-5" aria-hidden />
             {unreadBadgeText(unread) && (

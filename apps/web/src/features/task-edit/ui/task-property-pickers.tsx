@@ -131,7 +131,7 @@ export function DoneToggle({ task, className }: { task: TaskRef; className?: str
       title={label}
       onClick={() => changeTask(task, { status: toggledStatus(task.status) })}
       className={cn(
-        "grid size-10 shrink-0 place-items-center rounded-md outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 md:size-7",
+        "grid cursor-pointer size-10 shrink-0 place-items-center rounded-md outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 md:size-7",
         className,
       )}
     >
