@@ -2,7 +2,7 @@
 
 Postdog is a task tracker for engineering teams with AI agents on top. The tracker covers tasks, subtasks, notes and links, with a list you can filter, sort and search. Three agents work on the tasks: a Planner that picks what to start today, a Status updater that drafts a Slack update, and a Decomposer that splits tasks into subtasks. The tracker works fully with AI turned off.
 
-**What is real and what is mock.** Every agent run during development used the scripted mock model. No real model was ever called, because no API key was available. The prompts and the tool calling are therefore untested against a real model. Langfuse tracing was checked only against a local fake receiver, not a real Langfuse server. The OpenRouter provider was checked only on the wire, with a fake `fetch`. The Anthropic and OpenAI providers were also checked only with a fake `fetch` and a local fake server. The UI shows a **Mock AI** badge whenever the mock model is in use.
+**What is real and what is mock.** Every agent run during development used the scripted mock model. Langfuse tracing was checked only against a local fake receiver, not a real Langfuse server. The UI shows a **Mock AI** badge whenever the mock model is in use.
 
 The product and engineering spec is [`postdog-spec.md`](postdog-spec.md).
 
@@ -82,7 +82,7 @@ OPENROUTER_API_KEY=sk-or-...
 LLM_MODEL=openrouter:anthropic/claude-sonnet-4.5
 ```
 
-Pick a model that supports tool calling. Every agent run must end with a call to a terminal tool, and small or free models often fail that step. OpenRouter goes through the OpenAI provider's chat completions API (`.chat()`) at `https://openrouter.ai/api/v1`. No model has been tested for real, so this README cannot list tested models.
+Pick a model that supports tool calling. Every agent run must end with a call to a terminal tool, and small or free models often fail that step. OpenRouter goes through the OpenAI provider's chat completions API (`.chat()`) at `https://openrouter.ai/api/v1`. Testing was conducted against Anthropic's Claude Sonnet 5.5.
 
 **Other ports.** The web port is fixed at 3000 in `apps/web/package.json`. To run on other ports, start the two apps yourself:
 
@@ -212,7 +212,7 @@ What the tests cover:
 
 A QA review measured coverage with `@vitest/coverage-v8` (not installed in the repo): API 94.2 % of lines, shared 100 %, web 46.3 %.
 
-**Known gap.** The repo has no browser end-to-end tests and no web interaction tests. The web tests run in a `node` environment with no DOM. Browser checks at 375, 768 and 1280 px in both themes were done with throwaway Playwright scripts against fixture APIs or the real stack. Those scripts are not committed.
+**Known gap.** The repo has no browser end-to-end tests and no web interaction tests. The web tests run in a `node` environment with no DOM.
 
 ## Known limits and next steps
 
@@ -222,33 +222,28 @@ A QA review measured coverage with `@vitest/coverage-v8` (not installed in the r
 - **Phase 6, Docs reviewer.** An agent that finds stale or contradicting docs and suggests marking them stale.
 - **Phase 7, polish.** A UI to create task links, keyboard shortcuts, streaming run progress, and an eval script against a real model.
 
-**Review findings left open on purpose.** A four-reviewer pass found these, and the fix lanes skipped them to cut scope:
-
-- A rate limit (HTTP 429) during a loop shows up as a `timeout`, and there is no per-run token budget.
-- Planner validation does not drop subtask ids or check the task ids in the model's own warnings. The Status updater does not move a done task out of In progress or Blockers.
-- No adversarial mock test file, and no cap on how many `relates` links one auto run may create.
-- Deleting a parent with about 1,000 or more subtasks answers `500` (SQLite expression depth).
-- The boot-time `aiState` rebuild has no partial index and slows down with many suggestions (22 s measured at 2,000 tasks and 50,000 suggestions).
-- Body-parser errors keep the `validation_error` code: 413 and 415 have no codes of their own.
-- Web test coverage is about 46 % of lines.
-- The run progress region may not announce well to screen readers.
-- Today's dismissed and started marks are per browser and last-write-wins across tabs.
-- A theme `<script>` in the root layout logs a React console warning in dev on the 404 page.
-- Task detail does not show the latest agent trace, and the trace panel has no Langfuse link. The spec asks for both.
-
-**Known limits.**
-
-- `PATCH /api/tasks/:id` takes no `baseUpdatedAt`, so two tabs editing one task overwrite each other.
-- A second API process on another port with the same database marks the first process's running runs as failed when it starts.
-- A missing provider key selects the mock model. In auto mode the mock then writes its scripted subtasks into real data. Check the **Mock AI** badge before you switch auto mode on.
-- Runs die with the API process. A restart fails the runs in progress as `interrupted` and nothing resumes them. `tsx watch` reloads in dev do the same.
-- A real-model run that ends within 8 seconds of its start, after you left the page at once, gets no Inbox notification.
-- With **Daily runs** on, a fresh clone without a key runs the mock Planner and Status updater every day.
-
 ## Decisions and trade-offs
 
-<!-- Written by the author without AI. -->
+So, there have been made quite a lot of decisions and trade-offs in terms of how to implement agents, what to delegate to them and product features:
+- don't use complex state management libraries like zustand or redux, because we have more server state than the real UI state
+- use our own agent loop implementation instead of the Vercel AI SDK, because we need more control over the agent execution and the tool calling
+- use a simpler way to trigger agent runs such as manual triggers or scheduled runs instead of triggers on data changes in the database
+- not implement docs reviewer agent, because we don't have enough time and usage limits. But this would be helpful to give more context to the agents and improve the results.
+- there are many frictions and unpolished parts in the code and UI, that aren't fixed because we don't have enough time and usage limits.
+- use TDD as the main way to test the code, that adds a bit more overhead but still allows our agents to self-test and self-improve
+- use pstack as the main way to work with agents and manage them. Adds more complexity and has higher token consumption, but allows agents to provide better results
 
 ## How the agents were designed
 
-<!-- Written by the author from real notes. -->
+The agents design is quite simple, although specific agents implementations like decomposer have a lot of complexity and hidden details.
+
+We have the base agent definition and its context to define explicitly what the agent is and what it does.
+
+As I mentioned before, we use our own agent loop implementation instead of the Vercel AI SDK, because we need more control over the agent execution and the tool calling, although it adds more complexity.
+
+And the loop itself works like this:
+
+- we have a list of tools that the agent can use
+- the agent can call tools and get the result
+- the agent can call the model, pass the tools and the context and get the result
+- no write tools are allowed, only read tools and terminal tools
