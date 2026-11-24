@@ -108,7 +108,11 @@ When nothing valid is left, throw `new AgentError("nothing_valid", "...")`.
 
 ## Mock vs real
 
-`createLlm` in `core/llm.ts` picks the mock model when `LLM_MOCK=true`, or when the key of the provider named in `LLM_MODEL` is empty (`ANTHROPIC_API_KEY` for `anthropic:...`, `OPENAI_API_KEY` for `openai:...`). Otherwise it uses the real model. A missing key never fails boot: the spec wants a fresh clone to work, so the API falls back to the mock and `GET /api/agents/info` reports `llm.mode: "mock"`, which the UI shows as the "Mock AI" badge. The mock's output is not a preview. In auto mode, a mock Decomposer run creates the mock's subtasks and links in the real database like a real run would, so the badge is the only sign that they came from a script. Check it before you switch auto mode on.
+`createLlm` in `core/llm.ts` picks the mock model when `LLM_MOCK=true`, or when the key of the provider named in `LLM_MODEL` is empty (`ANTHROPIC_API_KEY` for `anthropic:...`, `OPENAI_API_KEY` for `openai:...`, `OPENROUTER_API_KEY` for `openrouter:...`). Otherwise it uses the real model. A missing key never fails boot: the spec wants a fresh clone to work, so the API falls back to the mock and `GET /api/agents/info` reports `llm.mode: "mock"`, which the UI shows as the "Mock AI" badge. The mock's output is not a preview. In auto mode, a mock Decomposer run creates the mock's subtasks and links in the real database like a real run would, so the badge is the only sign that they came from a script. Check it before you switch auto mode on.
+
+### OpenRouter
+
+`openrouter:<model id>` reaches OpenRouter through the OpenAI provider pointed at `https://openrouter.ai/api/v1`, using the chat completions API (`.chat()`), because the OpenAI provider's default call is the Responses API, which OpenRouter does not fully serve. The model id is everything after the first colon, so ids with slashes or a `:free` suffix work (`openrouter:meta-llama/llama-3.3-70b-instruct:free`). Pick a model that supports tool calling: every agent must end by calling a terminal tool, and small or free models often do not. Only the wire format is tested here (`test/agents/openrouter.test.ts`, fake fetch). No OpenRouter model was run.
 
 ## Mock scripts
 

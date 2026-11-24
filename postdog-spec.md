@@ -491,8 +491,9 @@ Environment (.env.example)
 # LLM
 ANTHROPIC_API_KEY=
 OPENAI_API_KEY=               # only if an OpenAI model is used
+OPENROUTER_API_KEY=           # only if an OpenRouter model is used
 LLM_MOCK=false                # true = scripted mock model (also used when the provider key is missing)
-LLM_MODEL=anthropic:claude-sonnet-5-5   # provider:model from the AI SDK registry
+LLM_MODEL=anthropic:claude-sonnet-5-5   # provider:model, providers anthropic | openai | openrouter
 
 # API
 API_HOST=127.0.0.1            # loopback only; the API has no auth

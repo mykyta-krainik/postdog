@@ -48,6 +48,7 @@ export function registerMockScript(agentName: string, script: MockScript): void 
 const API_KEY_ENV = {
   anthropic: "ANTHROPIC_API_KEY",
   openai: "OPENAI_API_KEY",
+  openrouter: "OPENROUTER_API_KEY",
 } as const satisfies Record<LlmProvider, keyof Env>;
 
 type LlmEnv = Pick<Env, "LLM_MOCK" | "LLM_MODEL" | (typeof API_KEY_ENV)[LlmProvider]>;
@@ -62,16 +63,40 @@ export const mockLlm: Llm = {
     }),
 };
 
-export function createLlm(env: LlmEnv): Llm {
+const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+
+/**
+ * OpenRouter speaks the OpenAI chat completions API. The OpenAI provider's default model call
+ * is the Responses API, which OpenRouter does not fully serve, so `.chat()` is used on purpose.
+ * Model ids keep everything after the first colon: "openrouter:meta-llama/llama-3.3-70b:free".
+ */
+function openRouterLlm(env: LlmEnv, fetch: typeof globalThis.fetch | undefined): Llm {
+  const modelId = env.LLM_MODEL.slice(env.LLM_MODEL.indexOf(":") + 1);
+  const openrouter = createOpenAI({
+    name: "openrouter",
+    apiKey: env.OPENROUTER_API_KEY,
+    baseURL: OPENROUTER_BASE_URL,
+    fetch,
+  });
+  return { info: { mode: "real", model: env.LLM_MODEL }, model: () => openrouter.chat(modelId) };
+}
+
+const isOpenRouterModel = (id: string): id is `openrouter:${string}` =>
+  id.startsWith("openrouter:");
+
+/** `options.fetch` lets tests answer provider calls without a network. */
+export function createLlm(env: LlmEnv, options: { fetch?: typeof globalThis.fetch } = {}): Llm {
   const provider = env.LLM_MODEL.slice(0, env.LLM_MODEL.indexOf(":")) as LlmProvider;
   if (env.LLM_MOCK || !env[API_KEY_ENV[provider]]) return mockLlm;
+  const modelId = env.LLM_MODEL;
+  if (isOpenRouterModel(modelId)) return openRouterLlm(env, options.fetch);
 
   const registry = createProviderRegistry({
     anthropic: createAnthropic({ apiKey: env.ANTHROPIC_API_KEY }),
     openai: createOpenAI({ apiKey: env.OPENAI_API_KEY }),
   });
-  const model = registry.languageModel(env.LLM_MODEL);
-  return { info: { mode: "real", model: env.LLM_MODEL }, model: () => model };
+  const model = registry.languageModel(modelId);
+  return { info: { mode: "real", model: modelId }, model: () => model };
 }
 
 async function replayMockScript(agentName: string, options: CallOptions): Promise<GenerateResult> {

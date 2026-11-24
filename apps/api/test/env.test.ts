@@ -64,6 +64,18 @@ describe("parseEnv", () => {
     });
   });
 
+  it("accepts an OpenRouter model id with slashes and a colon", () => {
+    expect(
+      parseEnv({
+        LLM_MODEL: "openrouter:meta-llama/llama-3.3-70b-instruct:free",
+        OPENROUTER_API_KEY: "sk-or-test",
+      }),
+    ).toMatchObject({
+      LLM_MODEL: "openrouter:meta-llama/llama-3.3-70b-instruct:free",
+      OPENROUTER_API_KEY: "sk-or-test",
+    });
+  });
+
   it("fails fast on an unknown provider, a bad mock flag or a bad Langfuse URL", () => {
     expect(() => parseEnv({ LLM_MODEL: "gemini:pro" })).toThrow(/LLM_MODEL/);
     expect(() => parseEnv({ LLM_MODEL: "claude-sonnet-5-5" })).toThrow(/LLM_MODEL/);
