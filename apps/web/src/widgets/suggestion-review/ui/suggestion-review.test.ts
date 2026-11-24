@@ -71,7 +71,11 @@ function task(pendingSuggestions: Suggestion[]): TaskDetail {
 }
 
 function render(detail: TaskDetail, aiEnabled: boolean): string {
-  const settings: Settings = { aiEnabled, decompositionMode: "suggest" };
+  const settings: Settings = {
+    aiEnabled,
+    decompositionMode: "suggest",
+    scheduledRunsEnabled: true,
+  };
   return renderToStaticMarkup(
     createElement(
       SWRConfig,

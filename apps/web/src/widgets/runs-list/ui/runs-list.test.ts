@@ -20,6 +20,7 @@ function summary(run: Partial<AgentRunSummary> & Pick<AgentRunSummary, "id">): A
     agent: "planner",
     mode: null,
     status: "completed",
+    trigger: "manual",
     promptVersion: "V1",
     error: null,
     langfuseTraceId: null,
@@ -36,7 +37,7 @@ function full(run: AgentRunSummary, rest: Pick<AgentRun, "input" | "output">): A
   return { ...run, ...rest, trace: [] };
 }
 
-const planner = summary({ id: 6 });
+const planner = summary({ id: 6, trigger: "scheduled" });
 const running = summary({
   id: 9,
   agent: "decomposer",
@@ -169,6 +170,11 @@ describe("RunsList", () => {
     expect(html).toContain("Started 5 min ago, took 20 s");
     // Only the mock run carries the mark.
     expect(html.match(/Mock AI/g)).toHaveLength(1);
+    // Only the scheduled plan carries this one, and it keeps its label.
+    expect(html.match(/>Scheduled</g)).toHaveLength(1);
+    expect(html).toMatch(
+      /Plan my day<\/span><span[^>]*title="The daily schedule[^"]*"[^>]*>.*?Scheduled</,
+    );
     expect(html).toContain('href="/runs?run=6"');
     expect(html).not.toContain('aria-expanded="true"');
   });

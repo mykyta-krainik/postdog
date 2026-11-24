@@ -10,7 +10,11 @@ import { TodayView } from "./today-view";
 
 /** Renders with these settings already loaded, as every page sees them after the first fetch. */
 function render(component: ComponentType, aiEnabled: boolean): string {
-  const settings: Settings = { aiEnabled, decompositionMode: "suggest" };
+  const settings: Settings = {
+    aiEnabled,
+    decompositionMode: "suggest",
+    scheduledRunsEnabled: true,
+  };
   return renderToStaticMarkup(
     createElement(
       SWRConfig,

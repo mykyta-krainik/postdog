@@ -1,16 +1,21 @@
 import { DEFAULT_SETTINGS, type Settings, type UpdateSettingsInput } from "@postdog/shared";
 import { AgentError } from "../agents/core/errors";
-import type { Db } from "../db/client";
+import type { Db, Executor } from "../db/client";
 import { getSetting, setSetting } from "../repositories/settings";
 import type { AgentRunService } from "./agentRuns";
 
+/** The stored settings, with the default for each key a database does not have yet. */
+export function readSettings(ex: Executor): Settings {
+  return {
+    aiEnabled: getSetting(ex, "aiEnabled") ?? DEFAULT_SETTINGS.aiEnabled,
+    decompositionMode: getSetting(ex, "decompositionMode") ?? DEFAULT_SETTINGS.decompositionMode,
+    scheduledRunsEnabled:
+      getSetting(ex, "scheduledRunsEnabled") ?? DEFAULT_SETTINGS.scheduledRunsEnabled,
+  };
+}
+
 export function createSettingsService(db: Db, runs: Pick<AgentRunService, "cancelAll">) {
-  function get(): Settings {
-    return {
-      aiEnabled: getSetting(db, "aiEnabled") ?? DEFAULT_SETTINGS.aiEnabled,
-      decompositionMode: getSetting(db, "decompositionMode") ?? DEFAULT_SETTINGS.decompositionMode,
-    };
-  }
+  const get = () => readSettings(db);
 
   return {
     get,
@@ -20,6 +25,9 @@ export function createSettingsService(db: Db, runs: Pick<AgentRunService, "cance
         if (input.aiEnabled !== undefined) setSetting(tx, "aiEnabled", input.aiEnabled);
         if (input.decompositionMode !== undefined) {
           setSetting(tx, "decompositionMode", input.decompositionMode);
+        }
+        if (input.scheduledRunsEnabled !== undefined) {
+          setSetting(tx, "scheduledRunsEnabled", input.scheduledRunsEnabled);
         }
       });
       if (input.aiEnabled === false) {

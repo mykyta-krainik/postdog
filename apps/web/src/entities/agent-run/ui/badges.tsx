@@ -1,7 +1,7 @@
 "use client";
 
-import type { LlmInfo } from "@postdog/shared";
-import { FlaskConical, Sparkles } from "lucide-react";
+import type { LlmInfo, RunTrigger } from "@postdog/shared";
+import { Clock, FlaskConical, Sparkles } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 import { useAgentsInfo } from "../api/queries";
@@ -33,6 +33,27 @@ export function MockAiBadgeView({
     >
       <FlaskConical aria-hidden />
       Mock AI
+    </Badge>
+  );
+}
+
+/** Marks a run the daily schedule started rather than the user. */
+export function ScheduledBadge({
+  trigger,
+  className,
+}: {
+  trigger: RunTrigger;
+  className?: string;
+}) {
+  if (trigger !== "scheduled") return null;
+  return (
+    <Badge
+      variant="outline"
+      title="The daily schedule started this run. Turn it off in Settings."
+      className={cn("font-normal text-muted-foreground", className)}
+    >
+      <Clock aria-hidden />
+      Scheduled
     </Badge>
   );
 }

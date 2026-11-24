@@ -9,6 +9,7 @@ function run(status: AgentRun["status"]): AgentRun {
     agent: "planner",
     mode: null,
     status,
+    trigger: "manual",
     promptVersion: "PLANNER_PROMPT_V1",
     input: {},
     output: null,

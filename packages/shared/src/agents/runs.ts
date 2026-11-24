@@ -6,6 +6,7 @@ import {
   decompositionModeSchema,
   llmModeSchema,
   runStatusSchema,
+  runTriggerSchema,
   traceStepTypeSchema,
 } from "../enums";
 
@@ -51,6 +52,7 @@ export const agentRunSchema = z.object({
   agent: agentNameSchema,
   mode: decompositionModeSchema.nullable(),
   status: runStatusSchema,
+  trigger: runTriggerSchema.default("manual"),
   promptVersion: z.string(),
   input: z.unknown(),
   output: z.unknown().nullable(),

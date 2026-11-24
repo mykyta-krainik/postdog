@@ -61,6 +61,7 @@ const completedRun = {
   agent: "planner",
   mode: null,
   status: "completed",
+  trigger: "scheduled",
   promptVersion: "PLANNER_PROMPT_V1",
   input: {},
   output,

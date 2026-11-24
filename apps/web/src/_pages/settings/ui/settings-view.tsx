@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { DecompositionModeSetting } from "@/features/set-decomposition-mode";
 import { AiToggle } from "@/features/toggle-ai";
+import { ScheduledRunsToggle } from "@/features/toggle-scheduled-runs";
 import { useSettings } from "@/entities/settings";
 import { LoadError } from "@/shared/ui/load-error";
 import { Skeleton } from "@/shared/ui/skeleton";
@@ -36,7 +37,7 @@ function SettingsSkeleton() {
       <div className="flex flex-col gap-3">
         <Skeleton className="h-3.5 w-10" />
         <div className={GROUP}>
-          {["w-24", "w-28"].map((width) => (
+          {["w-24", "w-20", "w-28"].map((width) => (
             <div key={width} className="flex flex-col gap-2 px-4 py-4">
               <Skeleton className={`h-3 ${width}`} />
               <Skeleton className="h-3 w-4/5" />
@@ -71,6 +72,10 @@ export function SettingsView() {
         {settings ? (
           <div className={GROUP}>
             <AiToggle enabled={settings.aiEnabled} />
+            <ScheduledRunsToggle
+              enabled={settings.scheduledRunsEnabled}
+              aiEnabled={settings.aiEnabled}
+            />
             {settings.aiEnabled && <DecompositionModeSetting mode={settings.decompositionMode} />}
           </div>
         ) : (

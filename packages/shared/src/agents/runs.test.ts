@@ -12,6 +12,7 @@ const run = {
   agent: "planner",
   mode: null,
   status: "failed",
+  trigger: "manual",
   promptVersion: "PLANNER_PROMPT_V1",
   input: {},
   output: null,
@@ -49,6 +50,12 @@ describe("agentRunSchema", () => {
   it("accepts a running run with no output, usage or finish time", () => {
     const running = { ...run, status: "running", error: null, usage: null, finishedAt: null };
     expect(agentRunSchema.safeParse(running).success).toBe(true);
+  });
+
+  it("reads a run without a trigger as manual and rejects an unknown trigger", () => {
+    expect(agentRunSchema.parse({ ...run, trigger: undefined }).trigger).toBe("manual");
+    expect(agentRunSchema.parse({ ...run, trigger: "scheduled" }).trigger).toBe("scheduled");
+    expect(agentRunSchema.safeParse({ ...run, trigger: "cron" }).success).toBe(false);
   });
 
   it("rejects an unknown agent, status or error code", () => {

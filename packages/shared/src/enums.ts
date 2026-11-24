@@ -33,6 +33,11 @@ export const RUN_STATUSES = ["running", "completed", "failed", "cancelled"] as c
 export const runStatusSchema = z.enum(RUN_STATUSES);
 export type RunStatus = z.infer<typeof runStatusSchema>;
 
+/** manual: the user started the run. scheduled: the API's daily schedule did (SCHEDULED_RUNS). */
+export const RUN_TRIGGERS = ["manual", "scheduled"] as const;
+export const runTriggerSchema = z.enum(RUN_TRIGGERS);
+export type RunTrigger = z.infer<typeof runTriggerSchema>;
+
 export const STATUS_UPDATE_TONES = ["celebrate", "neutral", "heads_up", "blocked"] as const;
 export const statusUpdateToneSchema = z.enum(STATUS_UPDATE_TONES);
 export type StatusUpdateTone = z.infer<typeof statusUpdateToneSchema>;

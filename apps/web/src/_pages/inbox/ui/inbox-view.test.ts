@@ -9,7 +9,7 @@ import { ApiError } from "@/shared/api";
 import { InboxView } from "./inbox-view";
 
 function render(aiEnabled: boolean): string {
-  const settings: Settings = { aiEnabled, decompositionMode: "auto" };
+  const settings: Settings = { aiEnabled, decompositionMode: "auto", scheduledRunsEnabled: true };
   const empty = { items: [], unreadCount: 3 };
   return renderToStaticMarkup(
     createElement(

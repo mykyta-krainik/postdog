@@ -11,16 +11,18 @@ describe("updateSettingsInputSchema", () => {
     expect(updateSettingsInputSchema.safeParse({ decompositionMode: "yolo" }).success).toBe(false);
   });
 
-  it("rejects a non-boolean aiEnabled", () => {
+  it("rejects a non-boolean aiEnabled or scheduledRunsEnabled", () => {
     expect(updateSettingsInputSchema.safeParse({ aiEnabled: "false" }).success).toBe(false);
+    expect(updateSettingsInputSchema.safeParse({ scheduledRunsEnabled: 0 }).success).toBe(false);
   });
 });
 
 describe("DEFAULT_SETTINGS", () => {
-  it("turns AI on in suggest mode", () => {
+  it("turns AI on in suggest mode, with the daily runs on", () => {
     expect(settingsSchema.parse(DEFAULT_SETTINGS)).toEqual({
       aiEnabled: true,
       decompositionMode: "suggest",
+      scheduledRunsEnabled: true,
     });
   });
 });

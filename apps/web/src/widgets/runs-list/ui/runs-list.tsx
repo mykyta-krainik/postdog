@@ -8,6 +8,7 @@ import {
   AGENT_META,
   MockAiBadgeView,
   RunStatusMark,
+  ScheduledBadge,
   runTimingText,
   runTitle,
   useAgentRuns,
@@ -42,6 +43,7 @@ function RunRow({ run, open }: { run: AgentRunSummary; open: boolean }) {
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="flex min-w-0 items-center gap-2">
             <span className="min-w-0 truncate text-[13px] font-medium">{runTitle(run)}</span>
+            <ScheduledBadge trigger={run.trigger} />
             <MockAiBadgeView llm={run.llm} />
           </span>
           <span className="flex min-w-0 flex-wrap gap-x-2 text-xs text-muted-foreground">

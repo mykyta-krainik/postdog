@@ -7,7 +7,11 @@ import { settingsKey } from "@/entities/settings";
 import { DecomposeButton } from "../index";
 
 function render(aiEnabled: boolean): string {
-  const settings: Settings = { aiEnabled, decompositionMode: "suggest" };
+  const settings: Settings = {
+    aiEnabled,
+    decompositionMode: "suggest",
+    scheduledRunsEnabled: true,
+  };
   return renderToStaticMarkup(
     createElement(
       SWRConfig,
