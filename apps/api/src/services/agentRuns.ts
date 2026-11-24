@@ -1,6 +1,5 @@
 import {
   completedPlannerRunSchema,
-  type AgentName,
   type AgentRun,
   type AgentRunError,
   type AgentRunSummary,
@@ -31,8 +30,9 @@ import {
 } from "../repositories/agentRuns";
 import { recomputeAllAiStates } from "../repositories/aiState";
 import { deleteClaimsOfStoppedRuns, releaseClaims } from "../repositories/claims";
-import { insertNotification, type NewNotification } from "../repositories/notifications";
+import { insertNotification } from "../repositories/notifications";
 import { countTasksUpdatedAfter } from "../repositories/tasks";
+import { runEndNotification } from "./runNotifications";
 import { runLabel } from "./runLabel";
 
 const INTERRUPTED: AgentRunError = {
@@ -40,13 +40,26 @@ const INTERRUPTED: AgentRunError = {
   message: "The API stopped while this run was in progress.",
 };
 
-/** Fails runs a crash left running, drops their claims and rebuilds every task's aiState. */
+/**
+ * A run counts as watched while its last GET /api/agents/runs/:id is at most this old. The web
+ * polls every 1.5 s, and a throttled background tab about once a minute.
+ */
+export const WATCH_WINDOW_MS = 8_000;
+
+/**
+ * Fails runs a crash left running with one Inbox entry each, drops their claims and rebuilds
+ * every task's aiState. A second call finds no running run, so it notifies nobody again.
+ */
 export function reconcileInterruptedRuns(db: Db, now = Date.now()): number {
   return db.transaction((tx) => {
     const interrupted = failRunningRuns(tx, { error: INTERRUPTED, finishedAt: now });
+    for (const run of interrupted) {
+      const notification = runEndNotification(run, false, now);
+      if (notification) insertNotification(tx, notification);
+    }
     deleteClaimsOfStoppedRuns(tx, now);
     recomputeAllAiStates(tx, now);
-    return interrupted;
+    return interrupted.length;
   });
 }
 
@@ -59,26 +72,6 @@ function toRunError(err: unknown, signal: AbortSignal): AgentRunError {
 
 function statusOf(error: AgentRunError): RunFinish["status"] {
   return error.code === "cancelled" || error.code === "ai_disabled" ? "cancelled" : "failed";
-}
-
-/**
- * The Inbox entry for a failed run. Only the Decomposer gets one: it may run in auto mode with
- * nobody watching, while the other agents show their errors where the user started them.
- */
-function failureNotification(
-  agent: AgentName,
-  runId: number,
-  error: AgentRunError,
-  now: number,
-): NewNotification | undefined {
-  if (agent !== "decomposer") return undefined;
-  return {
-    kind: "agent_failed",
-    title: "The Decomposer failed",
-    body: error.message,
-    runId,
-    createdAt: now,
-  };
 }
 
 export type AgentKey = keyof AgentRegistry;
@@ -109,10 +102,17 @@ export function createAgentRunService(deps: {
   llm: Llm;
   tracer: Tracer;
   agents: AgentRegistry;
+  now?: () => number;
 }) {
-  const { db, llm, tracer, agents } = deps;
-  /** The runs this process executes: how to stop each, and its execute until it has saved. */
-  const active = new Map<number, { controller: AbortController; done: Promise<void> }>();
+  const { db, llm, tracer, agents, now = () => Date.now() } = deps;
+  /**
+   * The runs this process executes: how to stop each, its execute until it has saved, and when
+   * GET /api/agents/runs/:id last read it. The entry goes once the run has saved its end.
+   */
+  const active = new Map<
+    number,
+    { controller: AbortController; done: Promise<void>; lastPolledAt?: number }
+  >();
   /** The run holding each slot of RUN_SLOTS. */
   const slots = new Map<string, number>();
 
@@ -126,42 +126,48 @@ export function createAgentRunService(deps: {
     return run;
   }
 
+  function watched(id: number, at: number): boolean {
+    const polledAt = active.get(id)?.lastPolledAt;
+    return polledAt !== undefined && at - polledAt <= WATCH_WINDOW_MS;
+  }
+
+  /** Saves the run's end and its Inbox entry in one transaction, unless the run already ended. */
+  function saveEnd(id: number, finish: RunFinish): void {
+    const seen = watched(id, finish.finishedAt);
+    db.transaction((tx) => {
+      const run = finishRun(tx, id, finish);
+      const notification = run && runEndNotification(run, seen, finish.finishedAt);
+      if (notification) insertNotification(tx, notification);
+    });
+  }
+
   function stop(id: number, reason: AgentError): void {
     active.get(id)?.controller.abort(reason);
-    const now = Date.now();
+    const at = now();
     const error = reason.toRunError();
-    finishRun(db, id, { status: statusOf(error), error, finishedAt: now });
-    releaseClaims(db, id, now);
+    saveEnd(id, { status: statusOf(error), error, finishedAt: at });
+    releaseClaims(db, id, at);
     freeSlot(id);
   }
 
   async function execute<I, O>(definition: AgentDefinition<I, O>, ctx: AgentContext, input: I) {
     let finish: RunFinish;
     let traced: { output?: unknown; error?: string };
-    let notification: NewNotification | undefined;
     try {
       const { output } = await definition.run(ctx, input);
       const parsed = definition.output.parse(output);
-      finish = { status: "completed", output: parsed, error: null, finishedAt: Date.now() };
+      finish = { status: "completed", output: parsed, error: null, finishedAt: now() };
       traced = { output: parsed };
     } catch (err) {
       const error = toRunError(err, ctx.signal);
       if (error.code === "internal_error") {
         logger.error(`Agent run ${ctx.runId} (${definition.name}) crashed`, { err });
       }
-      const finishedAt = Date.now();
-      finish = { status: statusOf(error), output: null, error, finishedAt };
+      finish = { status: statusOf(error), output: null, error, finishedAt: now() };
       traced = { error: `${error.code}: ${error.message}` };
-      if (finish.status === "failed") {
-        notification = failureNotification(definition.name, ctx.runId, error, finishedAt);
-      }
     }
-    db.transaction((tx) => {
-      const steps = { trace: ctx.trace.steps(), usage: ctx.trace.usage() };
-      const saved = finishRun(tx, ctx.runId, { ...finish, ...steps });
-      if (saved && notification) insertNotification(tx, notification);
-    });
-    releaseClaims(db, ctx.runId, Date.now());
+    saveEnd(ctx.runId, { ...finish, trace: ctx.trace.steps(), usage: ctx.trace.usage() });
+    releaseClaims(db, ctx.runId, now());
     freeSlot(ctx.runId);
     ctx.tracer.end(traced);
     await tracer.flush().catch((err: unknown) => logger.error("Langfuse flush failed", { err }));
@@ -175,7 +181,7 @@ export function createAgentRunService(deps: {
       if (holder !== undefined) throw conflict(`${busy} (run #${holder}).`);
 
       const definition = agents[key] as AgentDefinition<InputOf<K>, unknown>;
-      const startedAt = Date.now();
+      const startedAt = now();
       const input = definition.prepare ? definition.prepare(db, body, startedAt) : body;
       const mode = definition.mode?.(db) ?? null;
       const run = insertRun(db, {
@@ -215,8 +221,12 @@ export function createAgentRunService(deps: {
       return { runId: run.id };
     },
 
+    /** Reading a run this process executes marks it as watched (see WATCH_WINDOW_MS). */
     get(id: number): AgentRun {
-      return requireRun(id);
+      const run = requireRun(id);
+      const live = active.get(id);
+      if (live) live.lastPolledAt = now();
+      return run;
     },
 
     list(query: ListAgentRunsQuery): AgentRunSummary[] {

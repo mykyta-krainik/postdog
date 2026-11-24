@@ -9,8 +9,8 @@ export interface RunListFilter {
   limit: number;
 }
 
-export type RunFinish = Pick<AgentRunRow, "status" | "error" | "finishedAt"> &
-  Partial<Pick<AgentRunRow, "output" | "trace" | "usage">>;
+export type RunFinish = Pick<AgentRunRow, "status" | "error"> &
+  Partial<Pick<AgentRunRow, "output" | "trace" | "usage">> & { finishedAt: number };
 
 const summaryColumns = {
   id: agentRuns.id,
@@ -83,20 +83,22 @@ export function updateRun(
   ex.update(agentRuns).set(changes).where(eq(agentRuns.id, id)).run();
 }
 
-export function finishRun(ex: Executor, id: number, finish: RunFinish): boolean {
-  return (
-    ex
-      .update(agentRuns)
-      .set(finish)
-      .where(and(eq(agentRuns.id, id), eq(agentRuns.status, "running")))
-      .run().changes > 0
-  );
+/** The ended run, or undefined when it had already ended. */
+export function finishRun(ex: Executor, id: number, finish: RunFinish): AgentRunRow | undefined {
+  return ex
+    .update(agentRuns)
+    .set(finish)
+    .where(and(eq(agentRuns.id, id), eq(agentRuns.status, "running")))
+    .returning()
+    .get();
 }
 
-export function failRunningRuns(ex: Executor, finish: Omit<RunFinish, "status">): number {
+/** Fails every run still running and returns them. */
+export function failRunningRuns(ex: Executor, finish: Omit<RunFinish, "status">): AgentRunRow[] {
   return ex
     .update(agentRuns)
     .set({ ...finish, status: "failed" })
     .where(eq(agentRuns.status, "running"))
-    .run().changes;
+    .returning()
+    .all();
 }
