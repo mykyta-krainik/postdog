@@ -46,9 +46,11 @@ function KindDetails({
 export function NotificationCard({
   notification,
   renderTrace,
+  className,
 }: {
   notification: Notification;
   renderTrace: (runId: number) => ReactNode;
+  className?: string;
 }) {
   const unread = isUnread(notification);
   const marking = useRef(false);
@@ -73,8 +75,9 @@ export function NotificationCard({
       data-unread={unread}
       onClickCapture={markRead}
       className={cn(
-        'flex min-w-0 flex-col gap-2 border-b border-border px-4 py-3.5 md:px-5',
+        'flex min-w-0 flex-col gap-2 border-b border-border px-4 py-3.5 md:px-5 w-full',
         unread && 'bg-brand-soft/30',
+        className,
       )}
     >
       <header className="flex min-w-0 items-start gap-2.5">

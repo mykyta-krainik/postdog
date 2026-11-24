@@ -18,7 +18,7 @@ function Message({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
+    <div className="flex flex-col items-center gap-3 px-6 py-16 text-center size-full">
       <LogoMark className="size-9 opacity-90" />
       <div className="flex max-w-sm flex-col gap-1">
         <h2 className="text-sm font-medium text-foreground">{title}</h2>
@@ -54,6 +54,7 @@ export function NotificationsInbox({ renderTrace }: { renderTrace: (runId: numbe
 
   if (!data) {
     if (!error) return <InboxSkeleton />;
+
     return (
       <Message
         title="The Inbox didn't load"
