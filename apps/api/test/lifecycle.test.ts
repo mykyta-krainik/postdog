@@ -4,7 +4,7 @@ import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { plannerInputSchema, plannerOutputSchema, startRunResponseSchema } from "@postdog/shared";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defineAgent } from "../src/agents/core/definition";
 import { mockLlm } from "../src/agents/core/llm";
 import { noopTracer, type Tracer } from "../src/agents/core/tracer";
@@ -14,6 +14,7 @@ import { bootDatabase } from "../src/db/boot";
 import { openDatabase, type Db } from "../src/db/client";
 import { listen, shutdown } from "../src/lifecycle";
 import { findRun } from "../src/repositories/agentRuns";
+import { createScheduler, SCHEDULER_TICK_MS } from "../src/scheduler";
 import { createAgentRunService } from "../src/services/agentRuns";
 import { addRun } from "./suggestionFixtures";
 
@@ -39,6 +40,7 @@ beforeEach(() => {
   path = join(dir, "postdog.db");
 });
 afterEach(async () => {
+  vi.useRealTimers();
   await Promise.all(servers.splice(0).map((s) => new Promise((r) => s.close(r))));
   rmSync(dir, { recursive: true, force: true });
 });
@@ -55,15 +57,17 @@ async function occupiedPort(): Promise<number> {
 }
 
 describe("listen", () => {
-  it("leaves the runs alone when the port is taken, so a second start cannot fail the first's", async () => {
+  it("leaves the runs and the schedule alone when the port is taken, so a second start cannot fail the first's", async () => {
     const { db } = bootDatabase(path);
     const live = addRun(db);
     const port = await occupiedPort();
+    const scheduler = { start: vi.fn() };
 
-    await expect(listen(createApp(db), db, { host: HOST, port })).rejects.toMatchObject({
+    await expect(listen(createApp(db), db, { host: HOST, port }, scheduler)).rejects.toMatchObject({
       code: "EADDRINUSE",
     });
     expect(findRun(db, live)?.status).toBe("running");
+    expect(scheduler.start).not.toHaveBeenCalled();
     db.$client.close();
   });
 
@@ -118,6 +122,32 @@ describe("shutdown", () => {
       error: { code: "interrupted" },
     });
     after.$client.close();
+  });
+
+  it("starts the daily runs once the port is its own and stops them before anything else", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    const { db } = bootDatabase(path);
+    const runs = createAgentRunService({
+      db,
+      llm: mockLlm,
+      tracer: noopTracer,
+      agents: agentRegistry,
+    });
+    // Each tick reads the clock once. At 3:00 no slot is due, so a tick starts nothing.
+    const now = vi.fn(() => new Date(2026, 10, 24, 3).getTime());
+    const scheduler = createScheduler({ db, runs, now });
+    const { server } = await listen(
+      createApp(db, { runs }),
+      db,
+      { host: HOST, port: 0 },
+      scheduler,
+    );
+
+    vi.advanceTimersByTime(SCHEDULER_TICK_MS);
+    expect(now).toHaveBeenCalledTimes(1);
+    expect(await shutdown({ server, runs, tracer: noopTracer, db, scheduler })).toBe("clean");
+    vi.advanceTimersByTime(SCHEDULER_TICK_MS * 4);
+    expect(now).toHaveBeenCalledTimes(1);
   });
 
   it("gives up on a step that hangs and still closes the database", async () => {

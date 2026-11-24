@@ -4,7 +4,7 @@ import {
   submitDailyPlanInputSchema,
 } from "@postdog/shared";
 import type { Executor } from "../../db/client";
-import { loadTaskFacts } from "../context";
+import { loadTaskFacts, type TaskFacts } from "../context";
 import { defineAgent } from "../core/definition";
 import { AgentError } from "../core/errors";
 import { registerMockScript } from "../core/llm";
@@ -36,6 +36,15 @@ function plannerTools(ex: Executor, now: number) {
   return [getTask, searchTasks, submitDailyPlan] as const;
 }
 
+/**
+ * The ranked candidates, or undefined when the Planner has nothing to plan: no open top-level task
+ * is ready to start, because each one is done or blocked by an open task.
+ */
+export function readyCandidates(ex: Executor, now: number): TaskFacts[] | undefined {
+  const ranked = rankCandidates(loadTaskFacts(ex, now));
+  return ranked.some((task) => !task.isBlocked) ? ranked : undefined;
+}
+
 export function createPlannerAgent(loopName: string = PLANNER_LOOP) {
   return defineAgent({
     name: "planner",
@@ -43,8 +52,8 @@ export function createPlannerAgent(loopName: string = PLANNER_LOOP) {
     input: plannerInputSchema,
     output: plannerOutputSchema,
     run: async (ctx) => {
-      const ranked = rankCandidates(loadTaskFacts(ctx.db, ctx.startedAt));
-      if (!ranked.some((task) => !task.isBlocked)) {
+      const ranked = readyCandidates(ctx.db, ctx.startedAt);
+      if (!ranked) {
         throw new AgentError(
           "nothing_valid",
           "There is no open task that is ready to start: every task is done or blocked by an open task.",
