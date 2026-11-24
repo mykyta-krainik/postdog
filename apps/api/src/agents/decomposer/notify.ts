@@ -1,6 +1,6 @@
 import type { Changeset, DecomposerRelatedResult, DecomposerTaskResult } from "@postdog/shared";
 import type { Executor } from "../../db/client";
-import { plural } from "../../lib/text";
+import { listOf, plural } from "../../lib/text";
 import { findChangesetByRun } from "../../repositories/changesets";
 import { insertNotification } from "../../repositories/notifications";
 import { findTask } from "../../repositories/tasks";
@@ -26,12 +26,6 @@ export interface Message {
 }
 
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
-
-/** "PD-7", "PD-7 and PD-9", "PD-7, PD-9 and PD-12". */
-export function listOf(items: readonly string[]): string {
-  if (items.length <= 1) return items.join("");
-  return `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
-}
 
 const tasksThat = (n: number, one: string, many: string) =>
   `${plural(n, "task")} ${n === 1 ? one : many}`;
