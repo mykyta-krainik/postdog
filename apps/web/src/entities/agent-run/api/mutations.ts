@@ -25,14 +25,16 @@ const RUN_PATHS: Record<keyof StartableAgents, `/${string}`> = {
 };
 
 /** Starts a run. The API answers 202 with the run id at once; poll the run with useAgentRun. */
-export function startAgentRun<Agent extends keyof StartableAgents>(
+export async function startAgentRun<Agent extends keyof StartableAgents>(
   agent: Agent,
   input: StartableAgents[Agent],
 ): Promise<StartRunResponse> {
-  return apiRequest(apiKey(RUN_PATHS[agent]), startRunResponseSchema, {
+  const started = await apiRequest(apiKey(RUN_PATHS[agent]), startRunResponseSchema, {
     method: "POST",
     body: input,
   });
+  void revalidateRunLists();
+  return started;
 }
 
 export function startPlannerRun(): Promise<StartRunResponse> {
@@ -40,11 +42,13 @@ export function startPlannerRun(): Promise<StartRunResponse> {
 }
 
 /** Answers a clarification, or asks the Decomposer to go ahead anyway. Starts a new run for that task. */
-export function startClarifyRun(input: ClarifyInput): Promise<StartRunResponse> {
-  return apiRequest(apiKey("/agents/decomposer/clarify"), startRunResponseSchema, {
+export async function startClarifyRun(input: ClarifyInput): Promise<StartRunResponse> {
+  const started = await apiRequest(apiKey("/agents/decomposer/clarify"), startRunResponseSchema, {
     method: "POST",
     body: input,
   });
+  void revalidateRunLists();
+  return started;
 }
 
 /**
@@ -57,8 +61,13 @@ export async function cancelRun(id: number): Promise<void> {
   } catch (error) {
     if (!(error instanceof ApiError && error.code === "conflict")) throw error;
   } finally {
-    await mutate(agentRunKeys.run(id));
+    await Promise.all([mutate(agentRunKeys.run(id)), revalidateRunLists()]);
   }
+}
+
+/** Refetches every mounted run list, so the nav indicator and the Runs page see a start or a stop. */
+export function revalidateRunLists() {
+  return mutate(agentRunKeys.isRunList);
 }
 
 export function revalidatePlannerLatest() {

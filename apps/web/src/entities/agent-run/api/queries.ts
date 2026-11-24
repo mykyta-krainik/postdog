@@ -10,7 +10,8 @@ import {
 import useSWR, { useSWRConfig } from "swr";
 import type { z } from "zod";
 import { fetcherFor } from "@/shared/api";
-import { runPollInterval } from "../model/polling";
+import { RUN_POLL_INTERVAL_MS, runPollInterval } from "../model/polling";
+import { runningPollInterval } from "../model/running";
 import { agentRunKeys, type AgentRunsQuery } from "./keys";
 
 /** A run schema from @postdog/shared: agentRunSchema, or an agent's own, such as plannerRunSchema. */
@@ -49,9 +50,31 @@ export function useAgentRun<Schema extends RunSchema = typeof agentRunSchema>(
   });
 }
 
-/** Run history, newest first. */
-export function useAgentRuns(query: AgentRunsQuery = {}) {
-  return useSWR(agentRunKeys.runs(query), fetchRuns);
+/**
+ * Run history, newest first, refetched every 1.5 s while one of its runs is running. Every
+ * agent route answers 403 while AI is off, so pass enabled = aiEnabled.
+ */
+export function useAgentRuns(query: AgentRunsQuery = {}, enabled = true) {
+  return useSWR(enabled ? agentRunKeys.runs(query) : null, fetchRuns, {
+    refreshInterval: (data) =>
+      data?.items.some((run) => run.status === "running") ? RUN_POLL_INTERVAL_MS : 0,
+    dedupingInterval: 1000,
+  });
+}
+
+/**
+ * The runs going now, polled every 2 s while there are some and every 15 s otherwise, and on
+ * focus. Pass enabled = aiEnabled: with AI off it sends nothing and `runs` stays undefined.
+ */
+export function useRunningRuns(enabled = true) {
+  const { data } = useSWR(enabled ? agentRunKeys.running() : null, fetchRuns, {
+    refreshInterval: runningPollInterval,
+    // Below the fast poll, so each poll sends a request.
+    dedupingInterval: 1000,
+    revalidateOnFocus: true,
+  });
+  const runs = enabled ? data?.items : undefined;
+  return { runs, count: runs?.length ?? 0 };
 }
 
 /** The latest completed Planner run and how many tasks changed since. `latest` is null before the first plan. */

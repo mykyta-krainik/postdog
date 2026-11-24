@@ -1,15 +1,14 @@
 "use client";
 
-import { AGENT_META, MockAiBadgeView, TraceTimeline, useAgentRun } from "@/entities/agent-run";
+import {
+  AGENT_META,
+  MockAiBadgeView,
+  RUN_STATUS_LABEL,
+  TraceTimeline,
+  useAgentRun,
+} from "@/entities/agent-run";
 import { formatDayTime } from "@/shared/lib/format";
 import { Skeleton } from "@/shared/ui/skeleton";
-
-const STATUS_LABEL = {
-  running: "Running",
-  completed: "Completed",
-  failed: "Failed",
-  cancelled: "Cancelled",
-} as const;
 
 /**
  * One run's trace, loaded by id and polled while it runs: the agent, its status and model layer,
@@ -40,7 +39,7 @@ export function AgentTrace({
     >
       <div className="flex flex-wrap items-center gap-2 px-1.5 text-xs text-muted-foreground">
         <span className="font-medium text-foreground/80">{AGENT_META[run.agent].label}</span>
-        <span>{STATUS_LABEL[run.status]}</span>
+        <span>{RUN_STATUS_LABEL[run.status]}</span>
         <time dateTime={new Date(run.startedAt).toISOString()} className="tabular-nums">
           {formatDayTime(run.startedAt)}
         </time>
