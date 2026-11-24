@@ -4,7 +4,13 @@ import { AGENT_LIMITS, type DecompositionMode } from "@postdog/shared";
 import { ListTree, LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { AgentDialog, AgentRunStatus, isRunBusy } from "@/entities/agent-run";
+import {
+  AgentDialog,
+  AgentRunStatus,
+  findRunning,
+  isRunBusy,
+  useRunningRuns,
+} from "@/entities/agent-run";
 import { useSettings } from "@/entities/settings";
 import { routes } from "@/shared/config";
 import { cn } from "@/shared/lib/utils";
@@ -27,15 +33,20 @@ const MODE_DESCRIPTION: Record<DecompositionMode, string> = {
 /**
  * "Decompose" for the Tasks toolbar. It opens a dialog that says what the Decomposer does,
  * starts a default run, and shows the run: progress and Cancel, the per-task result, or what
- * failed with Retry. Icon only below 768 px. Hidden while AI is off.
+ * failed with Retry. While another Decomposer batch is going, started in another tab or before
+ * the user left, it links to that run instead of starting one. Icon only below 768 px. Hidden
+ * while AI is off.
  */
 export function DecomposeButton() {
   const { aiEnabled, settings } = useSettings();
   const runner = useDecompose();
+  const { runs } = useRunningRuns(aiEnabled);
   const [open, setOpen] = useState(false);
 
   if (!aiEnabled) return null;
-  const busy = isRunBusy(runner.view);
+  const idle = runner.view.status === "idle";
+  const elsewhere = idle ? findRunning(runs, { agent: "decomposer" }) : undefined;
+  const busy = isRunBusy(runner.view) || elsewhere !== undefined;
   const Icon = busy ? LoaderCircle : ListTree;
   const mode = settings?.decompositionMode ?? "suggest";
 
@@ -71,7 +82,18 @@ export function DecomposeButton() {
               Change it in Settings
             </Link>
           </p>
-          {runner.view.status === "idle" ? (
+          {elsewhere ? (
+            <p role="status" className="text-[13px] text-muted-foreground">
+              A Decomposer run is already going.{" "}
+              <Link
+                href={routes.run(elsewhere.id)}
+                className="text-brand-text underline underline-offset-2"
+                onClick={() => setOpen(false)}
+              >
+                Watch it on the Runs page
+              </Link>
+            </p>
+          ) : idle ? (
             <Button size="sm" className={cn(ACTION, "self-start")} onClick={runner.start}>
               Find subtasks
             </Button>
