@@ -1,11 +1,7 @@
-import { plannerInputSchema, plannerOutputSchema, type DecompositionMode } from "@postdog/shared";
+import type { DecompositionMode } from "@postdog/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createApp } from "../../src/app";
-import { defineAgent } from "../../src/agents/core/definition";
-import { AgentError } from "../../src/agents/core/errors";
 import type { MockConversation, MockTurn } from "../../src/agents/core/llm";
 import { autoRunMessage, conflictMessage } from "../../src/agents/decomposer/notify";
-import { agentRegistry } from "../../src/agents/registry";
 import type { Db } from "../../src/db/client";
 import { taskLinks } from "../../src/db/schema";
 import { findRun } from "../../src/repositories/agentRuns";
@@ -19,8 +15,8 @@ import {
   listSuggestions,
 } from "../../src/repositories/suggestions";
 import { listAllTasks } from "../../src/repositories/tasks";
-import { type Api, jsonClient, setNow } from "../helpers";
-import { addRun, addTask, aiStateOf, clarificationFor, createTestDb } from "../suggestionFixtures";
+import { type Api, setNow } from "../helpers";
+import { addRun, addTask, aiStateOf, clarificationFor } from "../suggestionFixtures";
 import {
   T0,
   clarify,
@@ -355,7 +351,7 @@ describe("Decomposer auto apply", () => {
     ]);
   });
 
-  it("writes no notification for a task edited during a suggest run", async () => {
+  it("writes no conflict notification for a task edited during a suggest run", async () => {
     setNow(T0);
     const { db, api } = setup({
       task: async (id) => {
@@ -368,7 +364,7 @@ describe("Decomposer auto apply", () => {
 
     const output = outputOf(await runDecomposer(api));
     expect(output.tasks.map((t) => [t.taskId, t.outcome])).toEqual([[edited, "superseded"]]);
-    expect(notifications(db)).toEqual([]);
+    expect(notifications(db).filter((n) => n.kind === "conflict")).toEqual([]);
   });
 
   it("keeps the mode it started with when Settings change during the run", async () => {
@@ -503,21 +499,6 @@ describe("Decomposer failure notifications", () => {
     await api.post(`/api/agents/runs/${runId}/cancel`).expect(200);
     expect((await waitForRun(api, runId)).status).toBe("cancelled");
     await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(notifications(db)).toEqual([]);
-  });
-
-  it("writes none for a failed Planner run", async () => {
-    const db = createTestDb();
-    const planner = defineAgent({
-      name: "planner",
-      promptVersion: "TEST_PROMPT_V1",
-      input: plannerInputSchema,
-      output: plannerOutputSchema,
-      run: () => Promise.reject(new AgentError("no_terminal_tool", "No plan.")),
-    });
-    const api = jsonClient(createApp(db, { agents: { ...agentRegistry, planner } }));
-    const res = await api.post("/api/agents/planner/run").send({}).expect(202);
-    expect((await waitForRun(api, res.body.runId as number)).status).toBe("failed");
     expect(notifications(db)).toEqual([]);
   });
 });

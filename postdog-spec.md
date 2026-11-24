@@ -173,7 +173,7 @@ agent_claims
   taskId, runId, agent, expiresAt     primary key (taskId)
 
 notifications
-  id, kind         enum  auto_decomposition | agent_failed | conflict
+  id, kind         enum  auto_decomposition | agent_failed | conflict | run_finished   run_finished = a run completed while nobody watched it; agent_failed also covers unwatched Planner and Status updater failures and runs a restart interrupted (background runs decision)
   title, body, runId?, changesetId?
   readAt?, createdAt
 

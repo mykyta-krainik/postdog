@@ -134,7 +134,34 @@ A script gets the conversation so far: `system`, `userMessage`, `turn` (1-based)
 3. When `run` resolves, the row gets `output`, `trace`, `usage`, `finishedAt` and status `completed`. When it throws, it gets `error: { code, message }` and status `failed`, or `cancelled` for `cancelled` and `ai_disabled`. An error that is not an `AgentError` is stored as `internal_error`.
 4. Cancel and the kill switch write `cancelled` at once and abort the run. Only a row that is still `running` can be finished, so whichever outcome lands first wins.
 5. When the run finishes or is cancelled, the run service releases every claim the run holds.
-6. Once the server holds its port (not at migrate or seed time, so a second process that fails to bind never touches them), every row still `running` becomes `failed` with `interrupted`, the claims of every run that is no longer running are deleted, and `aiState` is recomputed for every task.
+6. Once the server holds its port (not at migrate or seed time, so a second process that fails to bind never touches them), every row still `running` becomes `failed` with `interrupted` and gets an `agent_failed` notification, the claims of every run that is no longer running are deleted, and `aiState` is recomputed for every task.
+
+## Background runs
+
+A run executes in the API process, not in the browser, so it keeps going when the user leaves the page, opens another screen or closes the tab. When a run ends while nobody is watching it, the run service writes one Inbox notification, in the transaction that saves the run's end, with `runId` set. `services/runNotifications.ts` holds the rules and the wording.
+
+A run counts as watched when a client showed it was there at most `WATCH_WINDOW_MS` (8 s) before the run ended. Two things count: starting the run, and `GET /api/agents/runs/:id`. The run service keeps that time in memory, on the run's entry among the runs it executes, and drops it once the run has saved its end. Nothing is written to the database. The web polls a running run every 1.5 s, and a browser throttles a hidden tab to about one poll a minute. A closed tab stops counting 8 s after its last poll, and a hidden one counts only in the 8 s after each of its rare polls. `GET /api/agents/runs`, the run list, watches nothing.
+
+The start counts because the mock model ends a run in 25 to 130 ms, before the page's first poll. Without it, every mock run the user watched would land in the Inbox. The cost is a real-model run that ends within 8 s of its start after the user left at once: it gets no notification.
+
+| The run                                    | Watched        | Nobody watching                                                                                                                                                     |
+| ------------------------------------------ | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Planner completed                          | nothing        | `run_finished` "Your plan for today is ready", "3 tasks to start with.", plus "1 warning to check." when there are warnings                                         |
+| Status updater completed                   | nothing        | `run_finished` "Your status update is ready" with the headline, or "A status update needs a note from you" with "PD-3 and PD-7: " and the question                  |
+| Decomposer completed in suggest mode       | nothing        | `run_finished` "The Decomposer has suggestions to review", "3 tasks have subtasks to review, 1 task needs your answer.", or "The Decomposer found nothing to split" |
+| Decomposer completed in auto mode          | nothing        | nothing: its `auto_decomposition` and `conflict` notifications cover it                                                                                             |
+| Decomposer failed                          | `agent_failed` | `agent_failed`                                                                                                                                                      |
+| Planner or Status updater failed           | nothing        | `agent_failed` "The Planner failed" with the error message                                                                                                          |
+| Interrupted by a restart                   | `agent_failed` | `agent_failed`                                                                                                                                                      |
+| Cancelled by the user or by turning AI off | nothing        | nothing                                                                                                                                                             |
+
+The clarify rerun is a Decomposer run, so it follows the Decomposer rows. A run of the docs reviewer gets no `run_finished` yet.
+
+Limits:
+
+- Runs live in the API process and die with it. Nothing resumes a run after a restart: the user starts it again.
+- A clean stop (SIGINT or SIGTERM) fails the runs it stops and notifies each at once. A crash leaves the rows `running`, and the next boot fails and notifies them in the reconcile transaction. Boot only touches rows still `running`, so a second boot notifies nobody again.
+- The watch time lives in one process. Only the process that executes a run reads it, and the web talks to one API, so a second process on the same database changes nothing.
 
 ## Suggestions and claims
 
@@ -206,7 +233,7 @@ Auto mode records what it creates in `agent_changesets`, and the Inbox reads `no
 - `services/rollbackRules.ts` decides which created items a rollback may delete. `subtaskKeptReason(task, childCount, noteCount, foreignLinkCount)` returns `null` for an untouched subtask: it exists, its status is `todo` and `statusChangedAt` is `createdAt`, `updatedAt` is `createdAt`, and it has no subtasks, no notes and no links the run did not make. Otherwise it returns the first reason that applies: `not_found`, `status_changed`, `edited`, `has_children`, `has_notes` or `has_links`. `linkKeptReason(link)` returns `not_found` when the link is gone, and `null` otherwise. `isUntouchedSubtask` and `isUntouchedLink` are the same checks as booleans.
 - Adding a note does not change `updatedAt`, so `has_notes` is what keeps a subtask whose only change is a note. Deleting it would delete the note.
 - Summaries are built when they are read, so a notification shows the changeset as it is now, after any rollback.
-- Boot reconciles nothing for these tables. A changeset written before a crash still describes rows that exist, so a rollback still works on it.
+- Boot reconciles no changeset. A changeset written before a crash still describes rows that exist, so a rollback still works on it. Boot only adds the `agent_failed` notifications of interrupted runs (see Background runs).
 
 ### Notifications and rollback API
 
