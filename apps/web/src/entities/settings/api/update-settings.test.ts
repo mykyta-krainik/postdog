@@ -1,12 +1,12 @@
-import type { Settings } from "@postdog/shared";
-import { mutate, SWRConfig } from "swr";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError, settingsKey } from "@/shared/api";
-import { updateSettings } from "./update-settings";
+import type { Settings } from '@postdog/shared';
+import { mutate, SWRConfig } from 'swr';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiError, settingsKey } from '@/shared/api';
+import { updateSettings } from './update-settings';
 
 const saved: Settings = {
   aiEnabled: true,
-  decompositionMode: "suggest",
+  decompositionMode: 'suggest',
   scheduledRunsEnabled: true,
 };
 
@@ -23,7 +23,7 @@ function deferredResponse() {
         respond = (status, body) => resolve(new Response(JSON.stringify(body), { status }));
       }),
   );
-  vi.stubGlobal("fetch", fetchMock);
+  vi.stubGlobal('fetch', fetchMock);
   return { fetchMock, respond: (status: number, body: unknown) => respond(status, body) };
 }
 
@@ -35,20 +35,20 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("updateSettings", () => {
-  it("sends only the changed field to PATCH /api/settings", async () => {
+describe('updateSettings', () => {
+  it('sends only the changed field to PATCH /api/settings', async () => {
     const { fetchMock, respond } = deferredResponse();
     const update = updateSettings({ aiEnabled: false });
     respond(200, { ...saved, aiEnabled: false });
     await update;
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/settings",
-      expect.objectContaining({ method: "PATCH", body: JSON.stringify({ aiEnabled: false }) }),
+      '/api/settings',
+      expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ aiEnabled: false }) }),
     );
   });
 
-  it("shows the change before the API answers, then keeps the saved settings", async () => {
+  it('shows the change before the API answers, then keeps the saved settings', async () => {
     const { respond } = deferredResponse();
     const update = updateSettings({ aiEnabled: false });
 
@@ -59,34 +59,34 @@ describe("updateSettings", () => {
     expect(displayed()).toEqual({ ...saved, aiEnabled: false });
   });
 
-  it("shows what the API saved when it differs from the patch", async () => {
+  it('shows what the API saved when it differs from the patch', async () => {
     const { respond } = deferredResponse();
-    const update = updateSettings({ decompositionMode: "auto" });
-    respond(200, { ...saved, aiEnabled: false, decompositionMode: "auto" });
+    const update = updateSettings({ decompositionMode: 'auto' });
+    respond(200, { ...saved, aiEnabled: false, decompositionMode: 'auto' });
     await update;
 
-    expect(displayed()).toEqual({ ...saved, aiEnabled: false, decompositionMode: "auto" });
+    expect(displayed()).toEqual({ ...saved, aiEnabled: false, decompositionMode: 'auto' });
   });
 
-  it("rolls back and rethrows when the API rejects the change", async () => {
+  it('rolls back and rethrows when the API rejects the change', async () => {
     const { respond } = deferredResponse();
-    const update = updateSettings({ decompositionMode: "auto" });
-    expect(displayed()?.decompositionMode).toBe("auto");
+    const update = updateSettings({ decompositionMode: 'auto' });
+    expect(displayed()?.decompositionMode).toBe('auto');
 
-    respond(400, { error: { code: "validation_error", message: "Bad settings" } });
+    respond(400, { error: { code: 'validation_error', message: 'Bad settings' } });
     await expect(update).rejects.toBeInstanceOf(ApiError);
     expect(displayed()).toEqual(saved);
   });
 
-  it("rolls back when the API is unreachable", async () => {
+  it('rolls back when the API is unreachable', async () => {
     vi.stubGlobal(
-      "fetch",
+      'fetch',
       vi.fn(async () => {
-        throw new TypeError("fetch failed");
+        throw new TypeError('fetch failed');
       }),
     );
     await expect(updateSettings({ aiEnabled: false })).rejects.toMatchObject({
-      code: "network_error",
+      code: 'network_error',
     });
     expect(displayed()).toEqual(saved);
   });

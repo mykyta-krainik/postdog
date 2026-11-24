@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { taskStatusSchema } from "@postdog/shared";
-import { CircleDashed } from "lucide-react";
+import { taskStatusSchema } from '@postdog/shared';
+import { CircleDashed } from 'lucide-react';
 import {
   StatusIcon,
   TASK_STATUS_META,
   TASK_STATUS_ORDER,
   useTaskListParams,
-} from "@/entities/task";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
+} from '@/entities/task';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 
-const ALL = "all";
+const ALL = 'all';
 
 export function StatusFilter() {
   const { params, setParams } = useTaskListParams();

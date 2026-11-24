@@ -1,7 +1,7 @@
-import type { AgentWarning, PlannerFocusItem, SubmitDailyPlanInput } from "@postdog/shared";
-import type { TaskFacts } from "../context";
+import type { AgentWarning, PlannerFocusItem, SubmitDailyPlanInput } from '@postdog/shared';
+import type { TaskFacts } from '../context';
 
-type FocusInput = SubmitDailyPlanInput["focus"][number];
+type FocusInput = SubmitDailyPlanInput['focus'][number];
 
 export interface DroppedItem {
   item: FocusInput;
@@ -18,13 +18,13 @@ const MAX_BLOCKERS_NAMED = 3;
 function blockerList(task: TaskFacts): string {
   const names = task.openBlockers.map((b) => b.identifier);
   const rest = names.length - MAX_BLOCKERS_NAMED;
-  return names.slice(0, MAX_BLOCKERS_NAMED).join(", ") + (rest > 0 ? ` and ${rest} more` : "");
+  return names.slice(0, MAX_BLOCKERS_NAMED).join(', ') + (rest > 0 ? ` and ${rest} more` : '');
 }
 
 function rejection(task: TaskFacts, keptIds: ReadonlySet<number>): string | undefined {
-  if (task.status === "done") return "it is already done";
+  if (task.status === 'done') return 'it is already done';
   if (task.isBlocked) return `it is blocked by ${blockerList(task)} (still open)`;
-  if (keptIds.has(task.id)) return "it is already in the plan";
+  if (keptIds.has(task.id)) return 'it is already in the plan';
   return undefined;
 }
 

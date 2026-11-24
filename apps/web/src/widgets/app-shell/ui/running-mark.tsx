@@ -1,6 +1,6 @@
-import { LoaderCircle } from "lucide-react";
-import { cn } from "@/shared/lib/utils";
-import { runningText } from "../config/nav";
+import { LoaderCircle } from 'lucide-react';
+import { cn } from '@/shared/lib/utils';
+import { runningText } from '../config/nav';
 
 /** A spinner and the number of runs going now, on the Runs nav item. Renders nothing at zero. */
 export function RunningMark({ count, className }: { count: number; className?: string }) {
@@ -8,7 +8,7 @@ export function RunningMark({ count, className }: { count: number; className?: s
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 text-[11px] font-medium text-brand-text tabular-nums",
+        'inline-flex items-center gap-1 text-[11px] font-medium text-brand-text tabular-nums',
         className,
       )}
     >

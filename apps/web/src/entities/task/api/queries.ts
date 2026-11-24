@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { listTasksResponseSchema, taskDetailSchema } from "@postdog/shared";
-import useSWR from "swr";
-import { fetcherFor } from "@/shared/api";
-import { taskKeys, type TaskListQuery } from "./keys";
+import { listTasksResponseSchema, taskDetailSchema } from '@postdog/shared';
+import useSWR from 'swr';
+import { fetcherFor } from '@/shared/api';
+import { taskKeys, type TaskListQuery } from './keys';
 
 const fetchTaskList = fetcherFor(listTasksResponseSchema);
 const fetchTaskDetail = fetcherFor(taskDetailSchema);

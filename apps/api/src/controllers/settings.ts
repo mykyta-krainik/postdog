@@ -1,6 +1,6 @@
-import type { Settings, UpdateSettingsInput } from "@postdog/shared";
-import type { Request, Response } from "express";
-import type { SettingsService } from "../services/settings";
+import type { Settings, UpdateSettingsInput } from '@postdog/shared';
+import type { Request, Response } from 'express';
+import type { SettingsService } from '../services/settings';
 
 export function createSettingsController(settings: SettingsService) {
   return {

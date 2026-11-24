@@ -1,6 +1,6 @@
-import { SortMenu } from "./sort-menu";
-import { StatusFilter } from "./status-filter";
-import { TaskSearch } from "./task-search";
+import { SortMenu } from './sort-menu';
+import { StatusFilter } from './status-filter';
+import { TaskSearch } from './task-search';
 
 /** Search, status filter and sort for the task list. All three live in the URL. */
 export function TaskFilterSort() {

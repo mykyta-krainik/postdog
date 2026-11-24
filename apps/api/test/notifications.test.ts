@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { insertChangeset, updateChangesetOps } from "../src/repositories/changesets";
+import { describe, expect, it } from 'vitest';
+import { insertChangeset, updateChangesetOps } from '../src/repositories/changesets';
 import {
   countUnreadNotifications,
   findNotification,
@@ -7,8 +7,8 @@ import {
   listNotifications,
   markNotificationRead,
   type NewNotification,
-} from "../src/repositories/notifications";
-import { DAY, addRun, addTask, createTestDb } from "./suggestionFixtures";
+} from '../src/repositories/notifications';
+import { DAY, addRun, addTask, createTestDb } from './suggestionFixtures';
 
 const NOW = 50 * DAY;
 
@@ -16,24 +16,24 @@ function setup() {
   const db = createTestDb();
   const run = addRun(db);
   const conflict = (createdAt: number): NewNotification => ({
-    kind: "conflict",
-    title: "PD-7 was skipped",
-    body: "You edited PD-7 while the Decomposer worked on it.",
+    kind: 'conflict',
+    title: 'PD-7 was skipped',
+    body: 'You edited PD-7 while the Decomposer worked on it.',
     runId: run,
     createdAt,
   });
   return { db, run, conflict };
 }
 
-describe("insertNotification", () => {
-  it("stores an unread notification with no changeset", () => {
+describe('insertNotification', () => {
+  it('stores an unread notification with no changeset', () => {
     const { db, run, conflict } = setup();
     const saved = insertNotification(db, conflict(NOW));
     expect(saved).toEqual({
       id: saved.id,
-      kind: "conflict",
-      title: "PD-7 was skipped",
-      body: "You edited PD-7 while the Decomposer worked on it.",
+      kind: 'conflict',
+      title: 'PD-7 was skipped',
+      body: 'You edited PD-7 while the Decomposer worked on it.',
       runId: run,
       changesetId: null,
       changeset: null,
@@ -44,25 +44,25 @@ describe("insertNotification", () => {
     expect(findNotification(db, saved.id + 1)).toBeUndefined();
   });
 
-  it("stores a notification with no run, and an empty body by default", () => {
+  it('stores a notification with no run, and an empty body by default', () => {
     const { db } = setup();
-    const saved = insertNotification(db, { kind: "agent_failed", title: "Failed", createdAt: NOW });
-    expect(saved).toMatchObject({ runId: null, changesetId: null, body: "" });
+    const saved = insertNotification(db, { kind: 'agent_failed', title: 'Failed', createdAt: NOW });
+    expect(saved).toMatchObject({ runId: null, changesetId: null, body: '' });
   });
 
-  it("embeds the changeset summary of an auto decomposition, as it is now", () => {
+  it('embeds the changeset summary of an auto decomposition, as it is now', () => {
     const { db, run } = setup();
-    const task = addTask(db, { title: "Add SSO" });
-    const sub = addTask(db, { title: "Write the migration", parentId: task.id });
+    const task = addTask(db, { title: 'Add SSO' });
+    const sub = addTask(db, { title: 'Write the migration', parentId: task.id });
     const changeset = insertChangeset(db, {
       runId: run,
-      ops: [{ type: "create_task", id: sub.id, taskId: task.id }],
+      ops: [{ type: 'create_task', id: sub.id, taskId: task.id }],
       now: NOW,
     });
     const saved = insertNotification(db, {
-      kind: "auto_decomposition",
-      title: "Split 1 task into 1 subtask",
-      body: "",
+      kind: 'auto_decomposition',
+      title: 'Split 1 task into 1 subtask',
+      body: '',
       runId: run,
       changesetId: changeset.id,
       createdAt: NOW,
@@ -71,31 +71,31 @@ describe("insertNotification", () => {
     expect(saved.changeset).toEqual({
       id: changeset.id,
       runId: run,
-      status: "applied",
+      status: 'applied',
       createdAt: NOW,
       tasks: [
         {
           taskId: task.id,
           identifier: task.identifier,
-          title: "Add SSO",
+          title: 'Add SSO',
           createdSubtasks: 1,
           createdLinks: 0,
-          state: "applied",
+          state: 'applied',
         },
       ],
       counts: { subtasks: 1, links: 0 },
     });
 
-    updateChangesetOps(db, changeset.id, [{ ...changeset.ops[0]!, state: "rolled_back" }]);
+    updateChangesetOps(db, changeset.id, [{ ...changeset.ops[0]!, state: 'rolled_back' }]);
     expect(findNotification(db, saved.id)?.changeset).toMatchObject({
-      status: "rolled_back",
-      tasks: [{ taskId: task.id, state: "rolled_back" }],
+      status: 'rolled_back',
+      tasks: [{ taskId: task.id, state: 'rolled_back' }],
     });
   });
 });
 
-describe("listNotifications", () => {
-  it("lists newest first, the later id first on a tie, up to the limit", () => {
+describe('listNotifications', () => {
+  it('lists newest first, the later id first on a tie, up to the limit', () => {
     const { db, conflict } = setup();
     const old = insertNotification(db, conflict(NOW - DAY));
     const tieFirst = insertNotification(db, conflict(NOW));
@@ -106,7 +106,7 @@ describe("listNotifications", () => {
     expect(ids(2)).toEqual([tieSecond.id, tieFirst.id]);
   });
 
-  it("lists only unread notifications with unread, and counts every unread one", () => {
+  it('lists only unread notifications with unread, and counts every unread one', () => {
     const { db, conflict } = setup();
     const read = insertNotification(db, conflict(NOW));
     const unreadOld = insertNotification(db, conflict(NOW + 1));
@@ -122,8 +122,8 @@ describe("listNotifications", () => {
   });
 });
 
-describe("markNotificationRead", () => {
-  it("sets readAt once, so reading again keeps the first time", () => {
+describe('markNotificationRead', () => {
+  it('sets readAt once, so reading again keeps the first time', () => {
     const { db, conflict } = setup();
     const saved = insertNotification(db, conflict(NOW));
 
@@ -132,7 +132,7 @@ describe("markNotificationRead", () => {
     expect(countUnreadNotifications(db)).toBe(0);
   });
 
-  it("answers undefined for a notification that does not exist", () => {
+  it('answers undefined for a notification that does not exist', () => {
     const { db } = setup();
     expect(markNotificationRead(db, 1, NOW)).toBeUndefined();
   });

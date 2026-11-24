@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo } from "react";
-import { parseTaskListParams, taskListHref, type TaskListParams } from "./list-params";
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useMemo } from 'react';
+import { parseTaskListParams, taskListHref, type TaskListParams } from './list-params';
 
 export type SetTaskListParams = (
   patch: Partial<TaskListParams>,
-  options?: { history?: "push" | "replace" },
+  options?: { history?: 'push' | 'replace' },
 ) => void;
 
 /**
@@ -24,10 +24,10 @@ export function useTaskListParams() {
   );
 
   const setParams = useCallback<SetTaskListParams>(
-    (patch, { history = "replace" } = {}) => {
+    (patch, { history = 'replace' } = {}) => {
       const current = parseTaskListParams(new URLSearchParams(window.location.search));
       const href = taskListHref({ ...current, ...patch });
-      if (history === "push") router.push(href, { scroll: false });
+      if (history === 'push') router.push(href, { scroll: false });
       else router.replace(href, { scroll: false });
     },
     [router],

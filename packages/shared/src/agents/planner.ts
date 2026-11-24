@@ -1,7 +1,7 @@
-import { z } from "zod";
-import { idSchema, timestampSchema } from "../common";
-import { aiStateSchema, prioritySchema, taskStatusSchema } from "../enums";
-import { agentRunSchema, agentWarningSchema } from "./runs";
+import { z } from 'zod';
+import { idSchema, timestampSchema } from '../common';
+import { aiStateSchema, prioritySchema, taskStatusSchema } from '../enums';
+import { agentRunSchema, agentWarningSchema } from './runs';
 
 const countSchema = z.number().int().nonnegative();
 
@@ -25,13 +25,13 @@ export const plannerContextRowSchema = z.object({
 export type PlannerContextRow = z.infer<typeof plannerContextRowSchema>;
 
 const focusItemSchema = z.object({
-  taskId: idSchema.describe("The numeric id of a task from the candidate table."),
+  taskId: idSchema.describe('The numeric id of a task from the candidate table.'),
   reason: z
     .string()
     .trim()
     .min(1)
     .max(300)
-    .describe("One or two sentences on why this task comes first today."),
+    .describe('One or two sentences on why this task comes first today.'),
   signals: z
     .array(z.string().trim().min(1).max(60))
     .max(5)
@@ -39,16 +39,16 @@ const focusItemSchema = z.object({
 });
 
 export const submitDailyPlanInputSchema = z.object({
-  focus: z.array(focusItemSchema).min(1).max(5).describe("1 to 5 tasks, most important first."),
+  focus: z.array(focusItemSchema).min(1).max(5).describe('1 to 5 tasks, most important first.'),
   warnings: z
     .array(agentWarningSchema)
     .default([])
-    .describe("Problems the user should know about, tied to a task when there is one."),
+    .describe('Problems the user should know about, tied to a task when there is one.'),
   coordinationNotes: z
     .array(z.string().trim().min(1).max(300))
     .max(5)
     .default([])
-    .describe("Notes about tasks other agents are working on or that await review."),
+    .describe('Notes about tasks other agents are working on or that await review.'),
 });
 export type SubmitDailyPlanInput = z.infer<typeof submitDailyPlanInputSchema>;
 
@@ -66,14 +66,14 @@ export const plannerOutputSchema = z.object({
 export type PlannerOutput = z.infer<typeof plannerOutputSchema>;
 
 export const plannerRunSchema = agentRunSchema.extend({
-  agent: z.literal("planner"),
+  agent: z.literal('planner'),
   input: plannerInputSchema,
   output: plannerOutputSchema.nullable(),
 });
 export type PlannerRun = z.infer<typeof plannerRunSchema>;
 
 export const completedPlannerRunSchema = plannerRunSchema.extend({
-  status: z.literal("completed"),
+  status: z.literal('completed'),
   output: plannerOutputSchema,
   finishedAt: timestampSchema,
 });

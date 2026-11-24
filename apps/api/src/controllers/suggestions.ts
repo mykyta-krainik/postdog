@@ -5,9 +5,9 @@ import type {
   ListSuggestionsQuery,
   ListSuggestionsResponse,
   RejectSuggestionResponse,
-} from "@postdog/shared";
-import type { Request, Response } from "express";
-import type { SuggestionService } from "../services/suggestions";
+} from '@postdog/shared';
+import type { Request, Response } from 'express';
+import type { SuggestionService } from '../services/suggestions';
 
 export function createSuggestionController(suggestions: SuggestionService) {
   return {

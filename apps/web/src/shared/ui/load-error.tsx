@@ -1,6 +1,6 @@
-import { ApiError } from "@/shared/api";
-import { cn } from "@/shared/lib/utils";
-import { Button } from "@/shared/ui/button";
+import { ApiError } from '@/shared/api';
+import { cn } from '@/shared/lib/utils';
+import { Button } from '@/shared/ui/button';
 
 /** A request that failed to load, why, and Try again. */
 export function LoadError({
@@ -16,12 +16,12 @@ export function LoadError({
   onRetry: () => void;
   className?: string;
 }) {
-  const unreachable = error instanceof ApiError && error.code === "network_error";
+  const unreachable = error instanceof ApiError && error.code === 'network_error';
   return (
     <div
       role="alert"
       className={cn(
-        "flex flex-col items-start gap-3 rounded-md border border-border px-4 py-4",
+        'flex flex-col items-start gap-3 rounded-md border border-border px-4 py-4',
         className,
       )}
     >
@@ -32,7 +32,7 @@ export function LoadError({
             ? "Postdog can't reach the API. Check that it is running, then try again."
             : error instanceof Error
               ? error.message
-              : "The API returned an error."}
+              : 'The API returned an error.'}
         </p>
       </div>
       <Button
@@ -42,7 +42,7 @@ export function LoadError({
         disabled={retrying}
         className="max-md:h-10"
       >
-        {retrying ? "Trying again…" : "Try again"}
+        {retrying ? 'Trying again…' : 'Try again'}
       </Button>
     </div>
   );

@@ -6,9 +6,9 @@ import type {
   StatusUpdaterOutput,
   SubmitStatusUpdateInput,
   TaskStatus,
-} from "@postdog/shared";
-import { escapeMarkup } from "./prompt";
-import type { StatusRow, StatusScope } from "./scope";
+} from '@postdog/shared';
+import { escapeMarkup } from './prompt';
+import type { StatusRow, StatusScope } from './scope';
 
 export interface Finding {
   item: unknown;
@@ -19,10 +19,10 @@ interface Item {
   taskId: number;
 }
 
-type NeedsNotes = Extract<StatusUpdaterOutput, { kind: "needs_notes" }>;
+type NeedsNotes = Extract<StatusUpdaterOutput, { kind: 'needs_notes' }>;
 
 function statusLabel(status: TaskStatus): string {
-  return status === "in_progress" ? "in progress" : status;
+  return status === 'in_progress' ? 'in progress' : status;
 }
 
 function outOfScope(scope: StatusScope, taskId: number, item: unknown): Finding {
@@ -73,11 +73,11 @@ export function checkUpdate(
   });
 
   const blockers = once(inScope(submitted.blockers));
-  const done: SubmitStatusUpdateInput["done"] = [];
-  const moved: SubmitStatusUpdateInput["done"] = [];
+  const done: SubmitStatusUpdateInput['done'] = [];
+  const moved: SubmitStatusUpdateInput['done'] = [];
   for (const item of inScope(submitted.done)) {
     const row = rows.get(item.taskId)!;
-    if (row.status === "done") {
+    if (row.status === 'done') {
       done.push(item);
       continue;
     }
@@ -110,10 +110,10 @@ export function checkUpdate(
 export function checkNotesRequest(
   submitted: AskForNotesInput,
   scope: StatusScope,
-): { tasks: NeedsNotes["tasks"]; findings: Finding[] } {
+): { tasks: NeedsNotes['tasks']; findings: Finding[] } {
   const rows = new Map(scope.rows.map((row) => [row.id, row]));
   const findings: Finding[] = [];
-  const tasks: NeedsNotes["tasks"] = [];
+  const tasks: NeedsNotes['tasks'] = [];
   for (const taskId of new Set(submitted.taskIds)) {
     const row = rows.get(taskId);
     if (row) tasks.push({ taskId, identifier: row.identifier, title: row.title });
@@ -124,7 +124,7 @@ export function checkNotesRequest(
 
 export type RenderFacts = Pick<
   StatusRow,
-  "id" | "status" | "subtaskDone" | "subtaskTotal" | "daysInStatus" | "isStale" | "openBlockers"
+  'id' | 'status' | 'subtaskDone' | 'subtaskTotal' | 'daysInStatus' | 'isStale' | 'openBlockers'
 >;
 
 interface RenderItem {
@@ -135,28 +135,28 @@ interface RenderItem {
 }
 
 const TONE_EMOJI: Record<StatusUpdateTone, string> = {
-  celebrate: " :tada:",
-  neutral: "",
-  heads_up: " :warning:",
-  blocked: " :rotating_light:",
+  celebrate: ' :tada:',
+  neutral: '',
+  heads_up: ' :warning:',
+  blocked: ' :rotating_light:',
 };
 
 function factsOf(row: RenderFacts | undefined): string {
-  if (!row || row.status === "done") return "";
+  if (!row || row.status === 'done') return '';
   const facts = [
-    row.status === "todo" ? "not started" : null,
+    row.status === 'todo' ? 'not started' : null,
     row.subtaskTotal > 0 ? `${row.subtaskDone}/${row.subtaskTotal} subtasks done` : null,
     row.openBlockers.length > 0
-      ? `blocked by ${row.openBlockers.map((t) => t.identifier).join(", ")}`
+      ? `blocked by ${row.openBlockers.map((t) => t.identifier).join(', ')}`
       : null,
     row.isStale ? `in progress for ${row.daysInStatus} days` : null,
   ].filter((fact) => fact !== null);
-  return facts.length > 0 ? ` (${facts.join(", ")})` : "";
+  return facts.length > 0 ? ` (${facts.join(', ')})` : '';
 }
 
 function itemLine(label: string, item: RenderItem, row: RenderFacts | undefined): string {
-  const text = escapeMarkup(item.text.replace(/[\s.]+$/, ""));
-  const ask = item.ask ? `. *Ask:* ${escapeMarkup(item.ask)}` : "";
+  const text = escapeMarkup(item.text.replace(/[\s.]+$/, ''));
+  const ask = item.ask ? `. *Ask:* ${escapeMarkup(item.ask)}` : '';
   return `*${label}:* ${item.identifier} ${text}${factsOf(row)}${ask}`;
 }
 
@@ -166,9 +166,9 @@ export function renderSlackText(update: StatusUpdate, facts: readonly RenderFact
     items.map((item) => itemLine(label, item, byId.get(item.taskId)));
   return [
     `*${escapeMarkup(update.headline)}*${TONE_EMOJI[update.tone]}`,
-    ...lines("Blocker", update.blockers),
-    ...lines("Done", update.done),
-    ...lines("In progress", update.inProgress),
-    ...(update.next.length > 0 ? [`*Next:* ${update.next.map(escapeMarkup).join("; ")}`] : []),
-  ].join("\n");
+    ...lines('Blocker', update.blockers),
+    ...lines('Done', update.done),
+    ...lines('In progress', update.inProgress),
+    ...(update.next.length > 0 ? [`*Next:* ${update.next.map(escapeMarkup).join('; ')}`] : []),
+  ].join('\n');
 }

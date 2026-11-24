@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   listNotesResponseSchema,
@@ -6,11 +6,11 @@ import {
   type CreateNoteInput,
   type ListNotesResponse,
   type TaskNote,
-} from "@postdog/shared";
-import useSWR, { mutate } from "swr";
-import { apiRequest, fetcherFor } from "@/shared/api";
-import { appendNote } from "../model/notes";
-import { taskKeys } from "./keys";
+} from '@postdog/shared';
+import useSWR, { mutate } from 'swr';
+import { apiRequest, fetcherFor } from '@/shared/api';
+import { appendNote } from '../model/notes';
+import { taskKeys } from './keys';
 
 const fetchNotes = fetcherFor(listNotesResponseSchema);
 
@@ -25,7 +25,7 @@ export function useTaskNotes(taskId: number | undefined) {
  */
 export async function createNote(taskId: number, input: CreateNoteInput): Promise<TaskNote> {
   const key = taskKeys.notes(taskId);
-  const note = await apiRequest(key, taskNoteSchema, { method: "POST", body: input });
+  const note = await apiRequest(key, taskNoteSchema, { method: 'POST', body: input });
   await mutate<ListNotesResponse | undefined>(key, (list) => appendNote(list, note), {
     revalidate: (list) => list === undefined,
   });

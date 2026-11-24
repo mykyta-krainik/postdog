@@ -1,7 +1,7 @@
-import { markNotificationReadResponseSchema, type Notification } from "@postdog/shared";
-import { mutate } from "swr";
-import { apiKey, apiRequest } from "@/shared/api";
-import { notificationKeys } from "./keys";
+import { markNotificationReadResponseSchema, type Notification } from '@postdog/shared';
+import { mutate } from 'swr';
+import { apiKey, apiRequest } from '@/shared/api';
+import { notificationKeys } from './keys';
 
 /** Refetches every mounted notification list and the nav badge. */
 export function revalidateNotifications() {
@@ -13,7 +13,7 @@ export async function markNotificationRead(id: number): Promise<Notification> {
     return await apiRequest(
       apiKey(`/notifications/${id}/read`),
       markNotificationReadResponseSchema,
-      { method: "POST" },
+      { method: 'POST' },
     );
   } finally {
     await revalidateNotifications();

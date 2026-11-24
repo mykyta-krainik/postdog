@@ -1,1 +1,1 @@
-export { DeleteTaskButton } from "./ui/delete-task-button";
+export { DeleteTaskButton } from './ui/delete-task-button';

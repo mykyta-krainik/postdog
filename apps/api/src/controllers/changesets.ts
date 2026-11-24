@@ -1,6 +1,6 @@
-import type { IdParams, RollbackInput, RollbackResponse } from "@postdog/shared";
-import type { Request, Response } from "express";
-import type { ChangesetService } from "../services/changesets";
+import type { IdParams, RollbackInput, RollbackResponse } from '@postdog/shared';
+import type { Request, Response } from 'express';
+import type { ChangesetService } from '../services/changesets';
 
 export function createChangesetController(changesets: ChangesetService) {
   return {

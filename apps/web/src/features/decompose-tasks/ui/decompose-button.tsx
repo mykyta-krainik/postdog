@@ -1,28 +1,28 @@
-"use client";
+'use client';
 
-import { AGENT_LIMITS, type DecompositionMode } from "@postdog/shared";
-import { ListTree, LoaderCircle } from "lucide-react";
-import Link from "next/link";
-import { useState } from "react";
+import { AGENT_LIMITS, type DecompositionMode } from '@postdog/shared';
+import { ListTree, LoaderCircle } from 'lucide-react';
+import Link from 'next/link';
+import { useState } from 'react';
 import {
   AgentDialog,
   AgentRunStatus,
   findRunning,
   isRunBusy,
   useRunningRuns,
-} from "@/entities/agent-run";
-import { useSettings } from "@/entities/settings";
-import { routes } from "@/shared/config";
-import { cn } from "@/shared/lib/utils";
-import { Button } from "@/shared/ui/button";
-import { useDecompose } from "../model/use-decompose";
-import { DecomposeResult } from "./decompose-result";
+} from '@/entities/agent-run';
+import { useSettings } from '@/entities/settings';
+import { routes } from '@/shared/config';
+import { cn } from '@/shared/lib/utils';
+import { Button } from '@/shared/ui/button';
+import { useDecompose } from '../model/use-decompose';
+import { DecomposeResult } from './decompose-result';
 
-const ACTION = "h-10 px-3 text-[13px] md:h-8";
+const ACTION = 'h-10 px-3 text-[13px] md:h-8';
 
 const MODE_HINT: Record<DecompositionMode, string> = {
-  suggest: "Suggest mode: you review every change.",
-  auto: "Auto mode: creates subtasks and links right away; undo from the Inbox.",
+  suggest: 'Suggest mode: you review every change.',
+  auto: 'Auto mode: creates subtasks and links right away; undo from the Inbox.',
 };
 
 const MODE_DESCRIPTION: Record<DecompositionMode, string> = {
@@ -44,11 +44,11 @@ export function DecomposeButton() {
   const [open, setOpen] = useState(false);
 
   if (!aiEnabled) return null;
-  const idle = runner.view.status === "idle";
-  const elsewhere = idle ? findRunning(runs, { agent: "decomposer" }) : undefined;
+  const idle = runner.view.status === 'idle';
+  const elsewhere = idle ? findRunning(runs, { agent: 'decomposer' }) : undefined;
   const busy = isRunBusy(runner.view) || elsewhere !== undefined;
   const Icon = busy ? LoaderCircle : ListTree;
-  const mode = settings?.decompositionMode ?? "suggest";
+  const mode = settings?.decompositionMode ?? 'suggest';
 
   return (
     <>
@@ -60,7 +60,7 @@ export function DecomposeButton() {
         onClick={() => setOpen(true)}
       >
         <Icon
-          className={cn("size-4 text-brand", busy && "animate-spin motion-reduce:animate-none")}
+          className={cn('size-4 text-brand', busy && 'animate-spin motion-reduce:animate-none')}
           aria-hidden
         />
         <span className="max-md:sr-only">Decompose</span>
@@ -73,7 +73,7 @@ export function DecomposeButton() {
       >
         <div className="flex min-w-0 flex-col gap-3">
           <p className="text-xs text-muted-foreground">
-            {MODE_HINT[mode]}{" "}
+            {MODE_HINT[mode]}{' '}
             <Link
               href={routes.settings}
               className="underline underline-offset-2 hover:text-foreground"
@@ -84,7 +84,7 @@ export function DecomposeButton() {
           </p>
           {elsewhere ? (
             <p role="status" className="text-[13px] text-muted-foreground">
-              A Decomposer run is already going.{" "}
+              A Decomposer run is already going.{' '}
               <Link
                 href={routes.run(elsewhere.id)}
                 className="text-brand-text underline underline-offset-2"
@@ -94,7 +94,7 @@ export function DecomposeButton() {
               </Link>
             </p>
           ) : idle ? (
-            <Button size="sm" className={cn(ACTION, "self-start")} onClick={runner.start}>
+            <Button size="sm" className={cn(ACTION, 'self-start')} onClick={runner.start}>
               Find subtasks
             </Button>
           ) : (
@@ -109,7 +109,7 @@ export function DecomposeButton() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className={cn(ACTION, "self-start")}
+                    className={cn(ACTION, 'self-start')}
                     onClick={runner.start}
                   >
                     Run again

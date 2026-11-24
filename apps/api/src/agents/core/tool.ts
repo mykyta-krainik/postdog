@@ -1,5 +1,5 @@
-import { jsonSchema, tool, type ToolSet } from "ai";
-import { z } from "zod";
+import { jsonSchema, tool, type ToolSet } from 'ai';
+import { z } from 'zod';
 
 export interface ReadTool<N extends string = string, S extends z.ZodType = z.ZodType, O = unknown> {
   name: N;
@@ -43,7 +43,7 @@ export function defineTerminalTool<const N extends string, S extends z.ZodType>(
 type JsonSchemaInput = Parameters<typeof jsonSchema>[0];
 
 function inputJsonSchema(t: AgentTool) {
-  return z.toJSONSchema(t.input, { target: "draft-7", io: "input" });
+  return z.toJSONSchema(t.input, { target: 'draft-7', io: 'input' });
 }
 
 export function toToolSet(tools: readonly AgentTool[]): ToolSet {
@@ -65,7 +65,7 @@ export function structuredKeys(t: AgentTool): ReadonlySet<string> {
     Object.entries(properties)
       .filter(
         ([, schema]) =>
-          typeof schema === "object" && ["array", "object"].includes(`${schema.type}`),
+          typeof schema === 'object' && ['array', 'object'].includes(`${schema.type}`),
       )
       .map(([key]) => key),
   );
@@ -76,11 +76,11 @@ export function structuredKeys(t: AgentTool): ReadonlySet<string> {
  * Parses such a value back, only at the given keys, and keeps any string that is not JSON.
  */
 export function parseStringifiedFields(input: unknown, keys: ReadonlySet<string>): unknown {
-  if (typeof input !== "object" || input === null || Array.isArray(input)) return input;
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) return input;
   return Object.fromEntries(
     Object.entries(input).map(([key, value]) => [
       key,
-      keys.has(key) && typeof value === "string" && /^\s*[[{]/.test(value) ? parseOr(value) : value,
+      keys.has(key) && typeof value === 'string' && /^\s*[[{]/.test(value) ? parseOr(value) : value,
     ]),
   );
 }
@@ -95,6 +95,6 @@ function parseOr(text: string): unknown {
 
 export function describeIssues(error: z.ZodError): string {
   return error.issues
-    .map((issue) => `${issue.path.join(".") || "input"}: ${issue.message}`)
-    .join("; ");
+    .map((issue) => `${issue.path.join('.') || 'input'}: ${issue.message}`)
+    .join('; ');
 }

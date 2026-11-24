@@ -1,7 +1,7 @@
-import type { RequestHandler } from "express";
-import { AppError } from "../lib/errors";
+import type { RequestHandler } from 'express';
+import { AppError } from '../lib/errors';
 
-const READ_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 /**
  * Stops a page on another site from changing data. A browser sends a cross-site form post or
@@ -11,16 +11,16 @@ const READ_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
  */
 export const crossSiteGuard: RequestHandler = (req, _res, next) => {
   if (READ_METHODS.has(req.method)) return next();
-  if (req.get("Sec-Fetch-Site") === "cross-site") {
-    return next(new AppError(403, "forbidden", "Requests from another site cannot change data."));
+  if (req.get('Sec-Fetch-Site') === 'cross-site') {
+    return next(new AppError(403, 'forbidden', 'Requests from another site cannot change data.'));
   }
-  const mediaType = req.get("Content-Type")?.split(";")[0]!.trim().toLowerCase();
-  if (mediaType !== "application/json") {
+  const mediaType = req.get('Content-Type')?.split(';')[0]!.trim().toLowerCase();
+  if (mediaType !== 'application/json') {
     return next(
       new AppError(
         415,
-        "unsupported_media_type",
-        "Send writes with Content-Type: application/json.",
+        'unsupported_media_type',
+        'Send writes with Content-Type: application/json.',
       ),
     );
   }

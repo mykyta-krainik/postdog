@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useId } from "react";
-import { toast } from "sonner";
-import { updateSettings } from "@/entities/settings";
-import { Switch } from "@/shared/ui/switch";
+import { useId } from 'react';
+import { toast } from 'sonner';
+import { updateSettings } from '@/entities/settings';
+import { Switch } from '@/shared/ui/switch';
 
 /** The AI kill switch. It always renders, so the user can turn AI back on. */
 export function AiToggle({ enabled }: { enabled: boolean }) {
@@ -13,8 +13,8 @@ export function AiToggle({ enabled }: { enabled: boolean }) {
     try {
       await updateSettings({ aiEnabled: next });
     } catch (error) {
-      toast.error(next ? "AI is still off" : "AI is still on", {
-        description: error instanceof Error ? error.message : "The API rejected the change.",
+      toast.error(next ? 'AI is still off' : 'AI is still on', {
+        description: error instanceof Error ? error.message : 'The API rejected the change.',
       });
     }
   }

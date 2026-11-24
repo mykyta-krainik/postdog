@@ -65,7 +65,7 @@ Every failure is an `AgentError`. The trace so far stays in `ctx.trace` and is s
 
 ```ts
 const getWidget = defineReadTool({
-  name: "get_widget",
+  name: 'get_widget',
   description:
     'Get one widget by id. Use it when ... Do not use it to ...; use search_widgets for that. Example: {"id": 3}.',
   input: getWidgetInputSchema,
@@ -79,8 +79,8 @@ const getWidget = defineReadTool({
 });
 
 const submitAnswer = defineTerminalTool({
-  name: "submit_answer",
-  description: "Submit the final answer. Call it once, when you are done.",
+  name: 'submit_answer',
+  description: 'Submit the final answer. Call it once, when you are done.',
   input: submitAnswerInputSchema,
 });
 ```
@@ -97,9 +97,9 @@ The terminal tool's Zod schema checks shape, lengths and enums inside the loop. 
 
 ```ts
 ctx.trace.record({
-  type: "validation",
+  type: 'validation',
   input: item,
-  outputSummary: "Dropped PD-3: it is done",
+  outputSummary: 'Dropped PD-3: it is done',
   durationMs: 0,
 });
 ```
@@ -119,9 +119,9 @@ When nothing valid is left, throw `new AgentError("nothing_valid", "...")`.
 In mock mode (`LLM_MOCK=true`, a missing provider key, and every test), the model replays a `MockScript` registered for the loop's `name`:
 
 ```ts
-registerMockScript("planner", (conversation) => {
-  if (conversation.turn === 1) return { toolCalls: [{ toolName: "get_task", input: { id: 3 } }] };
-  return { toolCalls: [{ toolName: "submit_daily_plan", input: { focus: [/* ... */] } }] };
+registerMockScript('planner', (conversation) => {
+  if (conversation.turn === 1) return { toolCalls: [{ toolName: 'get_task', input: { id: 3 } }] };
+  return { toolCalls: [{ toolName: 'submit_daily_plan', input: { focus: [/* ... */] } }] };
 });
 ```
 

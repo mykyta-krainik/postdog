@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
-import { SWRConfig } from "swr";
-import { isRetryableError, revalidateSettingsOnAiDisabled } from "@/shared/api";
-import { ThemeSync } from "@/shared/lib/theme";
-import { Toaster } from "@/shared/ui/sonner";
-import { TooltipProvider } from "@/shared/ui/tooltip";
+import type { ReactNode } from 'react';
+import { SWRConfig } from 'swr';
+import { isRetryableError, revalidateSettingsOnAiDisabled } from '@/shared/api';
+import { ThemeSync } from '@/shared/lib/theme';
+import { Toaster } from '@/shared/ui/sonner';
+import { TooltipProvider } from '@/shared/ui/tooltip';
 
 export function Providers({ children }: { children: ReactNode }) {
   return (

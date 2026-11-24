@@ -1,6 +1,6 @@
-import { and, asc, desc, eq, gte } from "drizzle-orm";
-import type { Executor } from "../db/client";
-import { taskNotes, type TaskNoteRow } from "../db/schema";
+import { and, asc, desc, eq, gte } from 'drizzle-orm';
+import type { Executor } from '../db/client';
+import { taskNotes, type TaskNoteRow } from '../db/schema';
 
 /** Notes of one task, oldest first. */
 export function listNotes(ex: Executor, taskId: number): TaskNoteRow[] {
@@ -37,6 +37,6 @@ export function listNotesSince(ex: Executor, since: number): TaskNoteRow[] {
     .all();
 }
 
-export function insertNote(ex: Executor, row: Omit<TaskNoteRow, "id">): TaskNoteRow {
+export function insertNote(ex: Executor, row: Omit<TaskNoteRow, 'id'>): TaskNoteRow {
   return ex.insert(taskNotes).values(row).returning().get();
 }

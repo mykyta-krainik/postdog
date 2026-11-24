@@ -1,9 +1,9 @@
-import { cn } from "@/shared/lib/utils";
+import { cn } from '@/shared/lib/utils';
 
 /** A dog-eared note: the Postdog mark. */
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 20 20" aria-hidden className={cn("size-5 shrink-0", className)}>
+    <svg viewBox="0 0 20 20" aria-hidden className={cn('size-5 shrink-0', className)}>
       <path
         d="M5 2h7.5L18 7.5V15a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3Z"
         fill="var(--brand)"
@@ -28,11 +28,11 @@ export function Wordmark({
   textClassName?: string;
 }) {
   return (
-    <span className={cn("flex items-center gap-2", className)}>
+    <span className={cn('flex items-center gap-2', className)}>
       <LogoMark />
       <span
         className={cn(
-          "text-[15px] font-semibold tracking-[-0.02em] text-foreground",
+          'text-[15px] font-semibold tracking-[-0.02em] text-foreground',
           textClassName,
         )}
       >

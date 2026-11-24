@@ -1,6 +1,6 @@
-import { openDatabase, type Db } from "./client";
-import { migrateDatabase } from "./migrate";
-import { seedDatabase } from "./seed";
+import { openDatabase, type Db } from './client';
+import { migrateDatabase } from './migrate';
+import { seedDatabase } from './seed';
 
 /**
  * Creates the file and its directory, migrates and seeds once. It never touches agent runs:

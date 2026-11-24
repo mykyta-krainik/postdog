@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { statusUpdaterRunSchema, type StatusUpdaterInput } from "@postdog/shared";
-import { useRef, useState } from "react";
-import { mutate } from "swr";
-import { startAgentRun, useAgentRunner } from "@/entities/agent-run";
-import { taskKeys } from "@/entities/task";
+import { statusUpdaterRunSchema, type StatusUpdaterInput } from '@postdog/shared';
+import { useRef, useState } from 'react';
+import { mutate } from 'swr';
+import { startAgentRun, useAgentRunner } from '@/entities/agent-run';
+import { taskKeys } from '@/entities/task';
 import {
   initialInput,
   retryInput,
   toStatusUpdateView,
   type StatusUpdateScope,
   type StatusUpdateView,
-} from "./status-update";
+} from './status-update';
 
 /** The user's edits to one run's draft. */
 type Draft = { runId: number; text: string; copied: boolean };
@@ -58,7 +58,7 @@ export function useStatusUpdate(scope: StatusUpdateScope): StatusUpdater {
   // The input of the latest start. A ref, so start() always posts what run() just set.
   const input = useRef<StatusUpdaterInput>(initialInput(scope));
   const runner = useAgentRunner({
-    start: () => startAgentRun("status_updater", input.current),
+    start: () => startAgentRun('status_updater', input.current),
     schema: statusUpdaterRunSchema,
     onSettled: (settled) => {
       // The API saved these as task notes, so their timelines are out of date.
@@ -76,12 +76,12 @@ export function useStatusUpdate(scope: StatusUpdateScope): StatusUpdater {
   const { view } = runner;
   return {
     view: toStatusUpdateView(view),
-    runId: "run" in view ? view.run.id : undefined,
+    runId: 'run' in view ? view.run.id : undefined,
     begin: () => {
-      if (runner.view.status === "idle") run(initialInput(scope));
+      if (runner.view.status === 'idle') run(initialInput(scope));
     },
     run,
-    retry: () => run(retryInput(input.current, runner.view.status !== "request_failed")),
+    retry: () => run(retryInput(input.current, runner.view.status !== 'request_failed')),
     cancel: runner.cancel,
     ...drafts,
   };

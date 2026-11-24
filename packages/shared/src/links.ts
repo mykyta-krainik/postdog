@@ -1,13 +1,13 @@
-import { z } from "zod";
-import { idSchema, timestampSchema } from "./common";
-import { linkTypeSchema, taskStatusSchema } from "./enums";
+import { z } from 'zod';
+import { idSchema, timestampSchema } from './common';
+import { linkTypeSchema, taskStatusSchema } from './enums';
 
-export const linkDirectionSchema = z.enum(["out", "in"]);
+export const linkDirectionSchema = z.enum(['out', 'in']);
 export type LinkDirection = z.infer<typeof linkDirectionSchema>;
 
 export const linkCreatedBySchema = z.union([
-  z.literal("user"),
-  z.templateLiteral(["agent:", z.number().int().positive()]),
+  z.literal('user'),
+  z.templateLiteral(['agent:', z.number().int().positive()]),
 ]);
 export type LinkCreatedBy = z.infer<typeof linkCreatedBySchema>;
 

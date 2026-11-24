@@ -6,17 +6,17 @@ import type {
   TaskDetail,
   TaskListItem,
   UpdateTaskInput,
-} from "@postdog/shared";
-import type { Db, Executor } from "../db/client";
-import type { NewTaskRow, TaskRow } from "../db/schema";
-import { invalidField, notFound, stale } from "../lib/errors";
-import { listLinksOfTask } from "../repositories/links";
-import { getSetting, setSetting } from "../repositories/settings";
+} from '@postdog/shared';
+import type { Db, Executor } from '../db/client';
+import type { NewTaskRow, TaskRow } from '../db/schema';
+import { invalidField, notFound, stale } from '../lib/errors';
+import { listLinksOfTask } from '../repositories/links';
+import { getSetting, setSetting } from '../repositories/settings';
 import {
   listPendingSuggestionsOfTask,
   resolveSuggestion,
   supersedeSuggestionsOfTasks,
-} from "../repositories/suggestions";
+} from '../repositories/suggestions';
 import {
   deleteTask,
   findTask,
@@ -24,12 +24,12 @@ import {
   listSubtaskIds,
   listTasks,
   updateTask,
-} from "../repositories/tasks";
+} from '../repositories/tasks';
 
 /** Reserves the next `count` identifiers ("PD-n") from the counter in settings. */
 export function allocateIdentifiers(ex: Executor, count: number): string[] {
-  const last = getSetting(ex, "identifierCounter") ?? 0;
-  setSetting(ex, "identifierCounter", last + count);
+  const last = getSetting(ex, 'identifierCounter') ?? 0;
+  setSetting(ex, 'identifierCounter', last + count);
   return Array.from({ length: count }, (_, i) => `PD-${last + i + 1}`);
 }
 
@@ -50,7 +50,7 @@ export function planTaskUpdate(
   return {
     ...changes,
     updatedAt: now,
-    ...(changed.includes("status") && { statusChangedAt: now }),
+    ...(changed.includes('status') && { statusChangedAt: now }),
   };
 }
 
@@ -73,9 +73,9 @@ export function insertSubtasks(
     insertTask(ex, {
       title: subtask.title,
       description: subtask.description,
-      priority: subtask.priority ?? "medium",
+      priority: subtask.priority ?? 'medium',
       identifier: identifiers[i]!,
-      status: "todo",
+      status: 'todo',
       parentId,
       createdAt: now,
       updatedAt: now,
@@ -93,7 +93,7 @@ function requireTask(ex: Executor, id: number): TaskRow {
 function toDetail(ex: Executor, task: TaskRow): TaskDetail {
   return {
     ...task,
-    subtasks: listTasks(ex, { parentId: task.id, sort: "createdAt", order: "asc" }),
+    subtasks: listTasks(ex, { parentId: task.id, sort: 'createdAt', order: 'asc' }),
     links: listLinksOfTask(ex, task.id),
     pendingSuggestions: listPendingSuggestionsOfTask(ex, task.id),
   };
@@ -120,9 +120,9 @@ export function createTaskService(db: Db) {
         const { parentId, ...fields } = input;
         if (parentId !== undefined) {
           const parent = findTask(tx, parentId);
-          if (!parent) throw invalidField("parentId", `Task ${parentId} does not exist`);
+          if (!parent) throw invalidField('parentId', `Task ${parentId} does not exist`);
           if (parent.parentId !== null) {
-            throw invalidField("parentId", "A subtask cannot have subtasks of its own");
+            throw invalidField('parentId', 'A subtask cannot have subtasks of its own');
           }
         }
         const now = Date.now();
@@ -145,9 +145,9 @@ export function createTaskService(db: Db) {
         const now = Date.now();
         const changes = planTaskUpdate(task, input, now);
         if (changes) updateTask(tx, id, changes);
-        if (changes?.status === "done") {
+        if (changes?.status === 'done') {
           for (const s of listPendingSuggestionsOfTask(tx, id)) {
-            if (s.kind !== "related") resolveSuggestion(tx, s.id, "superseded", now);
+            if (s.kind !== 'related') resolveSuggestion(tx, s.id, 'superseded', now);
           }
         }
         return toDetail(tx, requireTask(tx, id));
@@ -165,7 +165,7 @@ export function createTaskService(db: Db) {
       return db.transaction((tx) => {
         const parent = requireTask(tx, id);
         if (parent.parentId !== null) {
-          throw invalidField("id", "A subtask cannot have subtasks of its own");
+          throw invalidField('id', 'A subtask cannot have subtasks of its own');
         }
         assertUnchanged(parent, input.baseUpdatedAt);
         insertSubtasks(tx, parent.id, input.subtasks, Date.now());

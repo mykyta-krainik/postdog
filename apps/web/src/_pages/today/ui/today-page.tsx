@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
-import { TodayView } from "./today-view";
+import type { Metadata } from 'next';
+import { TodayView } from './today-view';
 
-export const metadata: Metadata = { title: "Today" };
+export const metadata: Metadata = { title: 'Today' };
 
 export function TodayPage() {
   return (

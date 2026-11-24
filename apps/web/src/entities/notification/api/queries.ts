@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { listNotificationsResponseSchema } from "@postdog/shared";
-import useSWR from "swr";
-import { fetcherFor } from "@/shared/api";
-import { notificationKeys, type NotificationsQuery } from "./keys";
+import { listNotificationsResponseSchema } from '@postdog/shared';
+import useSWR from 'swr';
+import { fetcherFor } from '@/shared/api';
+import { notificationKeys, type NotificationsQuery } from './keys';
 
 const fetchNotifications = fetcherFor(listNotificationsResponseSchema);
 

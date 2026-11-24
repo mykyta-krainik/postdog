@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
-import { MEDIA } from "@/shared/config";
-import { useMediaQuery } from "@/shared/lib/use-media-query";
+import type { ReactNode } from 'react';
+import { MEDIA } from '@/shared/config';
+import { useMediaQuery } from '@/shared/lib/use-media-query';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/shared/ui/dialog";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/shared/ui/sheet";
-import { MockAiBadge } from "./badges";
+} from '@/shared/ui/dialog';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet';
+import { MockAiBadge } from './badges';
 
 /**
  * The frame of an AI action: a dialog from 768 px, a bottom sheet below, so the result gets the

@@ -1,27 +1,27 @@
-"use client";
+'use client';
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { createSubtasksInputSchema } from "@postdog/shared";
-import { Plus } from "lucide-react";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { mutate } from "swr";
-import type { z } from "zod";
-import { createSubtasks, taskKeys, type TaskDetail } from "@/entities/task";
-import { ApiError } from "@/shared/api";
-import { setApiErrors } from "@/shared/lib/form-errors";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createSubtasksInputSchema } from '@postdog/shared';
+import { Plus } from 'lucide-react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { mutate } from 'swr';
+import type { z } from 'zod';
+import { createSubtasks, taskKeys, type TaskDetail } from '@/entities/task';
+import { ApiError } from '@/shared/api';
+import { setApiErrors } from '@/shared/lib/form-errors';
+import { Button } from '@/shared/ui/button';
+import { Input } from '@/shared/ui/input';
 
 const subtaskSchema = createSubtasksInputSchema.shape.subtasks.element.pick({ title: true });
 type SubtaskValues = z.input<typeof subtaskSchema>;
 
 const resolver = zodResolver(subtaskSchema, {
   error: (issue) =>
-    issue.code === "too_small"
-      ? "Give the subtask a title."
-      : issue.code === "too_big"
-        ? "Keep the title under 200 characters."
+    issue.code === 'too_small'
+      ? 'Give the subtask a title.'
+      : issue.code === 'too_big'
+        ? 'Keep the title under 200 characters.'
         : undefined,
 });
 
@@ -33,27 +33,27 @@ const resolver = zodResolver(subtaskSchema, {
 export function AddSubtaskForm({
   parent,
 }: {
-  parent: Pick<TaskDetail, "id" | "identifier" | "updatedAt">;
+  parent: Pick<TaskDetail, 'id' | 'identifier' | 'updatedAt'>;
 }) {
   const [open, setOpen] = useState(false);
-  const form = useForm<SubtaskValues>({ resolver, defaultValues: { title: "" } });
+  const form = useForm<SubtaskValues>({ resolver, defaultValues: { title: '' } });
   const { errors, isSubmitting } = form.formState;
 
   const close = () => {
-    form.reset({ title: "" });
+    form.reset({ title: '' });
     setOpen(false);
   };
 
   const submit = form.handleSubmit(async ({ title }) => {
-    form.setValue("title", "");
-    form.setFocus("title");
+    form.setValue('title', '');
+    form.setFocus('title');
     try {
       await createSubtasks(parent.id, { subtasks: [{ title }], baseUpdatedAt: parent.updatedAt });
     } catch (error) {
-      if (form.getValues("title") === "") form.setValue("title", title);
-      if (error instanceof ApiError && error.code === "stale") {
+      if (form.getValues('title') === '') form.setValue('title', title);
+      if (error instanceof ApiError && error.code === 'stale') {
         await mutate(taskKeys.detail(parent.id));
-        form.setError("root", {
+        form.setError('root', {
           message: `${parent.identifier} changed after it loaded, so nothing was added. It's up to date now. Press Enter to add the subtask.`,
         });
         return;
@@ -61,7 +61,7 @@ export function AddSubtaskForm({
       setApiErrors(
         form,
         error,
-        (path) => (path === "subtasks.0.title" ? "title" : undefined),
+        (path) => (path === 'subtasks.0.title' ? 'title' : undefined),
         "The subtask wasn't added. Try again.",
       );
     }
@@ -99,13 +99,13 @@ export function AddSubtaskForm({
           placeholder="Subtask title"
           aria-invalid={errors.title ? true : undefined}
           className="h-10 text-[13px] md:h-8 md:text-[13px]"
-          {...form.register("title")}
+          {...form.register('title')}
           onKeyDown={(event) => {
-            if (event.key === "Escape") close();
+            if (event.key === 'Escape') close();
           }}
         />
         <Button type="submit" size="sm" disabled={isSubmitting} className="h-10 text-xs md:h-8">
-          {isSubmitting ? "Adding…" : "Add"}
+          {isSubmitting ? 'Adding…' : 'Add'}
         </Button>
         <Button
           type="button"

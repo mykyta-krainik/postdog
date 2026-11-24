@@ -1,7 +1,7 @@
-import type { AgentName, RunStatus } from "@postdog/shared";
-import { and, desc, eq, type SQL } from "drizzle-orm";
-import type { Executor } from "../db/client";
-import { agentRuns, type AgentRunRow, type NewAgentRunRow } from "../db/schema";
+import type { AgentName, RunStatus } from '@postdog/shared';
+import { and, desc, eq, type SQL } from 'drizzle-orm';
+import type { Executor } from '../db/client';
+import { agentRuns, type AgentRunRow, type NewAgentRunRow } from '../db/schema';
 
 export interface RunListFilter {
   agent?: AgentName;
@@ -9,8 +9,8 @@ export interface RunListFilter {
   limit: number;
 }
 
-export type RunFinish = Pick<AgentRunRow, "status" | "error"> &
-  Partial<Pick<AgentRunRow, "output" | "trace" | "usage">> & { finishedAt: number };
+export type RunFinish = Pick<AgentRunRow, 'status' | 'error'> &
+  Partial<Pick<AgentRunRow, 'output' | 'trace' | 'usage'>> & { finishedAt: number };
 
 const summaryColumns = {
   id: agentRuns.id,
@@ -71,7 +71,7 @@ export function listRunningRunIds(ex: Executor): number[] {
   return ex
     .select({ id: agentRuns.id })
     .from(agentRuns)
-    .where(eq(agentRuns.status, "running"))
+    .where(eq(agentRuns.status, 'running'))
     .all()
     .map((row) => row.id);
 }
@@ -79,7 +79,7 @@ export function listRunningRunIds(ex: Executor): number[] {
 export function updateRun(
   ex: Executor,
   id: number,
-  changes: Partial<Pick<AgentRunRow, "trace" | "usage" | "langfuseTraceId">>,
+  changes: Partial<Pick<AgentRunRow, 'trace' | 'usage' | 'langfuseTraceId'>>,
 ): void {
   ex.update(agentRuns).set(changes).where(eq(agentRuns.id, id)).run();
 }
@@ -89,17 +89,17 @@ export function finishRun(ex: Executor, id: number, finish: RunFinish): AgentRun
   return ex
     .update(agentRuns)
     .set(finish)
-    .where(and(eq(agentRuns.id, id), eq(agentRuns.status, "running")))
+    .where(and(eq(agentRuns.id, id), eq(agentRuns.status, 'running')))
     .returning()
     .get();
 }
 
 /** Fails every run still running and returns them. */
-export function failRunningRuns(ex: Executor, finish: Omit<RunFinish, "status">): AgentRunRow[] {
+export function failRunningRuns(ex: Executor, finish: Omit<RunFinish, 'status'>): AgentRunRow[] {
   return ex
     .update(agentRuns)
-    .set({ ...finish, status: "failed" })
-    .where(eq(agentRuns.status, "running"))
+    .set({ ...finish, status: 'failed' })
+    .where(eq(agentRuns.status, 'running'))
     .returning()
     .all();
 }

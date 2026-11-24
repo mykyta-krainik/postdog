@@ -4,15 +4,15 @@ import {
   type StatusUpdaterInput,
   type StatusUpdaterOutput,
   type StatusUpdaterRun,
-} from "@postdog/shared";
-import type { RunView } from "@/entities/agent-run";
+} from '@postdog/shared';
+import type { RunView } from '@/entities/agent-run';
 
 /** What an update covers: one task, or the user's tasks that changed in a window. */
 export type StatusUpdateScope =
-  { scope: "task"; taskId: number } | { scope: "since"; since?: number };
+  { scope: 'task'; taskId: number } | { scope: 'since'; since?: number };
 
-export type UpdateOutput = Extract<StatusUpdaterOutput, { kind: "update" }>;
-export type NotesRequest = Extract<StatusUpdaterOutput, { kind: "needs_notes" }>;
+export type UpdateOutput = Extract<StatusUpdaterOutput, { kind: 'update' }>;
+export type NotesRequest = Extract<StatusUpdaterOutput, { kind: 'needs_notes' }>;
 
 /**
  * What the dialog shows. `run_state` covers starting, running, failed, cancelled and a request
@@ -20,31 +20,31 @@ export type NotesRequest = Extract<StatusUpdaterOutput, { kind: "needs_notes" }>
  * the draft update or the request for notes, and `empty` when it finished with neither.
  */
 export type StatusUpdateView =
-  | { kind: "idle" }
-  | { kind: "run_state"; view: RunView<StatusUpdaterRun> }
-  | { kind: "update"; run: StatusUpdaterRun; output: UpdateOutput }
-  | { kind: "needs_notes"; run: StatusUpdaterRun; output: NotesRequest }
-  | { kind: "empty"; run: StatusUpdaterRun };
+  | { kind: 'idle' }
+  | { kind: 'run_state'; view: RunView<StatusUpdaterRun> }
+  | { kind: 'update'; run: StatusUpdaterRun; output: UpdateOutput }
+  | { kind: 'needs_notes'; run: StatusUpdaterRun; output: NotesRequest }
+  | { kind: 'empty'; run: StatusUpdaterRun };
 
 export function toStatusUpdateView(view: RunView<StatusUpdaterRun>): StatusUpdateView {
-  if (view.status === "idle") return { kind: "idle" };
-  if (view.status !== "completed") return { kind: "run_state", view };
+  if (view.status === 'idle') return { kind: 'idle' };
+  if (view.status !== 'completed') return { kind: 'run_state', view };
   const { run } = view;
   switch (run.output?.kind) {
-    case "update":
-      return { kind: "update", run, output: run.output };
-    case "needs_notes":
-      return { kind: "needs_notes", run, output: run.output };
+    case 'update':
+      return { kind: 'update', run, output: run.output };
+    case 'needs_notes':
+      return { kind: 'needs_notes', run, output: run.output };
     case undefined:
-      return { kind: "empty", run };
+      return { kind: 'empty', run };
   }
 }
 
-type Note = NonNullable<StatusUpdaterInput["notes"]>[number];
+type Note = NonNullable<StatusUpdaterInput['notes']>[number];
 
 function scopeOf(input: StatusUpdaterInput): StatusUpdateScope {
-  if (input.scope === "task") return { scope: "task", taskId: input.taskId };
-  return input.since === undefined ? { scope: "since" } : { scope: "since", since: input.since };
+  if (input.scope === 'task') return { scope: 'task', taskId: input.taskId };
+  return input.since === undefined ? { scope: 'since' } : { scope: 'since', since: input.since };
 }
 
 /** An input with only the fields that are set, so the request body carries no undefined keys. */
@@ -94,7 +94,7 @@ export function notesInput(
 ): StatusUpdaterInput | null {
   const notes = values.notes
     .map(({ taskId, body }) => ({ taskId, body: body.trim() }))
-    .filter((note) => note.body !== "");
+    .filter((note) => note.body !== '');
   if (notes.length === 0) return null;
   return build(scopeOf(previous), previous.tone, notes);
 }
@@ -107,8 +107,8 @@ export function isDraftEdited(draft: string, generated: string): boolean {
 }
 
 export const TONE_META: Record<StatusUpdateTone, { label: string }> = {
-  celebrate: { label: "Celebrate" },
-  neutral: { label: "Neutral" },
-  heads_up: { label: "Heads up" },
-  blocked: { label: "Blocked" },
+  celebrate: { label: 'Celebrate' },
+  neutral: { label: 'Neutral' },
+  heads_up: { label: 'Heads up' },
+  blocked: { label: 'Blocked' },
 };

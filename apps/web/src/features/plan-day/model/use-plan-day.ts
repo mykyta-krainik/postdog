@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { plannerRunSchema } from "@postdog/shared";
-import { revalidatePlannerLatest, startPlannerRun, useAgentRunner } from "@/entities/agent-run";
+import { plannerRunSchema } from '@postdog/shared';
+import { revalidatePlannerLatest, startPlannerRun, useAgentRunner } from '@/entities/agent-run';
 
 /** One Planner run. A completed run refreshes the latest plan everywhere it is shown. */
 export function usePlanDay() {
@@ -9,7 +9,7 @@ export function usePlanDay() {
     start: startPlannerRun,
     schema: plannerRunSchema,
     onSettled: (run) => {
-      if (run.status === "completed") void revalidatePlannerLatest();
+      if (run.status === 'completed') void revalidatePlannerLatest();
     },
   });
 }

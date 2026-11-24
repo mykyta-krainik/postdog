@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { agentRunSchema, type AgentRun, type StartRunResponse } from "@postdog/shared";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { toast } from "sonner";
-import type { z } from "zod";
-import { aiRequest } from "@/shared/api";
-import { errorMessage } from "@/shared/lib/form-errors";
-import { isRunBusy, toRunView, type RunnerState, type RunView } from "../model/run-view";
-import { cancelRun } from "./mutations";
-import { useAgentRun, type RunSchema } from "./queries";
+import { agentRunSchema, type AgentRun, type StartRunResponse } from '@postdog/shared';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import type { z } from 'zod';
+import { aiRequest } from '@/shared/api';
+import { errorMessage } from '@/shared/lib/form-errors';
+import { isRunBusy, toRunView, type RunnerState, type RunView } from '../model/run-view';
+import { cancelRun } from './mutations';
+import { useAgentRun, type RunSchema } from './queries';
 
 export type AgentRunner<Run extends AgentRun> = {
   view: RunView<Run>;
@@ -34,15 +34,15 @@ export function useAgentRunner<Schema extends RunSchema = typeof agentRunSchema>
   schema?: Schema;
   onSettled?: (run: z.output<Schema>) => void;
 }): AgentRunner<z.output<Schema>> {
-  const [state, setState] = useState<RunnerState>({ kind: "idle" });
-  const runId = state.kind === "tracking" ? state.runId : undefined;
+  const [state, setState] = useState<RunnerState>({ kind: 'idle' });
+  const runId = state.kind === 'tracking' ? state.runId : undefined;
   const { data: run, error } = useAgentRun(runId, schema);
   const view = toRunView(state, run, error);
 
   const notifySettled = useEffectEvent((settled: z.output<Schema>) => onSettled?.(settled));
   const notifiedRunId = useRef<number | undefined>(undefined);
   useEffect(() => {
-    if (!run || run.status === "running" || notifiedRunId.current === run.id) return;
+    if (!run || run.status === 'running' || notifiedRunId.current === run.id) return;
     notifiedRunId.current = run.id;
     notifySettled(run);
   }, [run]);
@@ -51,20 +51,20 @@ export function useAgentRunner<Schema extends RunSchema = typeof agentRunSchema>
     view,
     start: () => {
       if (isRunBusy(view)) return;
-      setState({ kind: "starting" });
+      setState({ kind: 'starting' });
       aiRequest(start()).then(
-        ({ runId: started }) => setState({ kind: "tracking", runId: started }),
-        (startError: unknown) => setState({ kind: "start_failed", error: startError }),
+        ({ runId: started }) => setState({ kind: 'tracking', runId: started }),
+        (startError: unknown) => setState({ kind: 'start_failed', error: startError }),
       );
     },
     cancel: () => {
       if (runId === undefined) return;
       aiRequest(cancelRun(runId)).catch((cancelError: unknown) => {
-        toast.error("The run is still going", {
+        toast.error('The run is still going', {
           description: errorMessage(cancelError, "Cancel didn't reach the API. Try again."),
         });
       });
     },
-    reset: () => setState({ kind: "idle" }),
+    reset: () => setState({ kind: 'idle' }),
   };
 }

@@ -1,1 +1,1 @@
-export { DecompositionModeSetting } from "./ui/decomposition-mode-setting";
+export { DecompositionModeSetting } from './ui/decomposition-mode-setting';

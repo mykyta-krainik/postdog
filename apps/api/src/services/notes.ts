@@ -1,8 +1,8 @@
-import type { CreateNoteInput, TaskNote } from "@postdog/shared";
-import type { Db } from "../db/client";
-import { notFound } from "../lib/errors";
-import { insertNote, listNotes } from "../repositories/notes";
-import { findTask } from "../repositories/tasks";
+import type { CreateNoteInput, TaskNote } from '@postdog/shared';
+import type { Db } from '../db/client';
+import { notFound } from '../lib/errors';
+import { insertNote, listNotes } from '../repositories/notes';
+import { findTask } from '../repositories/tasks';
 
 export function createNoteService(db: Db) {
   function requireTask(taskId: number): void {

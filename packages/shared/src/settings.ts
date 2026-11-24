@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { decompositionModeSchema } from "./enums";
+import { z } from 'zod';
+import { decompositionModeSchema } from './enums';
 
 export const settingsSchema = z.object({
   aiEnabled: z.boolean(),
@@ -14,6 +14,6 @@ export type UpdateSettingsInput = z.infer<typeof updateSettingsInputSchema>;
 
 export const DEFAULT_SETTINGS: Settings = {
   aiEnabled: true,
-  decompositionMode: "suggest",
+  decompositionMode: 'suggest',
   scheduledRunsEnabled: true,
 };

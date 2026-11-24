@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
-import { useNotifications } from "@/entities/notification";
-import { errorMessage } from "@/shared/lib/form-errors";
-import { Button } from "@/shared/ui/button";
-import { Skeleton } from "@/shared/ui/skeleton";
-import { LogoMark } from "@/shared/ui/wordmark";
-import { NotificationCard } from "./notification-card";
+import type { ReactNode } from 'react';
+import { useNotifications } from '@/entities/notification';
+import { errorMessage } from '@/shared/lib/form-errors';
+import { Button } from '@/shared/ui/button';
+import { Skeleton } from '@/shared/ui/skeleton';
+import { LogoMark } from '@/shared/ui/wordmark';
+import { NotificationCard } from './notification-card';
 
 function Message({
   title,
@@ -32,7 +32,7 @@ function Message({
 function InboxSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading the Inbox" className="flex flex-col">
-      {["w-3/5", "w-1/2", "w-2/3"].map((width) => (
+      {['w-3/5', 'w-1/2', 'w-2/3'].map((width) => (
         <div key={width} className="flex gap-3 border-b border-border px-4 py-3.5 md:px-5">
           <Skeleton className="size-4" />
           <div className="flex flex-1 flex-col gap-2">
@@ -65,11 +65,11 @@ export function NotificationsInbox({ renderTrace }: { renderTrace: (runId: numbe
             disabled={isValidating}
             onClick={() => void mutate()}
           >
-            {isValidating ? "Trying again…" : "Try again"}
+            {isValidating ? 'Trying again…' : 'Try again'}
           </Button>
         }
       >
-        {errorMessage(error, "The API returned an error.")}
+        {errorMessage(error, 'The API returned an error.')}
       </Message>
     );
   }

@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
-import { InboxView } from "./inbox-view";
+import type { Metadata } from 'next';
+import { InboxView } from './inbox-view';
 
-export const metadata: Metadata = { title: "Inbox" };
+export const metadata: Metadata = { title: 'Inbox' };
 
 export function InboxPage() {
   return (

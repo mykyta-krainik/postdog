@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   agentRunSchema,
@@ -7,13 +7,13 @@ import {
   plannerLatestResponseSchema,
   type AgentRun,
   type ListAgentRunsResponse,
-} from "@postdog/shared";
-import useSWR, { useSWRConfig } from "swr";
-import type { z } from "zod";
-import { fetcherFor } from "@/shared/api";
-import { runListPollInterval, runPollInterval } from "../model/polling";
-import { runningPollInterval } from "../model/running";
-import { agentRunKeys, type AgentRunsQuery } from "./keys";
+} from '@postdog/shared';
+import useSWR, { useSWRConfig } from 'swr';
+import type { z } from 'zod';
+import { fetcherFor } from '@/shared/api';
+import { runListPollInterval, runPollInterval } from '../model/polling';
+import { runningPollInterval } from '../model/running';
+import { agentRunKeys, type AgentRunsQuery } from './keys';
 
 /** A run schema from @postdog/shared: agentRunSchema, or an agent's own, such as plannerRunSchema. */
 export type RunSchema = z.ZodType<AgentRun>;

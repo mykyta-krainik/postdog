@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { AgentTrace } from "@/widgets/agent-trace";
-import { NotificationsInbox } from "@/widgets/notifications-inbox";
-import { useSettings } from "@/entities/settings";
-import { UnreadCountBadge, useUnreadCount } from "@/entities/notification";
-import { routes } from "@/shared/config";
-import { Button } from "@/shared/ui/button";
-import { LoadError } from "@/shared/ui/load-error";
-import { LogoMark } from "@/shared/ui/wordmark";
+import Link from 'next/link';
+import { AgentTrace } from '@/widgets/agent-trace';
+import { NotificationsInbox } from '@/widgets/notifications-inbox';
+import { useSettings } from '@/entities/settings';
+import { UnreadCountBadge, useUnreadCount } from '@/entities/notification';
+import { routes } from '@/shared/config';
+import { Button } from '@/shared/ui/button';
+import { LoadError } from '@/shared/ui/load-error';
+import { LogoMark } from '@/shared/ui/wordmark';
 
 function InboxHeader({ unread }: { unread?: number }) {
   return (

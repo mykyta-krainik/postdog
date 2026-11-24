@@ -1,11 +1,11 @@
-import type { TaskListItem } from "@postdog/shared";
-import { Link2, ListChecks } from "lucide-react";
-import Link from "next/link";
-import { formatDateTime, formatShortDate } from "@/shared/lib/format";
-import { cn } from "@/shared/lib/utils";
-import { AiDot } from "./ai-dot";
-import { PriorityIcon } from "./priority-icon";
-import { StatusIcon } from "./status-icon";
+import type { TaskListItem } from '@postdog/shared';
+import { Link2, ListChecks } from 'lucide-react';
+import Link from 'next/link';
+import { formatDateTime, formatShortDate } from '@/shared/lib/format';
+import { cn } from '@/shared/lib/utils';
+import { AiDot } from './ai-dot';
+import { PriorityIcon } from './priority-icon';
+import { StatusIcon } from './status-icon';
 
 type TaskRowProps = {
   task: TaskListItem;
@@ -20,12 +20,12 @@ export function TaskRow({ task, href, selected = false, aiEnabled }: TaskRowProp
     <Link
       href={href}
       scroll={false}
-      aria-current={selected ? "true" : undefined}
+      aria-current={selected ? 'true' : undefined}
       data-task-id={task.id}
       className={cn(
-        "group flex h-11 items-center gap-3 border-b border-border/60 px-4 text-[13px] outline-none md:h-9 md:px-5",
-        "hover:bg-accent/50 focus-visible:bg-accent/70 focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset",
-        selected && "bg-accent/80 hover:bg-accent/80",
+        'group flex h-11 items-center gap-3 border-b border-border/60 px-4 text-[13px] outline-none md:h-9 md:px-5',
+        'hover:bg-accent/50 focus-visible:bg-accent/70 focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset',
+        selected && 'bg-accent/80 hover:bg-accent/80',
       )}
     >
       <PriorityIcon priority={task.priority} />
@@ -46,7 +46,7 @@ export function TaskRow({ task, href, selected = false, aiEnabled }: TaskRowProp
         {task.linkCount > 0 && (
           <span
             className="flex items-center gap-1 tabular-nums"
-            title={`${task.linkCount} linked ${task.linkCount === 1 ? "task" : "tasks"}`}
+            title={`${task.linkCount} linked ${task.linkCount === 1 ? 'task' : 'tasks'}`}
           >
             <Link2 className="size-3.5" aria-hidden />
             {task.linkCount}

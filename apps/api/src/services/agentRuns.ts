@@ -8,16 +8,16 @@ import {
   type PlannerLatestResponse,
   type RunTrigger,
   type StartRunResponse,
-} from "@postdog/shared";
-import type { AgentContext, AgentDefinition } from "../agents/core/definition";
-import { AgentError } from "../agents/core/errors";
-import type { Llm } from "../agents/core/llm";
-import { createTraceRecorder } from "../agents/core/trace";
-import type { Tracer } from "../agents/core/tracer";
-import type { AgentRegistry } from "../agents/registry";
-import type { Db } from "../db/client";
-import { conflict, notFound } from "../lib/errors";
-import { logger } from "../lib/logger";
+} from '@postdog/shared';
+import type { AgentContext, AgentDefinition } from '../agents/core/definition';
+import { AgentError } from '../agents/core/errors';
+import type { Llm } from '../agents/core/llm';
+import { createTraceRecorder } from '../agents/core/trace';
+import type { Tracer } from '../agents/core/tracer';
+import type { AgentRegistry } from '../agents/registry';
+import type { Db } from '../db/client';
+import { conflict, notFound } from '../lib/errors';
+import { logger } from '../lib/logger';
 import {
   failRunningRuns,
   findLatestRun,
@@ -28,17 +28,17 @@ import {
   listRuns,
   updateRun,
   type RunFinish,
-} from "../repositories/agentRuns";
-import { recomputeAllAiStates } from "../repositories/aiState";
-import { deleteClaimsOfStoppedRuns, releaseClaims } from "../repositories/claims";
-import { insertNotification } from "../repositories/notifications";
-import { countTasksUpdatedAfter } from "../repositories/tasks";
-import { runEndNotification } from "./runNotifications";
-import { runLabel } from "./runLabel";
+} from '../repositories/agentRuns';
+import { recomputeAllAiStates } from '../repositories/aiState';
+import { deleteClaimsOfStoppedRuns, releaseClaims } from '../repositories/claims';
+import { insertNotification } from '../repositories/notifications';
+import { countTasksUpdatedAfter } from '../repositories/tasks';
+import { runEndNotification } from './runNotifications';
+import { runLabel } from './runLabel';
 
 const INTERRUPTED: AgentRunError = {
-  code: "interrupted",
-  message: "The API stopped while this run was in progress.",
+  code: 'interrupted',
+  message: 'The API stopped while this run was in progress.',
 };
 
 /**
@@ -68,11 +68,11 @@ function toRunError(err: unknown, signal: AbortSignal): AgentRunError {
   if (err instanceof AgentError) return err.toRunError();
   if (signal.aborted && signal.reason instanceof AgentError) return signal.reason.toRunError();
   const message = err instanceof Error ? err.message : String(err);
-  return { code: "internal_error", message: `The agent crashed: ${message}` };
+  return { code: 'internal_error', message: `The agent crashed: ${message}` };
 }
 
-function statusOf(error: AgentRunError): RunFinish["status"] {
-  return error.code === "cancelled" || error.code === "ai_disabled" ? "cancelled" : "failed";
+function statusOf(error: AgentRunError): RunFinish['status'] {
+  return error.code === 'cancelled' || error.code === 'ai_disabled' ? 'cancelled' : 'failed';
 }
 
 export type AgentKey = keyof AgentRegistry;
@@ -86,15 +86,15 @@ type InputOf<K extends AgentKey> =
 type RunSlot<I> = (input: I) => { slot: string; busy: string };
 
 const RUN_SLOTS: { [K in AgentKey]: RunSlot<InputOf<K>> } = {
-  planner: () => ({ slot: "planner", busy: "A Planner run is already in progress" }),
-  decomposer: () => ({ slot: "decomposer", busy: "A Decomposer run is already in progress" }),
+  planner: () => ({ slot: 'planner', busy: 'A Planner run is already in progress' }),
+  decomposer: () => ({ slot: 'decomposer', busy: 'A Decomposer run is already in progress' }),
   decomposer_clarify: ({ suggestionId }) => ({
     slot: `decomposer_clarify:${suggestionId}`,
-    busy: "A Decomposer run is already answering this clarification",
+    busy: 'A Decomposer run is already answering this clarification',
   }),
   status_updater: (input) => ({
-    slot: input.scope === "task" ? `status_updater:task:${input.taskId}` : "status_updater:since",
-    busy: "A Status updater run for the same scope is already in progress",
+    slot: input.scope === 'task' ? `status_updater:task:${input.taskId}` : 'status_updater:since',
+    busy: 'A Status updater run for the same scope is already in progress',
   }),
 };
 
@@ -158,11 +158,11 @@ export function createAgentRunService(deps: {
     try {
       const { output } = await definition.run(ctx, input);
       const parsed = definition.output.parse(output);
-      finish = { status: "completed", output: parsed, error: null, finishedAt: now() };
+      finish = { status: 'completed', output: parsed, error: null, finishedAt: now() };
       traced = { output: parsed };
     } catch (err) {
       const error = toRunError(err, ctx.signal);
-      if (error.code === "internal_error") {
+      if (error.code === 'internal_error') {
         logger.error(`Agent run ${ctx.runId} (${definition.name}) crashed`, { err });
       }
       finish = { status: statusOf(error), output: null, error, finishedAt: now() };
@@ -172,7 +172,7 @@ export function createAgentRunService(deps: {
     releaseClaims(db, ctx.runId, now());
     freeSlot(ctx.runId);
     ctx.tracer.end(traced);
-    await tracer.flush().catch((err: unknown) => logger.error("Langfuse flush failed", { err }));
+    await tracer.flush().catch((err: unknown) => logger.error('Langfuse flush failed', { err }));
   }
 
   return {
@@ -183,7 +183,7 @@ export function createAgentRunService(deps: {
     start<K extends AgentKey>(
       key: K,
       body: InputOf<K>,
-      trigger: RunTrigger = "manual",
+      trigger: RunTrigger = 'manual',
     ): StartRunResponse {
       const { slot, busy } = (RUN_SLOTS[key] as RunSlot<InputOf<K>>)(body);
       const holder = slots.get(slot);
@@ -196,7 +196,7 @@ export function createAgentRunService(deps: {
       const run = insertRun(db, {
         agent: definition.name,
         mode,
-        status: "running",
+        status: 'running',
         trigger,
         promptVersion: definition.promptVersion,
         input,
@@ -229,7 +229,7 @@ export function createAgentRunService(deps: {
       active.set(run.id, {
         controller,
         done,
-        lastSeenAt: trigger === "manual" ? startedAt : null,
+        lastSeenAt: trigger === 'manual' ? startedAt : null,
       });
       slots.set(slot, run.id);
       return { runId: run.id };
@@ -252,10 +252,10 @@ export function createAgentRunService(deps: {
 
     cancel(id: number): AgentRun {
       const run = requireRun(id);
-      if (run.status !== "running") {
+      if (run.status !== 'running') {
         throw conflict(`Agent run ${id} is not running; its status is ${run.status}`);
       }
-      stop(id, new AgentError("cancelled", "Cancelled by the user."));
+      stop(id, new AgentError('cancelled', 'Cancelled by the user.'));
       return requireRun(id);
     },
 
@@ -279,7 +279,7 @@ export function createAgentRunService(deps: {
     },
 
     plannerLatest(): PlannerLatestResponse {
-      const run = findLatestRun(db, "planner", "completed");
+      const run = findLatestRun(db, 'planner', 'completed');
       if (!run) return { latest: null };
       const completed = completedPlannerRunSchema.parse(run);
       return {

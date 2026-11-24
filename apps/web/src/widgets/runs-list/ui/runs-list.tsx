@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import type { AgentRunSummary } from "@postdog/shared";
-import { ChevronRight } from "lucide-react";
-import Link from "next/link";
-import { useEffect } from "react";
+import type { AgentRunSummary } from '@postdog/shared';
+import { ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect } from 'react';
 import {
   AGENT_META,
   MockAiBadgeView,
@@ -12,13 +12,13 @@ import {
   runTimingText,
   runTitle,
   useAgentRuns,
-} from "@/entities/agent-run";
-import { routes } from "@/shared/config";
-import { cn } from "@/shared/lib/utils";
-import { LoadError } from "@/shared/ui/load-error";
-import { Skeleton } from "@/shared/ui/skeleton";
-import { LogoMark } from "@/shared/ui/wordmark";
-import { RunDetail } from "./run-detail";
+} from '@/entities/agent-run';
+import { routes } from '@/shared/config';
+import { cn } from '@/shared/lib/utils';
+import { LoadError } from '@/shared/ui/load-error';
+import { Skeleton } from '@/shared/ui/skeleton';
+import { LogoMark } from '@/shared/ui/wordmark';
+import { RunDetail } from './run-detail';
 
 /** How many recent runs the page lists. */
 export const RUNS_LIMIT = 30;
@@ -35,8 +35,8 @@ function RunRow({ run, open }: { run: AgentRunSummary; open: boolean }) {
         aria-expanded={open}
         aria-controls={open ? detailId(run.id) : undefined}
         className={cn(
-          "flex min-h-14 min-w-0 items-center gap-3 px-4 py-2.5 outline-none hover:bg-accent/50 focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset md:px-5",
-          open && "bg-accent/40",
+          'flex min-h-14 min-w-0 items-center gap-3 px-4 py-2.5 outline-none hover:bg-accent/50 focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset md:px-5',
+          open && 'bg-accent/40',
         )}
       >
         <RunStatusMark status={run.status} />
@@ -53,8 +53,8 @@ function RunRow({ run, open }: { run: AgentRunSummary; open: boolean }) {
         </span>
         <ChevronRight
           className={cn(
-            "size-4 shrink-0 text-muted-foreground transition-transform duration-150",
-            open && "rotate-90",
+            'size-4 shrink-0 text-muted-foreground transition-transform duration-150',
+            open && 'rotate-90',
           )}
           aria-hidden
         />
@@ -71,7 +71,7 @@ function RunRow({ run, open }: { run: AgentRunSummary; open: boolean }) {
 function ListSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading runs" className="flex flex-col">
-      {["w-2/5", "w-1/2", "w-1/3"].map((width) => (
+      {['w-2/5', 'w-1/2', 'w-1/3'].map((width) => (
         <div
           key={width}
           className="flex items-center gap-3 border-b border-border/70 px-4 py-3 md:px-5"
@@ -88,7 +88,7 @@ function ListSkeleton() {
 }
 
 function Empty() {
-  const link = "text-brand-text underline underline-offset-2";
+  const link = 'text-brand-text underline underline-offset-2';
   return (
     <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
       <LogoMark className="size-9 opacity-90" />
@@ -98,7 +98,7 @@ function Empty() {
           <Link href={routes.today} className={link}>
             Plan your day
           </Link>
-          , or{" "}
+          , or{' '}
           <Link href={routes.tasks} className={link}>
             decompose some tasks
           </Link>
@@ -123,7 +123,7 @@ export function RunsList({ openRunId }: { openRunId: number | undefined }) {
   // A deep link opens a run further down the list: bring it into view once the list is there.
   useEffect(() => {
     if (openRunId === undefined || !loaded) return;
-    document.getElementById(rowId(openRunId))?.scrollIntoView({ block: "nearest" });
+    document.getElementById(rowId(openRunId))?.scrollIntoView({ block: 'nearest' });
   }, [openRunId, loaded]);
 
   if (!runs) {

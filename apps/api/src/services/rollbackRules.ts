@@ -1,9 +1,9 @@
-import type { RollbackKeptReason } from "@postdog/shared";
-import type { TaskLinkRow, TaskRow } from "../db/schema";
+import type { RollbackKeptReason } from '@postdog/shared';
+import type { TaskLinkRow, TaskRow } from '../db/schema';
 
 export type SubtaskSnapshot = Pick<
   TaskRow,
-  "status" | "createdAt" | "updatedAt" | "statusChangedAt"
+  'status' | 'createdAt' | 'updatedAt' | 'statusChangedAt'
 >;
 
 /**
@@ -21,18 +21,18 @@ export function subtaskKeptReason(
   noteCount = 0,
   foreignLinkCount = 0,
 ): RollbackKeptReason | null {
-  if (!task) return "not_found";
-  if (task.status !== "todo" || task.statusChangedAt !== task.createdAt) return "status_changed";
-  if (task.updatedAt !== task.createdAt) return "edited";
-  if (childCount > 0) return "has_children";
-  if (noteCount > 0) return "has_notes";
-  if (foreignLinkCount > 0) return "has_links";
+  if (!task) return 'not_found';
+  if (task.status !== 'todo' || task.statusChangedAt !== task.createdAt) return 'status_changed';
+  if (task.updatedAt !== task.createdAt) return 'edited';
+  if (childCount > 0) return 'has_children';
+  if (noteCount > 0) return 'has_notes';
+  if (foreignLinkCount > 0) return 'has_links';
   return null;
 }
 
 /** A link cannot be edited, so it is untouched while it exists. */
 export function linkKeptReason(link: TaskLinkRow | undefined): RollbackKeptReason | null {
-  return link ? null : "not_found";
+  return link ? null : 'not_found';
 }
 
 export function isUntouchedSubtask(

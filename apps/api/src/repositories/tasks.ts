@@ -5,11 +5,11 @@ import {
   type TaskListItem,
   type TaskSort,
   type TaskStatus,
-} from "@postdog/shared";
-import { and, asc, count, desc, eq, gt, isNull, or, sql, type SQL } from "drizzle-orm";
-import { alias, type SQLiteTable } from "drizzle-orm/sqlite-core";
-import type { Executor } from "../db/client";
-import { taskLinks, tasks, type NewTaskRow, type TaskRow } from "../db/schema";
+} from '@postdog/shared';
+import { and, asc, count, desc, eq, gt, isNull, or, sql, type SQL } from 'drizzle-orm';
+import { alias, type SQLiteTable } from 'drizzle-orm/sqlite-core';
+import type { Executor } from '../db/client';
+import { taskLinks, tasks, type NewTaskRow, type TaskRow } from '../db/schema';
 
 export interface TaskListFilter {
   parentId: number | null;
@@ -19,7 +19,7 @@ export interface TaskListFilter {
   order: SortOrder;
 }
 
-const subtask = alias(tasks, "subtask");
+const subtask = alias(tasks, 'subtask');
 
 const priorityRank = sql`case ${tasks.priority} ${sql.join(
   PRIORITIES.map((p) => sql`when ${p} then ${PRIORITY_RANK[p]}`),
@@ -42,9 +42,9 @@ export function listTasks(ex: Executor, filter: TaskListFilter): TaskListItem[] 
   if (filter.status) conditions.push(eq(tasks.status, filter.status));
   if (filter.search) conditions.push(containsText(filter.search));
 
-  const direction = filter.order === "asc" ? asc : desc;
+  const direction = filter.order === 'asc' ? asc : desc;
   const ordering =
-    filter.sort === "priority"
+    filter.sort === 'priority'
       ? [direction(priorityRank), desc(tasks.createdAt), desc(tasks.id)]
       : [direction(tasks.createdAt), direction(tasks.id)];
 
@@ -64,7 +64,7 @@ export function listTasks(ex: Executor, filter: TaskListFilter): TaskListItem[] 
       subtaskDoneCount: countWhere(
         ex,
         subtask,
-        and(eq(subtask.parentId, tasks.id), eq(subtask.status, "done")),
+        and(eq(subtask.parentId, tasks.id), eq(subtask.status, 'done')),
       ),
       linkCount: countWhere(
         ex,

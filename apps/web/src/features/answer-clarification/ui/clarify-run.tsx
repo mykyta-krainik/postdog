@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { CircleCheck } from "lucide-react";
-import { AgentRunStatus } from "@/entities/agent-run";
-import { Button } from "@/shared/ui/button";
-import type { Clarifier } from "../model/use-clarify";
+import { CircleCheck } from 'lucide-react';
+import { AgentRunStatus } from '@/entities/agent-run';
+import { Button } from '@/shared/ui/button';
+import type { Clarifier } from '../model/use-clarify';
 
 /**
  * The run that answers a clarification: progress and Cancel, what failed with Retry and the
@@ -25,7 +25,7 @@ export function ClarifyRun({ clarifier }: { clarifier: Clarifier }) {
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <p className="text-[13px] font-medium">Thanks, Postdog took another look</p>
             <p className="text-[13px] text-muted-foreground">
-              {run.output?.tasks[0]?.detail ?? "Anything new to review shows here."}
+              {run.output?.tasks[0]?.detail ?? 'Anything new to review shows here.'}
             </p>
           </div>
           <Button

@@ -1,21 +1,21 @@
-import { z } from "zod";
-import { distinctIdsSchema, idSchema, timestampSchema } from "../common";
-import { AGENT_LIMITS } from "../config";
+import { z } from 'zod';
+import { distinctIdsSchema, idSchema, timestampSchema } from '../common';
+import { AGENT_LIMITS } from '../config';
 import {
   relatedRelationSchema,
   skipReasonSchema,
   suggestionStatusSchema,
   suggestionTargetTypeSchema,
-} from "../enums";
-import { taskLinkSchema } from "../links";
-import { taskSchema } from "../tasks";
-import { agentRunSchema, agentWarningSchema } from "./runs";
+} from '../enums';
+import { taskLinkSchema } from '../links';
+import { taskSchema } from '../tasks';
+import { agentRunSchema, agentWarningSchema } from './runs';
 import {
   clarificationPayloadSchema,
   relatedPayloadSchema,
   subtasksPayloadSchema,
   suggestionSchema,
-} from "./suggestions";
+} from './suggestions';
 
 const countSchema = z.number().int().nonnegative();
 
@@ -23,7 +23,7 @@ export const reportRelatedInputSchema = z.object({
   groups: z
     .array(relatedPayloadSchema)
     .max(10)
-    .describe("Groups of related tasks. An empty list when no tasks in the batch are related."),
+    .describe('Groups of related tasks. An empty list when no tasks in the batch are related.'),
 });
 export type ReportRelatedInput = z.infer<typeof reportRelatedInputSchema>;
 
@@ -35,14 +35,14 @@ export type AskClarificationInput = z.infer<typeof askClarificationInputSchema>;
 
 export const skipInputSchema = z.object({
   reason: skipReasonSchema.describe(
-    "already_atomic when the task is one step already; not_actionable when it is not work to do, such as a note or an open question.",
+    'already_atomic when the task is one step already; not_actionable when it is not work to do, such as a note or an open question.',
   ),
   explanation: z
     .string()
     .trim()
     .min(1)
     .max(300)
-    .describe("One or two sentences on why the task gets no subtasks."),
+    .describe('One or two sentences on why the task gets no subtasks.'),
 });
 export type SkipInput = z.infer<typeof skipInputSchema>;
 
@@ -64,15 +64,15 @@ export const clarifyInputSchema = z
     generateAnyway: z.boolean().optional(),
   })
   .refine((input) => (input.answers !== undefined) !== (input.generateAnyway === true), {
-    message: "Send either answers or generateAnyway: true, not both and not neither",
-    path: ["answers"],
+    message: 'Send either answers or generateAnyway: true, not both and not neither',
+    path: ['answers'],
   });
 export type ClarifyInput = z.infer<typeof clarifyInputSchema>;
 
 export const listSuggestionsQuerySchema = z.object({
   targetType: suggestionTargetTypeSchema.optional(),
   targetId: z.coerce.number().int().positive().optional(),
-  status: suggestionStatusSchema.default("pending"),
+  status: suggestionStatusSchema.default('pending'),
 });
 export type ListSuggestionsQuery = z.infer<typeof listSuggestionsQuerySchema>;
 
@@ -99,22 +99,22 @@ export type RejectSuggestionResponse = z.infer<typeof rejectSuggestionResponseSc
 
 export const DECOMPOSER_OUTCOMES = [
   // propose_subtasks passed validation; a pending subtasks suggestion was saved.
-  "suggested_subtasks",
+  'suggested_subtasks',
   // Auto mode: propose_subtasks passed validation, the subtasks were created and recorded in
   // the run's changeset, and the subtasks suggestion was saved as applied.
-  "applied_subtasks",
+  'applied_subtasks',
   // ask_clarification; a pending clarification suggestion was saved.
-  "needs_clarification",
+  'needs_clarification',
   // skip, or validation dropped every proposed subtask (duplicates of existing ones).
-  "skipped",
+  'skipped',
   // Stage 1 put the task in a duplicates group, so stage 2 left it out.
-  "duplicate",
+  'duplicate',
   // Another run held the task's claim, so this run left it alone.
-  "claimed",
+  'claimed',
   // The user edited the task during the run; its suggestion was saved as superseded.
-  "superseded",
+  'superseded',
   // The task's loop failed (a limit, a model error or nothing valid); detail says why.
-  "failed",
+  'failed',
 ] as const;
 export const decomposerOutcomeSchema = z.enum(DECOMPOSER_OUTCOMES);
 export type DecomposerOutcome = z.infer<typeof decomposerOutcomeSchema>;
@@ -164,7 +164,7 @@ export const decomposerOutputSchema = z.object({
 export type DecomposerOutput = z.infer<typeof decomposerOutputSchema>;
 
 export const decomposerRunSchema = agentRunSchema.extend({
-  agent: z.literal("decomposer"),
+  agent: z.literal('decomposer'),
   output: decomposerOutputSchema.nullable(),
 });
 export type DecomposerRun = z.infer<typeof decomposerRunSchema>;

@@ -4,56 +4,56 @@ import type {
   RollbackKeptItem,
   RollbackKeptReason,
   RollbackResponse,
-} from "@postdog/shared";
-import type { Db, Executor } from "../db/client";
-import { notFound } from "../lib/errors";
-import { findChangeset, summarizeChangeset, updateChangesetOps } from "../repositories/changesets";
-import { countLinksNotCreatedBy, deleteLink } from "../repositories/links";
-import { listNotes } from "../repositories/notes";
+} from '@postdog/shared';
+import type { Db, Executor } from '../db/client';
+import { notFound } from '../lib/errors';
+import { findChangeset, summarizeChangeset, updateChangesetOps } from '../repositories/changesets';
+import { countLinksNotCreatedBy, deleteLink } from '../repositories/links';
+import { listNotes } from '../repositories/notes';
 import {
   markSuggestionsRolledBack,
   supersedeSuggestionsOfTasks,
-} from "../repositories/suggestions";
-import { deleteTask, findTask, listSubtaskIds } from "../repositories/tasks";
-import { subtaskKeptReason } from "./rollbackRules";
+} from '../repositories/suggestions';
+import { deleteTask, findTask, listSubtaskIds } from '../repositories/tasks';
+import { subtaskKeptReason } from './rollbackRules';
 
 /** A subtask that is already gone counts as undone, so it is never listed as kept. */
-type KeptReason = Exclude<RollbackKeptReason, "not_found">;
+type KeptReason = Exclude<RollbackKeptReason, 'not_found'>;
 type KeptItem = RollbackKeptItem & { reason: KeptReason };
 
 /** What undoing one applied op did. */
-type Undo = { state: "rolled_back"; deleted: boolean } | { state: "kept"; item: KeptItem };
+type Undo = { state: 'rolled_back'; deleted: boolean } | { state: 'kept'; item: KeptItem };
 
-export const NOTHING_TO_ROLL_BACK = "Nothing left to roll back.";
+export const NOTHING_TO_ROLL_BACK = 'Nothing left to roll back.';
 
 /** The singular and plural endings of "N subtask(s) ...", in the order the message lists them. */
 const KEPT_PHRASES: Record<KeptReason, [one: string, many: string]> = {
-  edited: ["was edited and kept", "were edited and kept"],
-  has_children: ["had its own subtasks and was kept", "had their own subtasks and were kept"],
-  has_notes: ["had notes and was kept", "had notes and were kept"],
-  has_links: ["had links and was kept", "had links and were kept"],
-  status_changed: ["was started or finished and kept", "were started or finished and kept"],
+  edited: ['was edited and kept', 'were edited and kept'],
+  has_children: ['had its own subtasks and was kept', 'had their own subtasks and were kept'],
+  has_notes: ['had notes and was kept', 'had notes and were kept'],
+  has_links: ['had links and was kept', 'had links and were kept'],
+  status_changed: ['was started or finished and kept', 'were started or finished and kept'],
 };
 
 function counted(n: number, noun: string): string {
-  return `${n} ${noun}${n === 1 ? "" : "s"}`;
+  return `${n} ${noun}${n === 1 ? '' : 's'}`;
 }
 
 /** The sentence the Inbox shows, e.g. "Removed 5 subtasks and 1 link. 2 subtasks were edited and kept." */
 export function rollbackMessage(
-  deleted: RollbackResponse["deleted"],
+  deleted: RollbackResponse['deleted'],
   kept: readonly { reason: KeptReason }[],
 ): string {
   const removed = [
-    deleted.tasks > 0 ? counted(deleted.tasks, "subtask") : "",
-    deleted.links > 0 ? counted(deleted.links, "link") : "",
+    deleted.tasks > 0 ? counted(deleted.tasks, 'subtask') : '',
+    deleted.links > 0 ? counted(deleted.links, 'link') : '',
   ].filter(Boolean);
-  const sentences = removed.length > 0 ? [`Removed ${removed.join(" and ")}.`] : [];
+  const sentences = removed.length > 0 ? [`Removed ${removed.join(' and ')}.`] : [];
   for (const [reason, [one, many]] of Object.entries(KEPT_PHRASES)) {
     const n = kept.filter((item) => item.reason === reason).length;
-    if (n > 0) sentences.push(`${counted(n, "subtask")} ${n === 1 ? one : many}.`);
+    if (n > 0) sentences.push(`${counted(n, 'subtask')} ${n === 1 ? one : many}.`);
   }
-  return sentences.length > 0 ? sentences.join(" ") : NOTHING_TO_ROLL_BACK;
+  return sentences.length > 0 ? sentences.join(' ') : NOTHING_TO_ROLL_BACK;
 }
 
 /**
@@ -68,23 +68,23 @@ function undoSubtask(ex: Executor, op: ChangesetOp, runId: number): Undo {
     listNotes(ex, op.id).length,
     countLinksNotCreatedBy(ex, op.id, `agent:${runId}`),
   );
-  if (reason === null) return { state: "rolled_back", deleted: deleteTask(ex, op.id) };
-  if (!task || reason === "not_found") return { state: "rolled_back", deleted: false };
+  if (reason === null) return { state: 'rolled_back', deleted: deleteTask(ex, op.id) };
+  if (!task || reason === 'not_found') return { state: 'rolled_back', deleted: false };
   const { identifier, title } = task;
   return {
-    state: "kept",
+    state: 'kept',
     item: { type: op.type, id: op.id, taskId: op.taskId, identifier, title, reason },
   };
 }
 
 /** A link cannot be edited, and one the user already deleted is undone already. */
 function undoLink(ex: Executor, op: ChangesetOp): Undo {
-  return { state: "rolled_back", deleted: deleteLink(ex, op.id) };
+  return { state: 'rolled_back', deleted: deleteLink(ex, op.id) };
 }
 
 type UndoOp = (ex: Executor, op: ChangesetOp, runId: number) => Undo;
 
-const UNDO_OP: Record<ChangesetOp["type"], UndoOp> = {
+const UNDO_OP: Record<ChangesetOp['type'], UndoOp> = {
   create_task: undoSubtask,
   create_link: undoLink,
 };
@@ -106,7 +106,7 @@ export function rollbackChangeset(
   }
 
   const undone = changeset.ops
-    .filter((op) => op.state === "applied" && (taskId === undefined || op.taskId === taskId))
+    .filter((op) => op.state === 'applied' && (taskId === undefined || op.taskId === taskId))
     .map((op) => ({ op, undo: UNDO_OP[op.type](ex, op, changeset.runId) }));
   if (undone.length === 0) {
     return {
@@ -125,13 +125,13 @@ export function rollbackChangeset(
   )!;
 
   const deletedOps = undone
-    .filter(({ undo }) => undo.state === "rolled_back" && undo.deleted)
+    .filter(({ undo }) => undo.state === 'rolled_back' && undo.deleted)
     .map(({ op }) => op);
-  const deletedTaskIds = deletedOps.filter((op) => op.type === "create_task").map((op) => op.id);
+  const deletedTaskIds = deletedOps.filter((op) => op.type === 'create_task').map((op) => op.id);
   supersedeSuggestionsOfTasks(ex, deletedTaskIds, now);
 
   const rolledBackTaskIds = undone
-    .filter(({ undo }) => undo.state === "rolled_back")
+    .filter(({ undo }) => undo.state === 'rolled_back')
     .map(({ op }) => op.taskId);
   markSuggestionsRolledBack(ex, {
     runId: changeset.runId,
@@ -139,7 +139,7 @@ export function rollbackChangeset(
     now,
   });
 
-  const kept = undone.flatMap(({ undo }) => (undo.state === "kept" ? [undo.item] : []));
+  const kept = undone.flatMap(({ undo }) => (undo.state === 'kept' ? [undo.item] : []));
   const deleted = {
     tasks: deletedTaskIds.length,
     links: deletedOps.length - deletedTaskIds.length,

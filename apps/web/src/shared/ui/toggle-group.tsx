@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { ToggleGroup as ToggleGroupPrimitive } from "radix-ui";
-import { cn } from "@/shared/lib/utils";
+import * as React from 'react';
+import { ToggleGroup as ToggleGroupPrimitive } from 'radix-ui';
+import { cn } from '@/shared/lib/utils';
 
 function ToggleGroup({
   className,
@@ -11,7 +11,7 @@ function ToggleGroup({
   return (
     <ToggleGroupPrimitive.Root
       data-slot="toggle-group"
-      className={cn("flex items-center gap-1", className)}
+      className={cn('flex items-center gap-1', className)}
       {...props}
     />
   );

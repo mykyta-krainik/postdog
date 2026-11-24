@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from "react";
+import { useId, type ReactNode } from 'react';
 
 /** One titled block of the panel, under a hairline. meta sits at the right of the title. */
 export function PanelSection({

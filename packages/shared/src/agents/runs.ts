@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { idSchema, timestampSchema } from "../common";
+import { z } from 'zod';
+import { idSchema, timestampSchema } from '../common';
 import {
   agentErrorCodeSchema,
   agentNameSchema,
@@ -8,7 +8,7 @@ import {
   runStatusSchema,
   runTriggerSchema,
   traceStepTypeSchema,
-} from "../enums";
+} from '../enums';
 
 const tokenCountSchema = z.number().int().nonnegative();
 
@@ -52,7 +52,7 @@ export const agentRunSchema = z.object({
   agent: agentNameSchema,
   mode: decompositionModeSchema.nullable(),
   status: runStatusSchema,
-  trigger: runTriggerSchema.default("manual"),
+  trigger: runTriggerSchema.default('manual'),
   promptVersion: z.string(),
   input: z.unknown(),
   output: z.unknown().nullable(),

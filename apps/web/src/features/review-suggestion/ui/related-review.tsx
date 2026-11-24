@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import type { Suggestion } from "@postdog/shared";
-import Link from "next/link";
+import type { Suggestion } from '@postdog/shared';
+import Link from 'next/link';
 import {
   StatusIcon,
   useTaskListParams,
   useTasks,
   type TaskDetail,
   type TaskListItem,
-} from "@/entities/task";
-import { Skeleton } from "@/shared/ui/skeleton";
-import { relatedPlan } from "../model/related";
-import { useReview } from "../model/use-review";
-import { ReviewActions } from "./review-actions";
+} from '@/entities/task';
+import { Skeleton } from '@/shared/ui/skeleton';
+import { relatedPlan } from '../model/related';
+import { useReview } from '../model/use-review';
+import { ReviewActions } from './review-actions';
 
-type RelatedSuggestion = Extract<Suggestion, { kind: "related" }>;
+type RelatedSuggestion = Extract<Suggestion, { kind: 'related' }>;
 type GroupRow = Pick<
   TaskListItem,
-  "id" | "identifier" | "title" | "status" | "createdAt" | "updatedAt"
+  'id' | 'identifier' | 'title' | 'status' | 'createdAt' | 'updatedAt'
 >;
 
 /**
@@ -60,7 +60,7 @@ export function RelatedReview({
               <Link
                 href={hrefWith({ selectedTaskId: id })}
                 scroll={false}
-                aria-current={id === task.id ? "page" : undefined}
+                aria-current={id === task.id ? 'page' : undefined}
                 className="flex h-10 min-w-0 items-center gap-2 rounded-md px-1.5 text-[13px] outline-none hover:bg-accent/50 focus-visible:ring-1 focus-visible:ring-ring md:h-8"
               >
                 {row ? (

@@ -1,7 +1,7 @@
-import type { AgentName, DecompositionMode } from "@postdog/shared";
-import type { ZodType } from "zod";
-import type { Db } from "../../db/client";
-import type { LoopDeps } from "./runAgent";
+import type { AgentName, DecompositionMode } from '@postdog/shared';
+import type { ZodType } from 'zod';
+import type { Db } from '../../db/client';
+import type { LoopDeps } from './runAgent';
 
 export interface AgentContext extends LoopDeps {
   runId: number;

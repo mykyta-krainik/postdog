@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { AddNoteForm } from "@/features/add-task-note";
-import { useTaskNotes, type TaskNote } from "@/entities/task";
-import { formatDateTime } from "@/shared/lib/format";
-import { Button } from "@/shared/ui/button";
-import { Skeleton } from "@/shared/ui/skeleton";
-import { EmptyNote, PanelSection } from "./panel-section";
+import { AddNoteForm } from '@/features/add-task-note';
+import { useTaskNotes, type TaskNote } from '@/entities/task';
+import { formatDateTime } from '@/shared/lib/format';
+import { Button } from '@/shared/ui/button';
+import { Skeleton } from '@/shared/ui/skeleton';
+import { EmptyNote, PanelSection } from './panel-section';
 
 /** Oldest first, so the newest note sits right above the form that adds the next one. */
 function NotesTimeline({ notes }: { notes: TaskNote[] }) {

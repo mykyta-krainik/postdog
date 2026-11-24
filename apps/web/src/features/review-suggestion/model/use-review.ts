@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { toast } from "sonner";
+import { useState } from 'react';
+import { toast } from 'sonner';
 import {
   acceptSuggestion,
   rejectSuggestion,
   toReviewError,
   type AcceptValues,
   type ReviewError,
-} from "@/entities/suggestion";
+} from '@/entities/suggestion';
 
 export type ReviewState =
-  | { status: "idle" }
-  | { status: "saving"; action: "accept" | "reject" }
-  | { status: "error"; error: ReviewError };
+  | { status: 'idle' }
+  | { status: 'saving'; action: 'accept' | 'reject' }
+  | { status: 'error'; error: ReviewError };
 
 export type Review = {
   state: ReviewState;
@@ -29,21 +29,21 @@ export type Review = {
  * handled goes the same way, with a toast that says so. Other errors stay on the card.
  */
 export function useReview(suggestionId: number, identifier: string): Review {
-  const [state, setState] = useState<ReviewState>({ status: "idle" });
-  const saving = state.status === "saving";
+  const [state, setState] = useState<ReviewState>({ status: 'idle' });
+  const saving = state.status === 'saving';
 
-  const send = (action: "accept" | "reject", request: () => Promise<unknown>, done: string) => {
+  const send = (action: 'accept' | 'reject', request: () => Promise<unknown>, done: string) => {
     if (saving) return;
-    setState({ status: "saving", action });
+    setState({ status: 'saving', action });
     request().then(
       () => toast.success(done),
       (cause: unknown) => {
         const error = toReviewError(cause, identifier);
-        if (error.kind === "handled") {
+        if (error.kind === 'handled') {
           toast.message(error.message);
-          setState({ status: "idle" });
+          setState({ status: 'idle' });
         } else {
-          setState({ status: "error", error });
+          setState({ status: 'error', error });
         }
       },
     );
@@ -52,7 +52,7 @@ export function useReview(suggestionId: number, identifier: string): Review {
   return {
     state,
     saving,
-    accept: (values, done) => send("accept", () => acceptSuggestion(suggestionId, values), done),
-    reject: () => send("reject", () => rejectSuggestion(suggestionId), "Suggestion rejected"),
+    accept: (values, done) => send('accept', () => acceptSuggestion(suggestionId, values), done),
+    reject: () => send('reject', () => rejectSuggestion(suggestionId), 'Suggestion rejected'),
   };
 }

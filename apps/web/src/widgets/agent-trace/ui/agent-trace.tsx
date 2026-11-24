@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   AGENT_META,
@@ -6,9 +6,9 @@ import {
   RUN_STATUS_LABEL,
   TraceTimeline,
   useAgentRun,
-} from "@/entities/agent-run";
-import { formatDayTime } from "@/shared/lib/format";
-import { Skeleton } from "@/shared/ui/skeleton";
+} from '@/entities/agent-run';
+import { formatDayTime } from '@/shared/lib/format';
+import { Skeleton } from '@/shared/ui/skeleton';
 
 /**
  * One run's trace, loaded by id and polled while it runs: the agent, its status and model layer,

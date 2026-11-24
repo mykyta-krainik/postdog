@@ -1,9 +1,9 @@
-import type { ListTasksResponse, TaskDetail, UpdateTaskInput } from "@postdog/shared";
+import type { ListTasksResponse, TaskDetail, UpdateTaskInput } from '@postdog/shared';
 
 /** The only fields the UI changes before the API confirms. */
-export type OptimisticTaskPatch = Pick<UpdateTaskInput, "status" | "priority">;
+export type OptimisticTaskPatch = Pick<UpdateTaskInput, 'status' | 'priority'>;
 
-const OPTIMISTIC_FIELDS: ReadonlySet<string> = new Set(["status", "priority"]);
+const OPTIMISTIC_FIELDS: ReadonlySet<string> = new Set(['status', 'priority']);
 
 export function isOptimisticPatch(patch: UpdateTaskInput): patch is OptimisticTaskPatch {
   const fields = Object.keys(patch);
@@ -29,6 +29,6 @@ export function patchTaskCache(
   const apply = <T extends { id: number }>(task: T): T =>
     task.id === id ? { ...task, ...changes } : task;
 
-  if ("items" in entry) return { ...entry, items: entry.items.map(apply) };
+  if ('items' in entry) return { ...entry, items: entry.items.map(apply) };
   return { ...apply(entry), subtasks: entry.subtasks.map(apply) };
 }

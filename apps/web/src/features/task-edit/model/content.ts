@@ -1,5 +1,5 @@
-import { updateTaskInputSchema, type UpdateTaskInput } from "@postdog/shared";
-import type { z } from "zod";
+import { updateTaskInputSchema, type UpdateTaskInput } from '@postdog/shared';
+import type { z } from 'zod';
 
 /** Title and description with the PATCH rules, both required in the form. */
 export const taskContentSchema = updateTaskInputSchema
@@ -31,7 +31,7 @@ export function rebaseContent(
 ): TaskContentValues {
   const edited = contentPatch(current, previous);
   return {
-    title: "title" in edited ? current.title : next.title,
-    description: "description" in edited ? current.description : next.description,
+    title: 'title' in edited ? current.title : next.title,
+    description: 'description' in edited ? current.description : next.description,
   };
 }

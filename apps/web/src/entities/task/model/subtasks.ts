@@ -1,4 +1,4 @@
-import type { TaskStatus } from "@postdog/shared";
+import type { TaskStatus } from '@postdog/shared';
 
 export type SubtaskProgress = {
   done: number;
@@ -14,5 +14,5 @@ export function subtaskProgress(subtasks: readonly { status: TaskStatus }[]): Su
 
 /** The status a done toggle moves to: an open task becomes done, a done task reopens as todo. */
 export function toggledStatus(status: TaskStatus): TaskStatus {
-  return status === "done" ? "todo" : "done";
+  return status === 'done' ? 'todo' : 'done';
 }

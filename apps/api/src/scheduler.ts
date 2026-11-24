@@ -3,15 +3,15 @@ import {
   type PlannerInput,
   type ScheduledAgent,
   type StatusUpdaterInput,
-} from "@postdog/shared";
-import { readyCandidates } from "./agents/planner";
-import { loadStatusScope } from "./agents/status-updater/scope";
-import type { Db, Executor } from "./db/client";
-import { AppError } from "./lib/errors";
-import { logger } from "./lib/logger";
-import { getSetting, setSetting } from "./repositories/settings";
-import type { AgentRunService } from "./services/agentRuns";
-import { readSettings } from "./services/settings";
+} from '@postdog/shared';
+import { readyCandidates } from './agents/planner';
+import { loadStatusScope } from './agents/status-updater/scope';
+import type { Db, Executor } from './db/client';
+import { AppError } from './lib/errors';
+import { logger } from './lib/logger';
+import { getSetting, setSetting } from './repositories/settings';
+import type { AgentRunService } from './services/agentRuns';
+import { readSettings } from './services/settings';
 
 export const SCHEDULER_TICK_MS = 30_000;
 
@@ -27,7 +27,7 @@ export interface DueRun {
   date: string;
 }
 
-const pad = (n: number) => String(n).padStart(2, "0");
+const pad = (n: number) => String(n).padStart(2, '0');
 
 export function localDate(ms: number): string {
   const d = new Date(ms);
@@ -72,12 +72,12 @@ const SLOT_RUNS: { planner: SlotRun<PlannerInput>; status_updater: SlotRun<Statu
   planner: {
     body: {},
     hasWork: (ex, now) => readyCandidates(ex, now) !== undefined,
-    idle: "no open task is ready to start",
+    idle: 'no open task is ready to start',
   },
   status_updater: {
-    body: { scope: "since" },
-    hasWork: (ex, now) => loadStatusScope(ex, { scope: "since" }, now).rows.length > 0,
-    idle: "no task changed in the last 24 hours",
+    body: { scope: 'since' },
+    hasWork: (ex, now) => loadStatusScope(ex, { scope: 'since' }, now).rows.length > 0,
+    idle: 'no task changed in the last 24 hours',
   },
 };
 
@@ -90,7 +90,7 @@ const firedKey = (agent: ScheduledAgent) => `lastScheduledRun:${agent}` as const
  */
 export function createScheduler(deps: {
   db: Db;
-  runs: Pick<AgentRunService, "start">;
+  runs: Pick<AgentRunService, 'start'>;
   now?: () => number;
 }) {
   const { db, runs, now = () => Date.now() } = deps;
@@ -118,14 +118,14 @@ export function createScheduler(deps: {
 
   function fire(run: DueRun, at: number): void {
     const settings = readSettings(db);
-    if (!settings.aiEnabled) return skip(run, "AI is off", false);
-    if (!settings.scheduledRunsEnabled) return skip(run, "daily runs are off in Settings", false);
+    if (!settings.aiEnabled) return skip(run, 'AI is off', false);
+    if (!settings.scheduledRunsEnabled) return skip(run, 'daily runs are off in Settings', false);
     const slot = SLOT_RUNS[run.agent];
     if (!slot.hasWork(db, at)) return skip(run, slot.idle, true);
     try {
       // start() inserts the run row on this connection before it returns, inside this transaction.
       const { runId } = db.transaction((tx) => {
-        const started = runs.start(run.agent, slot.body, "scheduled");
+        const started = runs.start(run.agent, slot.body, 'scheduled');
         markFired(tx, run);
         return started;
       });
@@ -155,7 +155,7 @@ export function createScheduler(deps: {
       timer = setInterval(tick, SCHEDULER_TICK_MS).unref();
       const slots = SCHEDULED_RUNS.map((s) => `${s.agent} at ${pad(s.hour)}:${pad(s.minute)}`);
       const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      logger.info(`Daily runs: ${slots.join(", ")}, ${zone} time`);
+      logger.info(`Daily runs: ${slots.join(', ')}, ${zone} time`);
     },
     stop(): void {
       clearInterval(timer);

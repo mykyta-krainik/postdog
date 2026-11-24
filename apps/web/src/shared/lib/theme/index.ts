@@ -4,5 +4,5 @@ export {
   themeInitScript,
   type ResolvedTheme,
   type ThemePreference,
-} from "./theme";
-export { ThemeSync, useTheme } from "./use-theme";
+} from './theme';
+export { ThemeSync, useTheme } from './use-theme';

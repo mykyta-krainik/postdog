@@ -1,1 +1,1 @@
-export { SuggestionReview } from "./ui/suggestion-review";
+export { SuggestionReview } from './ui/suggestion-review';

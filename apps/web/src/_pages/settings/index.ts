@@ -1,1 +1,1 @@
-export { SettingsPage, metadata } from "./ui/settings-page";
+export { SettingsPage, metadata } from './ui/settings-page';

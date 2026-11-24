@@ -1,4 +1,4 @@
-import type { ListNotesResponse, TaskNote } from "@postdog/shared";
+import type { ListNotesResponse, TaskNote } from '@postdog/shared';
 
 /**
  * The cached timeline with a note the API just created. The timeline runs oldest first, so the

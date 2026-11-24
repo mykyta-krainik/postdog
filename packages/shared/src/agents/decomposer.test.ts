@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 import {
   acceptSuggestionInputSchema,
   clarifyInputSchema,
@@ -8,16 +8,16 @@ import {
   reportRelatedInputSchema,
   skipInputSchema,
   type DecomposerOutput,
-} from "@postdog/shared";
+} from '@postdog/shared';
 
-describe("decomposerRunInputSchema", () => {
+describe('decomposerRunInputSchema', () => {
   const parse = (taskIds: number[]) => decomposerRunInputSchema.safeParse({ taskIds }).success;
 
-  it("leaves the task choice to the server without taskIds", () => {
+  it('leaves the task choice to the server without taskIds', () => {
     expect(decomposerRunInputSchema.parse({})).toEqual({});
   });
 
-  it("takes 1 to 10 distinct task ids", () => {
+  it('takes 1 to 10 distinct task ids', () => {
     const ids = (n: number) => Array.from({ length: n }, (_, i) => i + 1);
     expect([parse([]), parse(ids(1)), parse(ids(10)), parse(ids(11))]).toEqual([
       false,
@@ -29,22 +29,22 @@ describe("decomposerRunInputSchema", () => {
   });
 });
 
-describe("clarifyInputSchema", () => {
-  const answers = [{ question: "Which API?", answer: "  The public one  " }];
+describe('clarifyInputSchema', () => {
+  const answers = [{ question: 'Which API?', answer: '  The public one  ' }];
   const parse = (input: object) => clarifyInputSchema.safeParse({ suggestionId: 3, ...input });
 
-  it("accepts answers, trimmed", () => {
+  it('accepts answers, trimmed', () => {
     expect(parse({ answers }).data).toEqual({
       suggestionId: 3,
-      answers: [{ question: "Which API?", answer: "The public one" }],
+      answers: [{ question: 'Which API?', answer: 'The public one' }],
     });
   });
 
-  it("accepts generateAnyway on its own", () => {
+  it('accepts generateAnyway on its own', () => {
     expect(parse({ generateAnyway: true }).success).toBe(true);
   });
 
-  it("rejects both, neither, empty answers and generateAnyway false on its own", () => {
+  it('rejects both, neither, empty answers and generateAnyway false on its own', () => {
     expect(parse({ answers, generateAnyway: true }).success).toBe(false);
     expect(parse({}).success).toBe(false);
     expect(parse({ answers: [] }).success).toBe(false);
@@ -52,9 +52,9 @@ describe("clarifyInputSchema", () => {
     expect(parse({ answers, generateAnyway: false }).success).toBe(true);
   });
 
-  it("bounds an answer at 1000 characters", () => {
-    const answer = (text: string) => parse({ answers: [{ question: "Q?", answer: text }] }).success;
-    expect([answer("a".repeat(1000)), answer("a".repeat(1001)), answer("  ")]).toEqual([
+  it('bounds an answer at 1000 characters', () => {
+    const answer = (text: string) => parse({ answers: [{ question: 'Q?', answer: text }] }).success;
+    expect([answer('a'.repeat(1000)), answer('a'.repeat(1001)), answer('  ')]).toEqual([
       true,
       false,
       false,
@@ -62,18 +62,18 @@ describe("clarifyInputSchema", () => {
   });
 });
 
-describe("listSuggestionsQuerySchema", () => {
-  it("lists pending suggestions by default and coerces the target id", () => {
-    expect(listSuggestionsQuerySchema.parse({ targetType: "task", targetId: "12" })).toEqual({
-      targetType: "task",
+describe('listSuggestionsQuerySchema', () => {
+  it('lists pending suggestions by default and coerces the target id', () => {
+    expect(listSuggestionsQuerySchema.parse({ targetType: 'task', targetId: '12' })).toEqual({
+      targetType: 'task',
       targetId: 12,
-      status: "pending",
+      status: 'pending',
     });
-    expect(listSuggestionsQuerySchema.parse({ status: "rejected" }).status).toBe("rejected");
+    expect(listSuggestionsQuerySchema.parse({ status: 'rejected' }).status).toBe('rejected');
   });
 });
 
-describe("acceptSuggestionInputSchema", () => {
+describe('acceptSuggestionInputSchema', () => {
   it("passes the edited payload through for the kind's schema to check", () => {
     const payload = { anything: true };
     expect(acceptSuggestionInputSchema.parse({ payload, baseUpdatedAt: 5 })).toEqual({
@@ -84,44 +84,44 @@ describe("acceptSuggestionInputSchema", () => {
   });
 });
 
-describe("Decomposer terminal tools", () => {
-  it("report_related takes an empty list and rejects a group of one", () => {
+describe('Decomposer terminal tools', () => {
+  it('report_related takes an empty list and rejects a group of one', () => {
     expect(reportRelatedInputSchema.safeParse({ groups: [] }).success).toBe(true);
-    const group = { relation: "duplicates", taskIds: [3], reason: "Same" };
+    const group = { relation: 'duplicates', taskIds: [3], reason: 'Same' };
     expect(reportRelatedInputSchema.safeParse({ groups: [group] }).success).toBe(false);
   });
 
-  it("skip takes a known reason and an explanation", () => {
+  it('skip takes a known reason and an explanation', () => {
     expect(
-      skipInputSchema.safeParse({ reason: "already_atomic", explanation: "One step" }).success,
+      skipInputSchema.safeParse({ reason: 'already_atomic', explanation: 'One step' }).success,
     ).toBe(true);
-    expect(skipInputSchema.safeParse({ reason: "too_hard", explanation: "No" }).success).toBe(
+    expect(skipInputSchema.safeParse({ reason: 'too_hard', explanation: 'No' }).success).toBe(
       false,
     );
   });
 });
 
-describe("decomposerOutputSchema", () => {
+describe('decomposerOutputSchema', () => {
   const phase3Output = {
     tasks: [
       {
         taskId: 12,
-        identifier: "PD-12",
-        title: "Add SSO",
-        outcome: "suggested_subtasks",
+        identifier: 'PD-12',
+        title: 'Add SSO',
+        outcome: 'suggested_subtasks',
         suggestionId: 7,
-        detail: "Proposed 4 subtasks",
+        detail: 'Proposed 4 subtasks',
       },
       {
         taskId: 15,
-        identifier: "PD-15",
-        title: "Improve things",
-        outcome: "claimed",
+        identifier: 'PD-15',
+        title: 'Improve things',
+        outcome: 'claimed',
         suggestionId: null,
-        detail: "Skipped PD-15: being processed by decomposer run #41",
+        detail: 'Skipped PD-15: being processed by decomposer run #41',
       },
     ],
-    related: [{ suggestionId: 8, relation: "overlaps", taskIds: [12, 15] }],
+    related: [{ suggestionId: 8, relation: 'overlaps', taskIds: [12, 15] }],
     counts: {
       considered: 2,
       suggestedSubtasks: 1,
@@ -132,31 +132,31 @@ describe("decomposerOutputSchema", () => {
       superseded: 0,
       failed: 0,
     },
-    warnings: [{ taskId: 12, message: "Dropped a subtask that already exists" }],
+    warnings: [{ taskId: 12, message: 'Dropped a subtask that already exists' }],
   };
 
-  it("reads an output stored before auto mode with the auto fields at their defaults", () => {
+  it('reads an output stored before auto mode with the auto fields at their defaults', () => {
     expect(decomposerOutputSchema.parse(phase3Output)).toEqual({
       ...phase3Output,
-      related: [{ suggestionId: 8, relation: "overlaps", taskIds: [12, 15], applied: false }],
+      related: [{ suggestionId: 8, relation: 'overlaps', taskIds: [12, 15], applied: false }],
       changesetId: null,
       counts: { ...phase3Output.counts, appliedSubtasks: 0, createdSubtasks: 0, appliedLinks: 0 },
     });
   });
 
-  it("accepts an auto run summary and rejects an unknown outcome", () => {
+  it('accepts an auto run summary and rejects an unknown outcome', () => {
     const output: DecomposerOutput = {
       tasks: [
         {
           taskId: 12,
-          identifier: "PD-12",
-          title: "Add SSO",
-          outcome: "applied_subtasks",
+          identifier: 'PD-12',
+          title: 'Add SSO',
+          outcome: 'applied_subtasks',
           suggestionId: 7,
-          detail: "Created 4 subtasks",
+          detail: 'Created 4 subtasks',
         },
       ],
-      related: [{ suggestionId: 8, relation: "overlaps", taskIds: [12, 15], applied: true }],
+      related: [{ suggestionId: 8, relation: 'overlaps', taskIds: [12, 15], applied: true }],
       changesetId: 2,
       counts: {
         ...phase3Output.counts,
@@ -170,7 +170,7 @@ describe("decomposerOutputSchema", () => {
       warnings: [],
     };
     expect(decomposerOutputSchema.parse(output)).toEqual(output);
-    const bad = { ...output, tasks: [{ ...output.tasks[0], outcome: "maybe" }] };
+    const bad = { ...output, tasks: [{ ...output.tasks[0], outcome: 'maybe' }] };
     expect(decomposerOutputSchema.safeParse(bad).success).toBe(false);
   });
 });

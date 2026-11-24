@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { AlertTriangle, LoaderCircle } from "lucide-react";
-import type { ReactNode } from "react";
-import { Button } from "@/shared/ui/button";
-import type { Review } from "../model/use-review";
+import { AlertTriangle, LoaderCircle } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { Button } from '@/shared/ui/button';
+import type { Review } from '../model/use-review';
 
-const ACTION = "h-10 gap-1.5 px-3 text-[13px] md:h-8";
+const ACTION = 'h-10 gap-1.5 px-3 text-[13px] md:h-8';
 
 /** Reject and Accept for one suggestion, and what went wrong. */
 export function ReviewActions({
@@ -22,12 +22,12 @@ export function ReviewActions({
   hint?: ReactNode;
 }) {
   const { state, saving } = review;
-  const busy = (action: "accept" | "reject") =>
-    state.status === "saving" && state.action === action;
+  const busy = (action: 'accept' | 'reject') =>
+    state.status === 'saving' && state.action === action;
 
   return (
     <div className="flex flex-col gap-2">
-      {state.status === "error" && (
+      {state.status === 'error' && (
         <div
           role="alert"
           className="flex items-start gap-2.5 rounded-md border border-destructive/35 bg-destructive/5 px-3 py-2"
@@ -46,7 +46,7 @@ export function ReviewActions({
             disabled={saving}
             onClick={review.reject}
           >
-            {busy("reject") && (
+            {busy('reject') && (
               <LoaderCircle
                 className="size-3.5 animate-spin motion-reduce:animate-none"
                 aria-hidden
@@ -60,7 +60,7 @@ export function ReviewActions({
             disabled={saving || acceptDisabled}
             onClick={onAccept}
           >
-            {busy("accept") && (
+            {busy('accept') && (
               <LoaderCircle
                 className="size-3.5 animate-spin motion-reduce:animate-none"
                 aria-hidden

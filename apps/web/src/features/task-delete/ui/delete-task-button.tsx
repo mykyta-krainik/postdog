@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { Trash2 } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
-import { deleteTask, type TaskDetail } from "@/entities/task";
-import { errorMessage } from "@/shared/lib/form-errors";
-import { Button } from "@/shared/ui/button";
+import { Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { deleteTask, type TaskDetail } from '@/entities/task';
+import { errorMessage } from '@/shared/lib/form-errors';
+import { Button } from '@/shared/ui/button';
 import {
   Dialog,
   DialogClose,
@@ -15,14 +15,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/shared/ui/dialog";
+} from '@/shared/ui/dialog';
 
-type DeletableTask = Pick<TaskDetail, "id" | "identifier" | "title" | "subtasks">;
+type DeletableTask = Pick<TaskDetail, 'id' | 'identifier' | 'title' | 'subtasks'>;
 
 function whatGoes(task: DeletableTask): string {
   const subtasks = task.subtasks.length;
-  if (subtasks === 0) return "Its notes and links go with it.";
-  return `Its ${subtasks === 1 ? "subtask" : `${subtasks} subtasks`}, notes and links go with it.`;
+  if (subtasks === 0) return 'Its notes and links go with it.';
+  return `Its ${subtasks === 1 ? 'subtask' : `${subtasks} subtasks`}, notes and links go with it.`;
 }
 
 /** A delete button that asks first. onDeleted runs after the API confirms. */
@@ -97,7 +97,7 @@ export function DeleteTaskButton({
             onClick={() => void confirm()}
             className="h-10 md:h-8"
           >
-            {pending ? "Deleting…" : "Delete task"}
+            {pending ? 'Deleting…' : 'Delete task'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,1 +1,1 @@
-export { TasksPage as default, metadata } from "@/_pages/tasks";
+export { TasksPage as default, metadata } from '@/_pages/tasks';

@@ -4,10 +4,10 @@ import {
   type AcceptSuggestionResponse,
   type Suggestion,
   type SuggestionPayload,
-} from "@postdog/shared";
-import { mutate } from "swr";
-import { aiRequest, apiKey, apiRequest } from "@/shared/api";
-import { suggestionKeys } from "./keys";
+} from '@postdog/shared';
+import { mutate } from 'swr';
+import { aiRequest, apiKey, apiRequest } from '@/shared/api';
+import { suggestionKeys } from './keys';
 
 /**
  * Refetches suggestions and every mounted task list and detail. Call it after anything that
@@ -35,7 +35,7 @@ export async function acceptSuggestion(
   try {
     return await aiRequest(
       apiRequest(apiKey(`/suggestions/${id}/accept`), acceptSuggestionResponseSchema, {
-        method: "POST",
+        method: 'POST',
         body: values,
       }),
     );
@@ -49,7 +49,7 @@ export async function rejectSuggestion(id: number): Promise<Suggestion> {
   try {
     return await aiRequest(
       apiRequest(apiKey(`/suggestions/${id}/reject`), rejectSuggestionResponseSchema, {
-        method: "POST",
+        method: 'POST',
       }),
     );
   } finally {

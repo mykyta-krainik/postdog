@@ -1,4 +1,4 @@
-import type { TaskFacts } from "../context";
+import type { TaskFacts } from '../context';
 
 export const SCORE_WEIGHTS = {
   staleInProgress: 100,
@@ -14,7 +14,7 @@ export const SCORE_WEIGHTS = {
 export function candidateScore(task: TaskFacts): number {
   const w = SCORE_WEIGHTS;
   const progress =
-    task.status === "in_progress" ? (task.isStale ? w.staleInProgress : w.inProgress) : 0;
+    task.status === 'in_progress' ? (task.isStale ? w.staleInProgress : w.inProgress) : 0;
   return (
     progress +
     w.priority[task.priority] +
@@ -26,7 +26,7 @@ export function candidateScore(task: TaskFacts): number {
 
 export function rankCandidates(facts: readonly TaskFacts[]): TaskFacts[] {
   return facts
-    .filter((task) => task.status !== "done" && task.parentId === null)
+    .filter((task) => task.status !== 'done' && task.parentId === null)
     .map((task) => ({ task, score: candidateScore(task) }))
     .sort((a, b) => b.score - a.score || a.task.id - b.task.id)
     .map(({ task }) => task);

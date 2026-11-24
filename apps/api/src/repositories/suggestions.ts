@@ -5,11 +5,11 @@ import {
   type SuggestionPayload,
   type SuggestionStatus,
   type SuggestionTargetType,
-} from "@postdog/shared";
-import { and, asc, eq, gt, inArray, or, type SQL } from "drizzle-orm";
-import type { Executor } from "../db/client";
-import { agentSuggestions, type AgentSuggestionRow } from "../db/schema";
-import { affectsTask, recomputeAiState } from "./aiState";
+} from '@postdog/shared';
+import { and, asc, eq, gt, inArray, or, type SQL } from 'drizzle-orm';
+import type { Executor } from '../db/client';
+import { agentSuggestions, type AgentSuggestionRow } from '../db/schema';
+import { affectsTask, recomputeAiState } from './aiState';
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 
@@ -17,11 +17,11 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K>
  * A new suggestion is pending, or applied when auto mode saves what it has already applied.
  * An applied one is resolved at its `createdAt`.
  */
-export type NewSuggestion = DistributiveOmit<Suggestion, "id" | "status" | "resolvedAt"> & {
-  status?: "pending" | "applied";
+export type NewSuggestion = DistributiveOmit<Suggestion, 'id' | 'status' | 'resolvedAt'> & {
+  status?: 'pending' | 'applied';
 };
 
-export type SuggestionResolution = Exclude<SuggestionStatus, "pending">;
+export type SuggestionResolution = Exclude<SuggestionStatus, 'pending'>;
 
 export interface SuggestionFilter {
   targetType?: SuggestionTargetType;
@@ -37,11 +37,11 @@ function toSuggestion(row: AgentSuggestionRow): Suggestion {
 
 /** Every task whose aiState the suggestion counts toward. */
 export function suggestionTaskIds(suggestion: Suggestion): number[] {
-  return suggestion.kind === "related" ? suggestion.payload.taskIds : [suggestion.targetId];
+  return suggestion.kind === 'related' ? suggestion.payload.taskIds : [suggestion.targetId];
 }
 
 export function insertSuggestion(ex: Executor, row: NewSuggestion): Suggestion {
-  const resolvedAt = row.status === "applied" ? row.createdAt : null;
+  const resolvedAt = row.status === 'applied' ? row.createdAt : null;
   return ex.transaction((tx) => {
     const suggestion = toSuggestion(
       tx
@@ -66,7 +66,7 @@ export function listSuggestions(ex: Executor, filter: SuggestionFilter): Suggest
   if (filter.targetType) conditions.push(eq(agentSuggestions.targetType, filter.targetType));
   if (filter.targetId !== undefined) {
     conditions.push(
-      filter.targetType === "doc"
+      filter.targetType === 'doc'
         ? eq(agentSuggestions.targetId, filter.targetId)
         : affectsTask(filter.targetId),
     );
@@ -82,7 +82,7 @@ export function listSuggestions(ex: Executor, filter: SuggestionFilter): Suggest
 }
 
 export function listPendingSuggestionsOfTask(ex: Executor, taskId: number): Suggestion[] {
-  return listSuggestions(ex, { targetType: "task", targetId: taskId, status: "pending" });
+  return listSuggestions(ex, { targetType: 'task', targetId: taskId, status: 'pending' });
 }
 
 /** Moves a pending suggestion to `status`. Undefined when it is missing or no longer pending. */
@@ -96,7 +96,7 @@ export function resolveSuggestion(
     const row = tx
       .update(agentSuggestions)
       .set({ status, resolvedAt: now })
-      .where(and(eq(agentSuggestions.id, id), eq(agentSuggestions.status, "pending")))
+      .where(and(eq(agentSuggestions.id, id), eq(agentSuggestions.status, 'pending')))
       .returning()
       .get();
     if (!row) return undefined;
@@ -121,8 +121,8 @@ export function applySuggestion(
     const before = findSuggestion(tx, id);
     const row = tx
       .update(agentSuggestions)
-      .set({ status: "applied", payload, resolvedAt: now })
-      .where(and(eq(agentSuggestions.id, id), eq(agentSuggestions.status, "pending")))
+      .set({ status: 'applied', payload, resolvedAt: now })
+      .where(and(eq(agentSuggestions.id, id), eq(agentSuggestions.status, 'pending')))
       .returning()
       .get();
     if (!before || !row) return undefined;
@@ -142,8 +142,8 @@ export function supersedeSuggestionsOfTasks(
   ex.transaction((tx) => {
     const superseded = tx
       .update(agentSuggestions)
-      .set({ status: "superseded", resolvedAt: now })
-      .where(and(eq(agentSuggestions.status, "pending"), or(...taskIds.map(affectsTask))))
+      .set({ status: 'superseded', resolvedAt: now })
+      .where(and(eq(agentSuggestions.status, 'pending'), or(...taskIds.map(affectsTask))))
       .returning()
       .all()
       .map(toSuggestion);
@@ -169,12 +169,12 @@ export function markSuggestionsRolledBack(
   return ex.transaction((tx) => {
     const rolledBack = tx
       .update(agentSuggestions)
-      .set({ status: "rolled_back", resolvedAt: now })
+      .set({ status: 'rolled_back', resolvedAt: now })
       .where(
         and(
           eq(agentSuggestions.runId, runId),
-          eq(agentSuggestions.status, "applied"),
-          eq(agentSuggestions.targetType, "task"),
+          eq(agentSuggestions.status, 'applied'),
+          eq(agentSuggestions.targetType, 'task'),
           inArray(agentSuggestions.targetId, [...targetIds]),
         ),
       )
@@ -196,8 +196,8 @@ export function listTaskIdsInCooldown(ex: Executor, now: number): Set<number> {
     .from(agentSuggestions)
     .where(
       and(
-        eq(agentSuggestions.targetType, "task"),
-        inArray(agentSuggestions.status, ["rejected", "rolled_back"]),
+        eq(agentSuggestions.targetType, 'task'),
+        inArray(agentSuggestions.status, ['rejected', 'rolled_back']),
         gt(agentSuggestions.resolvedAt, now - AGENT_LIMITS.rejectedCooldownMs),
       ),
     )

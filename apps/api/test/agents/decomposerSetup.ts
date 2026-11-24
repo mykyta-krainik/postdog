@@ -1,17 +1,17 @@
-import { decomposerRunSchema, type DecomposerOutput, type DecomposerRun } from "@postdog/shared";
-import { expect } from "vitest";
-import { createApp } from "../../src/app";
+import { decomposerRunSchema, type DecomposerOutput, type DecomposerRun } from '@postdog/shared';
+import { expect } from 'vitest';
+import { createApp } from '../../src/app';
 import {
   registerMockScript,
   type MockConversation,
   type MockTurn,
-} from "../../src/agents/core/llm";
-import { createDecomposerAgent, createDecomposerClarifyAgent } from "../../src/agents/decomposer";
-import { agentRegistry } from "../../src/agents/registry";
-import { seedDatabase } from "../../src/db/seed";
-import { jsonClient, type Api } from "../helpers";
-import { createTestDb } from "../suggestionFixtures";
-import { call, script, waitForRun, type Step } from "./helpers";
+} from '../../src/agents/core/llm';
+import { createDecomposerAgent, createDecomposerClarifyAgent } from '../../src/agents/decomposer';
+import { agentRegistry } from '../../src/agents/registry';
+import { seedDatabase } from '../../src/db/seed';
+import { jsonClient, type Api } from '../helpers';
+import { createTestDb } from '../suggestionFixtures';
+import { call, script, waitForRun, type Step } from './helpers';
 
 export const T0 = Date.UTC(2026, 10, 1, 9);
 
@@ -55,16 +55,16 @@ export function setup(options: { seed?: boolean; related?: Step[]; task?: TaskHa
 
 export async function startRun(api: Api, path: string, body: object): Promise<DecomposerRun> {
   const res = await api.post(`/api/agents/decomposer/${path}`).send(body).expect(202);
-  expect(Object.keys(res.body)).toEqual(["runId"]);
+  expect(Object.keys(res.body)).toEqual(['runId']);
   return decomposerRunSchema.parse(await waitForRun(api, res.body.runId as number));
 }
 
-export const runDecomposer = (api: Api, body: object = {}) => startRun(api, "run", body);
-export const clarify = (api: Api, body: object) => startRun(api, "clarify", body);
+export const runDecomposer = (api: Api, body: object = {}) => startRun(api, 'run', body);
+export const clarify = (api: Api, body: object) => startRun(api, 'clarify', body);
 
 export function outputOf(run: DecomposerRun): DecomposerOutput {
   expect(run.error).toBeNull();
-  expect(run.status).toBe("completed");
+  expect(run.status).toBe('completed');
   return run.output!;
 }
 
@@ -73,16 +73,16 @@ export function outcomes(output: DecomposerOutput): Record<string, string> {
 }
 
 export const propose = (...titles: string[]) =>
-  call("propose_subtasks", {
-    subtasks: titles.map((title) => ({ title, description: "" })),
-    rationale: "Split it.",
+  call('propose_subtasks', {
+    subtasks: titles.map((title) => ({ title, description: '' })),
+    rationale: 'Split it.',
   });
 
-export const twoSteps = () => propose("Step one", "Step two");
+export const twoSteps = () => propose('Step one', 'Step two');
 
-export const ask = call("ask_clarification", {
-  questions: ["What does done look like?"],
-  whatIsUnclear: "No outcome.",
+export const ask = call('ask_clarification', {
+  questions: ['What does done look like?'],
+  whatIsUnclear: 'No outcome.',
 });
 
-export const noGroups = call("report_related", { groups: [] });
+export const noGroups = call('report_related', { groups: [] });

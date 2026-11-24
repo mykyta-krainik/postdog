@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { createNoteInputSchema } from "@postdog/shared";
-import { useForm, useWatch } from "react-hook-form";
-import type { z } from "zod";
-import { createNote } from "@/entities/task";
-import { setApiErrors } from "@/shared/lib/form-errors";
-import { cn } from "@/shared/lib/utils";
-import { Button } from "@/shared/ui/button";
-import { Textarea } from "@/shared/ui/textarea";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createNoteInputSchema } from '@postdog/shared';
+import { useForm, useWatch } from 'react-hook-form';
+import type { z } from 'zod';
+import { createNote } from '@/entities/task';
+import { setApiErrors } from '@/shared/lib/form-errors';
+import { cn } from '@/shared/lib/utils';
+import { Button } from '@/shared/ui/button';
+import { Textarea } from '@/shared/ui/textarea';
 
 type NoteValues = z.input<typeof createNoteInputSchema>;
 
@@ -18,29 +18,29 @@ const COUNTER_FROM = MAX_LENGTH - 500;
 
 const resolver = zodResolver(createNoteInputSchema, {
   error: (issue) =>
-    issue.code === "too_small"
-      ? "Write something first."
-      : issue.code === "too_big"
-        ? `Keep notes under ${MAX_LENGTH.toLocaleString("en")} characters.`
+    issue.code === 'too_small'
+      ? 'Write something first.'
+      : issue.code === 'too_big'
+        ? `Keep notes under ${MAX_LENGTH.toLocaleString('en')} characters.`
         : undefined,
 });
 
 export function AddNoteForm({ taskId }: { taskId: number }) {
-  const form = useForm<NoteValues>({ resolver, defaultValues: { body: "" } });
+  const form = useForm<NoteValues>({ resolver, defaultValues: { body: '' } });
   const { errors, isSubmitting } = form.formState;
-  const length = useWatch({ control: form.control, name: "body" }).length;
+  const length = useWatch({ control: form.control, name: 'body' }).length;
 
   // The box clears as soon as a note is sent. A failed send puts the note back.
   const submit = form.handleSubmit(async (values) => {
-    form.setValue("body", "");
+    form.setValue('body', '');
     try {
       await createNote(taskId, values);
     } catch (error) {
-      if (form.getValues("body") === "") form.setValue("body", values.body);
+      if (form.getValues('body') === '') form.setValue('body', values.body);
       setApiErrors(
         form,
         error,
-        (path) => (path === "body" ? "body" : undefined),
+        (path) => (path === 'body' ? 'body' : undefined),
         "The note wasn't added. Try again.",
       );
     }
@@ -54,9 +54,9 @@ export function AddNoteForm({ taskId }: { taskId: number }) {
         placeholder="Add a note: progress, a blocker, a decision"
         aria-invalid={errors.body ? true : undefined}
         className="min-h-16 leading-relaxed md:text-[13px]"
-        {...form.register("body")}
+        {...form.register('body')}
         onKeyDown={(event) => {
-          if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey)) return;
+          if (event.key !== 'Enter' || !(event.metaKey || event.ctrlKey)) return;
           event.preventDefault();
           // Like the disabled button, a second shortcut while sending adds nothing.
           if (!form.formState.isSubmitting) void submit();
@@ -71,11 +71,11 @@ export function AddNoteForm({ taskId }: { taskId: number }) {
         {length >= COUNTER_FROM && (
           <span
             className={cn(
-              "text-xs tabular-nums",
-              length > MAX_LENGTH ? "text-destructive" : "text-muted-foreground",
+              'text-xs tabular-nums',
+              length > MAX_LENGTH ? 'text-destructive' : 'text-muted-foreground',
             )}
           >
-            {length.toLocaleString("en")}/{MAX_LENGTH.toLocaleString("en")}
+            {length.toLocaleString('en')}/{MAX_LENGTH.toLocaleString('en')}
           </span>
         )}
         <Button
@@ -86,7 +86,7 @@ export function AddNoteForm({ taskId }: { taskId: number }) {
           title="Ctrl+Enter or ⌘+Enter"
           className="h-10 text-xs md:h-7"
         >
-          {isSubmitting ? "Adding…" : "Add note"}
+          {isSubmitting ? 'Adding…' : 'Add note'}
         </Button>
       </div>
     </form>

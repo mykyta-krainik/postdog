@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { PRIORITIES, type Priority, type TaskStatus } from "@postdog/shared";
-import type { ReactNode } from "react";
-import { toast } from "sonner";
+import { PRIORITIES, type Priority, type TaskStatus } from '@postdog/shared';
+import type { ReactNode } from 'react';
+import { toast } from 'sonner';
 import {
   PriorityIcon,
   StatusIcon,
@@ -12,26 +12,26 @@ import {
   toggledStatus,
   updateTask,
   type TaskListItem,
-} from "@/entities/task";
-import { errorMessage } from "@/shared/lib/form-errors";
-import { cn } from "@/shared/lib/utils";
-import { Button } from "@/shared/ui/button";
+} from '@/entities/task';
+import { errorMessage } from '@/shared/lib/form-errors';
+import { cn } from '@/shared/lib/utils';
+import { Button } from '@/shared/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from "@/shared/ui/dropdown-menu";
+} from '@/shared/ui/dropdown-menu';
 
-type TaskRef = Pick<TaskListItem, "id" | "identifier" | "status" | "priority">;
+type TaskRef = Pick<TaskListItem, 'id' | 'identifier' | 'status' | 'priority'>;
 
 /** Status and priority changes show at once. updateTask rolls them back if the API refuses. */
 function changeTask(task: TaskRef, patch: { status: TaskStatus } | { priority: Priority }) {
-  const field = "status" in patch ? "status" : "priority";
+  const field = 'status' in patch ? 'status' : 'priority';
   updateTask(task.id, patch).catch((error: unknown) => {
     toast.error(`The ${field} of ${task.identifier} didn't change`, {
-      description: errorMessage(error, "Try again."),
+      description: errorMessage(error, 'Try again.'),
     });
   });
 }
@@ -123,7 +123,7 @@ export function TaskPriorityPicker({ task }: { task: TaskRef }) {
 /** One click finishes an open subtask or reopens a done one. */
 export function DoneToggle({ task, className }: { task: TaskRef; className?: string }) {
   const label =
-    task.status === "done" ? `Reopen ${task.identifier}` : `Mark ${task.identifier} done`;
+    task.status === 'done' ? `Reopen ${task.identifier}` : `Mark ${task.identifier} done`;
   return (
     <button
       type="button"
@@ -131,7 +131,7 @@ export function DoneToggle({ task, className }: { task: TaskRef; className?: str
       title={label}
       onClick={() => changeTask(task, { status: toggledStatus(task.status) })}
       className={cn(
-        "grid cursor-pointer size-10 shrink-0 place-items-center rounded-md outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 md:size-7",
+        'grid cursor-pointer size-10 shrink-0 place-items-center rounded-md outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 md:size-7',
         className,
       )}
     >

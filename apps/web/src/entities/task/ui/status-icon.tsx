@@ -1,5 +1,5 @@
-import type { TaskStatus } from "@postdog/shared";
-import { cn } from "@/shared/lib/utils";
+import type { TaskStatus } from '@postdog/shared';
+import { cn } from '@/shared/lib/utils';
 
 function TodoGlyph() {
   return <circle cx="7" cy="7" r="5.75" fill="none" stroke="currentColor" strokeWidth="1.5" />;
@@ -35,13 +35,13 @@ export const TASK_STATUS_META: Record<
   TaskStatus,
   { label: string; className: string; Glyph: () => React.JSX.Element }
 > = {
-  todo: { label: "Todo", className: "text-status-todo", Glyph: TodoGlyph },
+  todo: { label: 'Todo', className: 'text-status-todo', Glyph: TodoGlyph },
   in_progress: {
-    label: "In progress",
-    className: "text-status-in-progress",
+    label: 'In progress',
+    className: 'text-status-in-progress',
     Glyph: InProgressGlyph,
   },
-  done: { label: "Done", className: "text-status-done", Glyph: DoneGlyph },
+  done: { label: 'Done', className: 'text-status-done', Glyph: DoneGlyph },
 };
 
 export function StatusIcon({ status, className }: { status: TaskStatus; className?: string }) {
@@ -51,7 +51,7 @@ export function StatusIcon({ status, className }: { status: TaskStatus; classNam
       viewBox="0 0 14 14"
       role="img"
       aria-label={label}
-      className={cn("size-3.5 shrink-0", tone, className)}
+      className={cn('size-3.5 shrink-0', tone, className)}
     >
       <Glyph />
     </svg>

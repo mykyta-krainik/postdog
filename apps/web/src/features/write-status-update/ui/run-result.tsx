@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import type { StatusUpdaterRun } from "@postdog/shared";
-import { CircleSlash, MessageSquareText } from "lucide-react";
-import Link from "next/link";
-import { routes } from "@/shared/config";
-import { useDraftStore } from "../model/use-status-update";
-import { UpdateResult } from "./update-result";
+import type { StatusUpdaterRun } from '@postdog/shared';
+import { CircleSlash, MessageSquareText } from 'lucide-react';
+import Link from 'next/link';
+import { routes } from '@/shared/config';
+import { useDraftStore } from '../model/use-status-update';
+import { UpdateResult } from './update-result';
 
 /**
  * A finished Status updater run opened on its own, such as from the Runs page: the draft to edit
@@ -16,11 +16,11 @@ export function StatusUpdateRunResult({ run }: { run: StatusUpdaterRun }) {
   const drafts = useDraftStore();
   const output = run.output;
 
-  if (output?.kind === "update") {
+  if (output?.kind === 'update') {
     return <UpdateResult key={run.id} run={run} output={output} drafts={drafts} />;
   }
 
-  if (output?.kind === "needs_notes") {
+  if (output?.kind === 'needs_notes') {
     return (
       <div className="flex flex-col gap-3">
         <div className="flex gap-2.5 rounded-md border border-brand/35 bg-brand-soft/60 px-3 py-2.5">

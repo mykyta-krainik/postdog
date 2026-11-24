@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { Menu, X } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { routes } from "@/shared/config";
-import { cn } from "@/shared/lib/utils";
-import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/shared/ui/sheet";
-import { Wordmark } from "@/shared/ui/wordmark";
-import { useRunningRuns } from "@/entities/agent-run";
-import { UnreadCountBadge, unreadBadgeText, useUnreadCount } from "@/entities/notification";
-import { useSettings } from "@/entities/settings";
-import { isActive, menuButtonLabel, navItemsFor } from "../config/nav";
-import { RunningMark } from "./running-mark";
+import { Menu, X } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useState } from 'react';
+import { routes } from '@/shared/config';
+import { cn } from '@/shared/lib/utils';
+import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '@/shared/ui/sheet';
+import { Wordmark } from '@/shared/ui/wordmark';
+import { useRunningRuns } from '@/entities/agent-run';
+import { UnreadCountBadge, unreadBadgeText, useUnreadCount } from '@/entities/notification';
+import { useSettings } from '@/entities/settings';
+import { isActive, menuButtonLabel, navItemsFor } from '../config/nav';
+import { RunningMark } from './running-mark';
 
 /** Mobile only: the wordmark and a menu button that opens the navigation sheet. */
 export function MobileTopBar() {
@@ -66,11 +66,11 @@ export function MobileTopBar() {
                   key={href}
                   href={href}
                   onClick={() => setOpen(false)}
-                  aria-current={active ? "page" : undefined}
+                  aria-current={active ? 'page' : undefined}
                   className={cn(
-                    "flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium outline-none",
-                    "hover:bg-sidebar-accent focus-visible:ring-1 focus-visible:ring-ring",
-                    active && "bg-sidebar-accent text-sidebar-accent-foreground",
+                    'flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium outline-none',
+                    'hover:bg-sidebar-accent focus-visible:ring-1 focus-visible:ring-ring',
+                    active && 'bg-sidebar-accent text-sidebar-accent-foreground',
                   )}
                 >
                   <Icon className="size-4" aria-hidden />

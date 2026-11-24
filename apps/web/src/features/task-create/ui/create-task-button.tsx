@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Plus } from "lucide-react";
-import { useState } from "react";
-import { Button } from "@/shared/ui/button";
+import { Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Button } from '@/shared/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -10,10 +10,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/shared/ui/dialog";
-import { CreateTaskForm } from "./create-task-form";
+} from '@/shared/ui/dialog';
+import { CreateTaskForm } from './create-task-form';
 
-export function CreateTaskButton({ variant = "default" }: { variant?: "default" | "outline" }) {
+export function CreateTaskButton({ variant = 'default' }: { variant?: 'default' | 'outline' }) {
   const [open, setOpen] = useState(false);
 
   return (

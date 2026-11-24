@@ -1,7 +1,7 @@
-import { z } from "zod";
-import { changesetSummarySchema } from "./changesets";
-import { idSchema, timestampSchema } from "./common";
-import { notificationKindSchema } from "./enums";
+import { z } from 'zod';
+import { changesetSummarySchema } from './changesets';
+import { idSchema, timestampSchema } from './common';
+import { notificationKindSchema } from './enums';
 
 export const notificationSchema = z.object({
   id: idSchema,

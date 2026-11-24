@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { Search, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { useTaskListParams } from "@/entities/task";
-import { cn } from "@/shared/lib/utils";
+import { Search, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useTaskListParams } from '@/entities/task';
+import { cn } from '@/shared/lib/utils';
 
 const DEBOUNCE_MS = 250;
 
@@ -28,7 +28,7 @@ export function TaskSearch({ className }: { className?: string }) {
   };
 
   return (
-    <div className={cn("relative flex min-w-0 items-center", className)}>
+    <div className={cn('relative flex min-w-0 items-center', className)}>
       <Search
         className="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground"
         aria-hidden
@@ -38,9 +38,9 @@ export function TaskSearch({ className }: { className?: string }) {
         value={value}
         onChange={(event) => change(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === "Escape" && value) {
+          if (event.key === 'Escape' && value) {
             event.preventDefault();
-            change("", 0);
+            change('', 0);
           }
         }}
         placeholder="Search tasks"
@@ -51,7 +51,7 @@ export function TaskSearch({ className }: { className?: string }) {
       {value && (
         <button
           type="button"
-          onClick={() => change("", 0)}
+          onClick={() => change('', 0)}
           aria-label="Clear search"
           className="absolute right-1 flex size-8 items-center justify-center rounded text-muted-foreground hover:text-foreground md:size-6"
         >

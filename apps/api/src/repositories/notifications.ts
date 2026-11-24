@@ -1,11 +1,11 @@
-import { notificationSchema, type Notification } from "@postdog/shared";
-import { count, desc, eq, isNull, sql } from "drizzle-orm";
-import type { Executor } from "../db/client";
-import { notifications, type NewNotificationRow, type NotificationRow } from "../db/schema";
-import { findChangeset, summarizeChangeset } from "./changesets";
+import { notificationSchema, type Notification } from '@postdog/shared';
+import { count, desc, eq, isNull, sql } from 'drizzle-orm';
+import type { Executor } from '../db/client';
+import { notifications, type NewNotificationRow, type NotificationRow } from '../db/schema';
+import { findChangeset, summarizeChangeset } from './changesets';
 
 /** A new notification is always unread. */
-export type NewNotification = Omit<NewNotificationRow, "id" | "readAt">;
+export type NewNotification = Omit<NewNotificationRow, 'id' | 'readAt'>;
 
 export interface NotificationListFilter {
   unread?: boolean;

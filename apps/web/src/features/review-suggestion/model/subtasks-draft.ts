@@ -3,7 +3,7 @@ import {
   subtasksPayloadSchema,
   type Priority,
   type SubtasksPayload,
-} from "@postdog/shared";
+} from '@postdog/shared';
 
 /** subtasksPayloadSchema's bounds. The schema stays the check; these word the messages. */
 export const MIN_SUBTASKS = 2;
@@ -24,9 +24,9 @@ export type DraftItem = {
 export type SubtasksDraft = { items: DraftItem[]; removeBlocked: boolean };
 
 export type DraftAction =
-  | { type: "edit"; key: number; field: "title" | "description"; value: string }
-  | { type: "priority"; key: number; value: Priority }
-  | { type: "remove"; key: number };
+  | { type: 'edit'; key: number; field: 'title' | 'description'; value: string }
+  | { type: 'priority'; key: number; value: Priority }
+  | { type: 'remove'; key: number };
 
 export function initialDraft(payload: SubtasksPayload): SubtasksDraft {
   return {
@@ -43,21 +43,21 @@ export function initialDraft(payload: SubtasksPayload): SubtasksDraft {
 /** Edit a title, a description or a priority, or remove an item. Nothing can be added. */
 export function draftReducer(draft: SubtasksDraft, action: DraftAction): SubtasksDraft {
   switch (action.type) {
-    case "edit":
+    case 'edit':
       return {
         items: draft.items.map((item) =>
           item.key === action.key ? { ...item, [action.field]: action.value } : item,
         ),
         removeBlocked: false,
       };
-    case "priority":
+    case 'priority':
       return {
         items: draft.items.map((item) =>
           item.key === action.key ? { ...item, priority: action.value } : item,
         ),
         removeBlocked: false,
       };
-    case "remove":
+    case 'remove':
       if (draft.items.length <= MIN_SUBTASKS) return { ...draft, removeBlocked: true };
       return { items: draft.items.filter((item) => item.key !== action.key), removeBlocked: false };
   }
@@ -69,11 +69,11 @@ export type DraftCheck =
   | { ok: true; payload: SubtasksPayload }
   | { ok: false; items: Record<number, ItemErrors>; list?: string };
 
-function fieldMessage(field: "title" | "description", code: string): string {
-  if (field === "title") {
-    return code === "too_small" ? "Give it a title." : `Keep titles under ${TITLE_MAX} characters.`;
+function fieldMessage(field: 'title' | 'description', code: string): string {
+  if (field === 'title') {
+    return code === 'too_small' ? 'Give it a title.' : `Keep titles under ${TITLE_MAX} characters.`;
   }
-  return `Keep the description under ${DESCRIPTION_MAX.toLocaleString("en")} characters.`;
+  return `Keep the description under ${DESCRIPTION_MAX.toLocaleString('en')} characters.`;
 }
 
 /** Checks the draft with the shared payload schema, so the API gets what it would accept. */
@@ -92,16 +92,16 @@ export function checkDraft(draft: SubtasksDraft, rationale: string): DraftCheck 
   let list: string | undefined;
   for (const issue of parsed.error.issues) {
     const [root, index, field] = issue.path;
-    if (root !== "subtasks") continue;
-    if (typeof index !== "number") {
+    if (root !== 'subtasks') continue;
+    if (typeof index !== 'number') {
       list =
-        issue.code === "too_small"
+        issue.code === 'too_small'
           ? MIN_SUBTASKS_MESSAGE
           : `A split has at most ${AGENT_LIMITS.maxSubtasks} subtasks.`;
       continue;
     }
     const item = draft.items[index];
-    if (item && (field === "title" || field === "description")) {
+    if (item && (field === 'title' || field === 'description')) {
       items[item.key] = { ...items[item.key], [field]: fieldMessage(field, issue.code) };
     }
   }
@@ -117,7 +117,7 @@ function sameSubtasks(a: SubtasksPayload, b: SubtasksPayload): boolean {
         other !== undefined &&
         subtask.title.trim() === other.title.trim() &&
         subtask.description === other.description &&
-        (subtask.priority ?? "medium") === (other.priority ?? "medium")
+        (subtask.priority ?? 'medium') === (other.priority ?? 'medium')
       );
     })
   );

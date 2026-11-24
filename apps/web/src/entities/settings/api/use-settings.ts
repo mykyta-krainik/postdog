@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { settingsSchema } from "@postdog/shared";
-import useSWR from "swr";
-import { fetcherFor, settingsKey } from "@/shared/api";
+import { settingsSchema } from '@postdog/shared';
+import useSWR from 'swr';
+import { fetcherFor, settingsKey } from '@/shared/api';
 
 const fetchSettings = fetcherFor(settingsSchema);
 

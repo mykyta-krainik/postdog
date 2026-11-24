@@ -1,4 +1,4 @@
-import { LangfuseSpanProcessor } from "@langfuse/otel";
+import { LangfuseSpanProcessor } from '@langfuse/otel';
 import {
   LangfuseOtelSpanAttributes,
   setLangfuseTracerProvider,
@@ -6,11 +6,11 @@ import {
   type LangfuseAgent,
   type LangfuseGeneration,
   type LangfuseTool,
-} from "@langfuse/tracing";
-import { BasicTracerProvider } from "@opentelemetry/sdk-trace-base";
-import type { AgentName, LlmMode } from "@postdog/shared";
-import type { Env } from "../../config/env";
-import { logger } from "../../lib/logger";
+} from '@langfuse/tracing';
+import { BasicTracerProvider } from '@opentelemetry/sdk-trace-base';
+import type { AgentName, LlmMode } from '@postdog/shared';
+import type { Env } from '../../config/env';
+import { logger } from '../../lib/logger';
 
 export interface ObservationResult {
   output?: unknown;
@@ -61,7 +61,7 @@ export const noopTracer: Tracer = {
   flush: async () => {},
 };
 
-type LangfuseEnv = Pick<Env, "LANGFUSE_PUBLIC_KEY" | "LANGFUSE_SECRET_KEY" | "LANGFUSE_BASE_URL">;
+type LangfuseEnv = Pick<Env, 'LANGFUSE_PUBLIC_KEY' | 'LANGFUSE_SECRET_KEY' | 'LANGFUSE_BASE_URL'>;
 
 export function createTracer(env: LangfuseEnv): Tracer {
   const { LANGFUSE_PUBLIC_KEY: publicKey, LANGFUSE_SECRET_KEY: secretKey } = env;
@@ -83,7 +83,7 @@ function createLangfuseTracer(config: {
       try {
         return startLangfuseRun(start);
       } catch (err) {
-        logger.error("Langfuse could not start a trace; this run is not traced", { err });
+        logger.error('Langfuse could not start a trace; this run is not traced', { err });
         return noopRunTracer;
       }
     },
@@ -95,7 +95,7 @@ function startLangfuseRun(start: RunTraceStart): RunTracer {
   const root = startObservation(
     start.agent,
     { input: start.input, metadata: { runId: start.runId } },
-    { asType: "agent" },
+    { asType: 'agent' },
   );
   root.otelSpan.setAttributes({
     [LangfuseOtelSpanAttributes.TRACE_NAME]: start.agent,
@@ -109,7 +109,7 @@ function startLangfuseRun(start: RunTraceStart): RunTracer {
   ) => {
     observation.update({
       output: result.output,
-      ...(result.error !== undefined && { level: "ERROR", statusMessage: result.error }),
+      ...(result.error !== undefined && { level: 'ERROR', statusMessage: result.error }),
       ...(result.usage && { usageDetails: result.usage }),
     });
     observation.end();
@@ -118,11 +118,11 @@ function startLangfuseRun(start: RunTraceStart): RunTracer {
   return {
     traceId: root.traceId,
     generation: ({ name, model, input }) => {
-      const generation = root.startObservation(name, { model, input }, { asType: "generation" });
+      const generation = root.startObservation(name, { model, input }, { asType: 'generation' });
       return { end: (result) => finish(generation, result) };
     },
     span: ({ name, input }) => {
-      const span = root.startObservation(name, { input }, { asType: "tool" });
+      const span = root.startObservation(name, { input }, { asType: 'tool' });
       return { end: (result) => finish(span, result) };
     },
     end: (result) => finish(root, result),

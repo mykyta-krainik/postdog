@@ -1,1 +1,1 @@
-export { TaskDetailPage as default } from "@/_pages/task-detail";
+export { TaskDetailPage as default } from '@/_pages/task-detail';

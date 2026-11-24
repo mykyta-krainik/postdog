@@ -3,13 +3,13 @@ import {
   validationErrorDetailsSchema,
   type ErrorCode,
   type ValidationErrorDetails,
-} from "@postdog/shared";
+} from '@postdog/shared';
 
 /** Codes the client produces itself, when there is no contract error body to read. */
-export type ClientErrorCode = "network_error" | "unexpected_response";
+export type ClientErrorCode = 'network_error' | 'unexpected_response';
 
 export class ApiError extends Error {
-  override readonly name = "ApiError";
+  override readonly name = 'ApiError';
 
   constructor(
     readonly status: number,
@@ -31,23 +31,23 @@ export function apiErrorFromBody(status: number, body: unknown): ApiError {
     return new ApiError(status, code, message, details);
   }
   if (UNREACHABLE_STATUSES.has(status)) {
-    return new ApiError(status, "network_error", "Postdog can't reach the API.");
+    return new ApiError(status, 'network_error', "Postdog can't reach the API.");
   }
   return new ApiError(
     status,
-    "unexpected_response",
+    'unexpected_response',
     `The API answered ${status} in an unknown format.`,
   );
 }
 
 /** Field issues of a validation_error. Each path is also the React Hook Form field name. */
-export function getValidationIssues(error: unknown): ValidationErrorDetails["issues"] {
-  if (!(error instanceof ApiError) || error.code !== "validation_error") return [];
+export function getValidationIssues(error: unknown): ValidationErrorDetails['issues'] {
+  if (!(error instanceof ApiError) || error.code !== 'validation_error') return [];
   const details = validationErrorDetailsSchema.safeParse(error.details);
   return details.success ? details.data.issues : [];
 }
 
 /** SWR retries only when the request might succeed later: the network or the server failed. */
 export function isRetryableError(error: unknown): boolean {
-  return !(error instanceof ApiError) || error.code === "network_error" || error.status >= 500;
+  return !(error instanceof ApiError) || error.code === 'network_error' || error.status >= 500;
 }

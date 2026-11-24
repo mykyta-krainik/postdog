@@ -5,23 +5,23 @@ import {
   type DecompositionMode,
   type RelatedPayload,
   type SuggestionStatus,
-} from "@postdog/shared";
-import type { Executor } from "../../db/client";
-import type { TaskRow } from "../../db/schema";
-import { plural } from "../../lib/text";
-import { appendChangesetOps, type NewChangesetOp } from "../../repositories/changesets";
-import { getSetting } from "../../repositories/settings";
+} from '@postdog/shared';
+import type { Executor } from '../../db/client';
+import type { TaskRow } from '../../db/schema';
+import { plural } from '../../lib/text';
+import { appendChangesetOps, type NewChangesetOp } from '../../repositories/changesets';
+import { getSetting } from '../../repositories/settings';
 import {
   insertSuggestion,
   listPendingSuggestionsOfTask,
   listSuggestions,
-} from "../../repositories/suggestions";
-import { findTask, listSubtaskIds } from "../../repositories/tasks";
-import { linkGroup } from "../../services/suggestions";
-import { insertSubtasks } from "../../services/tasks";
-import { truncate } from "../core/trace";
-import { taskResult } from "./eligibility";
-import { sameGroup, type Decision } from "./validate";
+} from '../../repositories/suggestions';
+import { findTask, listSubtaskIds } from '../../repositories/tasks';
+import { linkGroup } from '../../services/suggestions';
+import { insertSubtasks } from '../../services/tasks';
+import { truncate } from '../core/trace';
+import { taskResult } from './eligibility';
+import { sameGroup, type Decision } from './validate';
 
 export interface ApplyRun {
   runId: number;
@@ -62,13 +62,13 @@ export function writeConflict(
   const current = findTask(ex, task.id);
   const stale = staleReason(current, task.identifier, run.startedAt);
   if (stale !== null || !current) return stale;
-  if (current.status === "done") return `${task.identifier} is done`;
+  if (current.status === 'done') return `${task.identifier} is done`;
   const subtasks = listSubtaskIds(ex, task.id).length;
   if (subtasks > 0) {
-    return `${task.identifier} got ${plural(subtasks, "subtask")} while the Decomposer worked`;
+    return `${task.identifier} got ${plural(subtasks, 'subtask')} while the Decomposer worked`;
   }
   const other = listPendingSuggestionsOfTask(ex, task.id).find(
-    (s) => s.kind !== "related" && s.runId !== run.runId && s.id !== answering,
+    (s) => s.kind !== 'related' && s.runId !== run.runId && s.id !== answering,
   );
   if (other) {
     return `${task.identifier} already has ${other.kind} suggestion #${other.id} from run #${other.runId}`;
@@ -77,7 +77,7 @@ export function writeConflict(
 }
 
 function suggestionOf(run: ApplyRun, targetId: number) {
-  return { runId: run.runId, targetType: "task" as const, targetId, createdAt: run.now };
+  return { runId: run.runId, targetType: 'task' as const, targetId, createdAt: run.now };
 }
 
 /** The group's tasks, or why it is not saved: one of them was edited, or it is already pending. */
@@ -87,7 +87,7 @@ function checkGroup(
   group: RelatedPayload,
 ): { tasks: TaskRow[] } | { warning: AgentWarning } {
   const found = group.taskIds.map((id) => ({ id, row: findTask(ex, id) }));
-  const names = found.map(({ id, row }) => row?.identifier ?? `task ${id}`).join(", ");
+  const names = found.map(({ id, row }) => row?.identifier ?? `task ${id}`).join(', ');
   const notSaved = (why: string) => ({
     warning: { message: truncate(`Related group ${names} was not saved: ${why}.`, 300) },
   });
@@ -98,8 +98,8 @@ function checkGroup(
     if (row) tasks.push(row);
   }
   const targetId = Math.min(...group.taskIds);
-  const pending = listSuggestions(ex, { targetType: "task", targetId, status: "pending" }).find(
-    (s) => s.kind === "related" && sameGroup(s.payload.taskIds, group.taskIds),
+  const pending = listSuggestions(ex, { targetType: 'task', targetId, status: 'pending' }).find(
+    (s) => s.kind === 'related' && sameGroup(s.payload.taskIds, group.taskIds),
   );
   if (pending) return notSaved(`it is already pending as suggestion #${pending.id}`);
   return { tasks };
@@ -109,12 +109,12 @@ function saveRelated(
   ex: Executor,
   run: ApplyRun,
   group: RelatedPayload,
-  status: Extract<SuggestionStatus, "pending" | "applied">,
+  status: Extract<SuggestionStatus, 'pending' | 'applied'>,
 ): number {
   const targetId = Math.min(...group.taskIds);
   return insertSuggestion(ex, {
     ...suggestionOf(run, targetId),
-    kind: "related",
+    kind: 'related',
     payload: group,
     status,
   }).id;
@@ -128,24 +128,24 @@ const suggest: Applier = {
   task(ex, run, task, decision) {
     const base = suggestionOf(run, task.id);
     switch (decision.kind) {
-      case "skip":
-        return taskResult(task, "skipped", decision.detail);
-      case "subtasks": {
+      case 'skip':
+        return taskResult(task, 'skipped', decision.detail);
+      case 'subtasks': {
         const saved = insertSuggestion(ex, {
           ...base,
-          kind: "subtasks",
+          kind: 'subtasks',
           payload: decision.payload,
         });
         const n = decision.payload.subtasks.length;
-        return taskResult(task, "suggested_subtasks", `Proposed ${plural(n, "subtask")}`, saved.id);
+        return taskResult(task, 'suggested_subtasks', `Proposed ${plural(n, 'subtask')}`, saved.id);
       }
-      case "clarification": {
+      case 'clarification': {
         const { payload } = decision;
-        const saved = insertSuggestion(ex, { ...base, kind: "clarification", payload });
-        const asked = `Asked ${plural(payload.questions.length, "question")}`;
+        const saved = insertSuggestion(ex, { ...base, kind: 'clarification', payload });
+        const asked = `Asked ${plural(payload.questions.length, 'question')}`;
         return taskResult(
           task,
-          "needs_clarification",
+          'needs_clarification',
           `${asked}: ${payload.whatIsUnclear}`,
           saved.id,
         );
@@ -155,8 +155,8 @@ const suggest: Applier = {
 
   related(ex, run, group) {
     const checked = checkGroup(ex, run, group);
-    if ("warning" in checked) return { saved: false, warning: checked.warning };
-    return { saved: true, suggestionId: saveRelated(ex, run, group, "pending"), applied: false };
+    if ('warning' in checked) return { saved: false, warning: checked.warning };
+    return { saved: true, suggestionId: saveRelated(ex, run, group, 'pending'), applied: false };
   },
 };
 
@@ -166,35 +166,35 @@ const suggest: Applier = {
  */
 const auto: Applier = {
   task(ex, run, task, decision) {
-    if (decision.kind !== "subtasks") return suggest.task(ex, run, task, decision);
+    if (decision.kind !== 'subtasks') return suggest.task(ex, run, task, decision);
     const created = insertSubtasks(ex, task.id, decision.payload.subtasks, run.now);
     recordOps(
       ex,
       run,
-      created.map((subtask) => ({ type: "create_task", id: subtask.id, taskId: task.id })),
+      created.map((subtask) => ({ type: 'create_task', id: subtask.id, taskId: task.id })),
     );
     const saved = insertSuggestion(ex, {
       ...suggestionOf(run, task.id),
-      kind: "subtasks",
+      kind: 'subtasks',
       payload: decision.payload,
-      status: "applied",
+      status: 'applied',
     });
-    const detail = `Created ${plural(created.length, "subtask")}`;
-    return taskResult(task, "applied_subtasks", detail, saved.id);
+    const detail = `Created ${plural(created.length, 'subtask')}`;
+    return taskResult(task, 'applied_subtasks', detail, saved.id);
   },
 
   related(ex, run, group) {
-    if (group.relation === "duplicates") return suggest.related(ex, run, group);
+    if (group.relation === 'duplicates') return suggest.related(ex, run, group);
     const checked = checkGroup(ex, run, group);
-    if ("warning" in checked) return { saved: false, warning: checked.warning };
+    if ('warning' in checked) return { saved: false, warning: checked.warning };
     const [hub, ...others] = [...checked.tasks].sort((a, b) => a.id - b.id);
     const links = linkGroup(ex, hub!, others, group.relation, run.runId, run.now);
     recordOps(
       ex,
       run,
-      links.map((link) => ({ type: "create_link", id: link.id, taskId: hub!.id })),
+      links.map((link) => ({ type: 'create_link', id: link.id, taskId: hub!.id })),
     );
-    return { saved: true, suggestionId: saveRelated(ex, run, group, "applied"), applied: true };
+    return { saved: true, suggestionId: saveRelated(ex, run, group, 'applied'), applied: true };
   },
 };
 
@@ -202,9 +202,9 @@ const APPLIERS: Record<DecompositionMode, Applier> = { suggest, auto };
 
 /** The mode in Settings. A run reads it once, at its start, and keeps it. */
 export function decompositionMode(ex: Executor): DecompositionMode {
-  return getSetting(ex, "decompositionMode") ?? DEFAULT_SETTINGS.decompositionMode;
+  return getSetting(ex, 'decompositionMode') ?? DEFAULT_SETTINGS.decompositionMode;
 }
 
 export function applierFor(mode: DecompositionMode | null): Applier {
-  return APPLIERS[mode ?? "suggest"];
+  return APPLIERS[mode ?? 'suggest'];
 }

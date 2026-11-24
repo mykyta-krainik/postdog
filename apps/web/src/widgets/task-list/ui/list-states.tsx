@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
-import { Skeleton } from "@/shared/ui/skeleton";
-import { LogoMark } from "@/shared/ui/wordmark";
+import type { ReactNode } from 'react';
+import { Skeleton } from '@/shared/ui/skeleton';
+import { LogoMark } from '@/shared/ui/wordmark';
 
-const SKELETON_WIDTHS = ["w-2/3", "w-1/2", "w-3/4", "w-2/5", "w-3/5", "w-1/2", "w-2/3"];
+const SKELETON_WIDTHS = ['w-2/3', 'w-1/2', 'w-3/4', 'w-2/5', 'w-3/5', 'w-1/2', 'w-2/3'];
 
 export function TaskListSkeleton() {
   return (

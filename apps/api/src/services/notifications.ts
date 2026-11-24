@@ -2,14 +2,14 @@ import type {
   ListNotificationsQuery,
   ListNotificationsResponse,
   Notification,
-} from "@postdog/shared";
-import type { Db } from "../db/client";
-import { notFound } from "../lib/errors";
+} from '@postdog/shared';
+import type { Db } from '../db/client';
+import { notFound } from '../lib/errors';
 import {
   countUnreadNotifications,
   listNotifications,
   markNotificationRead,
-} from "../repositories/notifications";
+} from '../repositories/notifications';
 
 export function createNotificationService(db: Db) {
   return {

@@ -1,9 +1,9 @@
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { createOpenAI } from "@ai-sdk/openai";
-import type { LlmInfo } from "@postdog/shared";
-import { createProviderRegistry, type LanguageModel } from "ai";
-import { MockLanguageModelV4 } from "ai/test";
-import type { Env, LlmProvider } from "../../config/env";
+import { createAnthropic } from '@ai-sdk/anthropic';
+import { createOpenAI } from '@ai-sdk/openai';
+import type { LlmInfo } from '@postdog/shared';
+import { createProviderRegistry, type LanguageModel } from 'ai';
+import { MockLanguageModelV4 } from 'ai/test';
+import type { Env, LlmProvider } from '../../config/env';
 
 export interface Llm {
   readonly info: LlmInfo;
@@ -24,7 +24,7 @@ export interface MockConversation {
   turn: number;
   results: MockToolResult[];
   lastResults: MockToolResult[];
-  prompt: CallOptions["prompt"];
+  prompt: CallOptions['prompt'];
 }
 
 export interface MockToolCall {
@@ -36,8 +36,8 @@ export type MockTurn = { toolCalls: MockToolCall[] } | { text: string };
 
 export type MockScript = (conversation: MockConversation) => MockTurn | Promise<MockTurn>;
 
-type CallOptions = Parameters<MockLanguageModelV4["doGenerate"]>[0];
-type GenerateResult = Awaited<ReturnType<MockLanguageModelV4["doGenerate"]>>;
+type CallOptions = Parameters<MockLanguageModelV4['doGenerate']>[0];
+type GenerateResult = Awaited<ReturnType<MockLanguageModelV4['doGenerate']>>;
 
 const mockScripts = new Map<string, MockScript>();
 
@@ -46,24 +46,24 @@ export function registerMockScript(agentName: string, script: MockScript): void 
 }
 
 const API_KEY_ENV = {
-  anthropic: "ANTHROPIC_API_KEY",
-  openai: "OPENAI_API_KEY",
-  openrouter: "OPENROUTER_API_KEY",
+  anthropic: 'ANTHROPIC_API_KEY',
+  openai: 'OPENAI_API_KEY',
+  openrouter: 'OPENROUTER_API_KEY',
 } as const satisfies Record<LlmProvider, keyof Env>;
 
-type LlmEnv = Pick<Env, "LLM_MOCK" | "LLM_MODEL" | (typeof API_KEY_ENV)[LlmProvider]>;
+type LlmEnv = Pick<Env, 'LLM_MOCK' | 'LLM_MODEL' | (typeof API_KEY_ENV)[LlmProvider]>;
 
 export const mockLlm: Llm = {
-  info: { mode: "mock", model: "mock" },
+  info: { mode: 'mock', model: 'mock' },
   model: (agentName) =>
     new MockLanguageModelV4({
-      provider: "mock",
+      provider: 'mock',
       modelId: agentName,
       doGenerate: (options) => replayMockScript(agentName, options),
     }),
 };
 
-const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
 /**
  * OpenRouter speaks the OpenAI chat completions API. The OpenAI provider's default model call
@@ -71,22 +71,22 @@ const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
  * Model ids keep everything after the first colon: "openrouter:meta-llama/llama-3.3-70b:free".
  */
 function openRouterLlm(env: LlmEnv, fetch: typeof globalThis.fetch | undefined): Llm {
-  const modelId = env.LLM_MODEL.slice(env.LLM_MODEL.indexOf(":") + 1);
+  const modelId = env.LLM_MODEL.slice(env.LLM_MODEL.indexOf(':') + 1);
   const openrouter = createOpenAI({
-    name: "openrouter",
+    name: 'openrouter',
     apiKey: env.OPENROUTER_API_KEY,
     baseURL: OPENROUTER_BASE_URL,
     fetch,
   });
-  return { info: { mode: "real", model: env.LLM_MODEL }, model: () => openrouter.chat(modelId) };
+  return { info: { mode: 'real', model: env.LLM_MODEL }, model: () => openrouter.chat(modelId) };
 }
 
 const isOpenRouterModel = (id: string): id is `openrouter:${string}` =>
-  id.startsWith("openrouter:");
+  id.startsWith('openrouter:');
 
 /** `options.fetch` lets tests answer provider calls without a network. */
 export function createLlm(env: LlmEnv, options: { fetch?: typeof globalThis.fetch } = {}): Llm {
-  const provider = env.LLM_MODEL.slice(0, env.LLM_MODEL.indexOf(":")) as LlmProvider;
+  const provider = env.LLM_MODEL.slice(0, env.LLM_MODEL.indexOf(':')) as LlmProvider;
   if (env.LLM_MOCK || !env[API_KEY_ENV[provider]]) return mockLlm;
   const modelId = env.LLM_MODEL;
   if (isOpenRouterModel(modelId)) return openRouterLlm(env, options.fetch);
@@ -96,7 +96,7 @@ export function createLlm(env: LlmEnv, options: { fetch?: typeof globalThis.fetc
     openai: createOpenAI({ apiKey: env.OPENAI_API_KEY }),
   });
   const model = registry.languageModel(modelId);
-  return { info: { mode: "real", model: modelId }, model: () => model };
+  return { info: { mode: 'real', model: modelId }, model: () => model };
 }
 
 async function replayMockScript(agentName: string, options: CallOptions): Promise<GenerateResult> {
@@ -108,11 +108,11 @@ async function replayMockScript(agentName: string, options: CallOptions): Promis
   }
   const conversation = toConversation(agentName, options.prompt);
   const turn = await abortable(Promise.resolve(script(conversation)), options.abortSignal);
-  const content: GenerateResult["content"] =
-    "text" in turn
-      ? [{ type: "text", text: turn.text }]
+  const content: GenerateResult['content'] =
+    'text' in turn
+      ? [{ type: 'text', text: turn.text }]
       : turn.toolCalls.map((call, i) => ({
-          type: "tool-call",
+          type: 'tool-call',
           toolCallId: `mock_${conversation.turn}_${i + 1}`,
           toolName: call.toolName,
           input: JSON.stringify(call.input ?? {}),
@@ -121,7 +121,7 @@ async function replayMockScript(agentName: string, options: CallOptions): Promis
   const outputTokens = estimateTokens(content);
   return {
     content,
-    finishReason: { unified: "text" in turn ? "stop" : "tool-calls", raw: undefined },
+    finishReason: { unified: 'text' in turn ? 'stop' : 'tool-calls', raw: undefined },
     usage: {
       inputTokens: {
         total: inputTokens,
@@ -135,42 +135,42 @@ async function replayMockScript(agentName: string, options: CallOptions): Promis
   };
 }
 
-function toConversation(agentName: string, prompt: CallOptions["prompt"]): MockConversation {
+function toConversation(agentName: string, prompt: CallOptions['prompt']): MockConversation {
   const inputs = new Map<string, unknown>();
   const results: MockToolResult[] = [];
   let lastResults: MockToolResult[] = [];
-  let system = "";
+  let system = '';
   let userMessage: string | undefined;
   let turn = 1;
 
   for (const message of prompt) {
-    if (message.role === "system") system = message.content;
-    if (message.role === "user" && userMessage === undefined) {
-      userMessage = message.content.map((part) => (part.type === "text" ? part.text : "")).join("");
+    if (message.role === 'system') system = message.content;
+    if (message.role === 'user' && userMessage === undefined) {
+      userMessage = message.content.map((part) => (part.type === 'text' ? part.text : '')).join('');
     }
-    if (message.role === "assistant") {
+    if (message.role === 'assistant') {
       turn += 1;
       lastResults = [];
       for (const part of message.content) {
-        if (part.type === "tool-call") inputs.set(part.toolCallId, part.input);
+        if (part.type === 'tool-call') inputs.set(part.toolCallId, part.input);
       }
     }
-    if (message.role === "tool") {
+    if (message.role === 'tool') {
       for (const part of message.content) {
-        if (part.type !== "tool-result") continue;
+        if (part.type !== 'tool-result') continue;
         const { output } = part;
         const result: MockToolResult = {
           toolName: part.toolName,
           input: inputs.get(part.toolCallId),
-          output: "value" in output ? output.value : undefined,
-          isError: output.type === "error-text" || output.type === "error-json",
+          output: 'value' in output ? output.value : undefined,
+          isError: output.type === 'error-text' || output.type === 'error-json',
         };
         results.push(result);
         lastResults.push(result);
       }
     }
   }
-  return { agentName, system, userMessage: userMessage ?? "", turn, results, lastResults, prompt };
+  return { agentName, system, userMessage: userMessage ?? '', turn, results, lastResults, prompt };
 }
 
 function estimateTokens(value: unknown): number {
@@ -182,7 +182,7 @@ function abortable<T>(promise: Promise<T>, signal: AbortSignal | undefined): Pro
   signal.throwIfAborted();
   return new Promise<T>((resolve, reject) => {
     const onAbort = () => reject(signal.reason);
-    signal.addEventListener("abort", onAbort, { once: true });
-    promise.then(resolve, reject).finally(() => signal.removeEventListener("abort", onAbort));
+    signal.addEventListener('abort', onAbort, { once: true });
+    promise.then(resolve, reject).finally(() => signal.removeEventListener('abort', onAbort));
   });
 }

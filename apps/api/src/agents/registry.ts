@@ -3,11 +3,11 @@ import type {
   DecomposerRunInput,
   PlannerInput,
   StatusUpdaterInput,
-} from "@postdog/shared";
-import type { AgentDefinition } from "./core/definition";
-import { decomposerAgent, decomposerClarifyAgent } from "./decomposer";
-import { plannerAgent } from "./planner";
-import { statusUpdaterAgent } from "./status-updater";
+} from '@postdog/shared';
+import type { AgentDefinition } from './core/definition';
+import { decomposerAgent, decomposerClarifyAgent } from './decomposer';
+import { plannerAgent } from './planner';
+import { statusUpdaterAgent } from './status-updater';
 
 export interface AgentRegistry {
   planner: AgentDefinition<PlannerInput, unknown>;

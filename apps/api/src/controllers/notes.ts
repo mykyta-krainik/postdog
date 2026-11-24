@@ -1,6 +1,6 @@
-import type { CreateNoteInput, IdParams, ListNotesResponse, TaskNote } from "@postdog/shared";
-import type { Request, Response } from "express";
-import type { NoteService } from "../services/notes";
+import type { CreateNoteInput, IdParams, ListNotesResponse, TaskNote } from '@postdog/shared';
+import type { Request, Response } from 'express';
+import type { NoteService } from '../services/notes';
 
 export function createNoteController(notes: NoteService) {
   return {

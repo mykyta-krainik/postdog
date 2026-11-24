@@ -1,8 +1,8 @@
-import { AGENT_LIMITS, type AgentName } from "@postdog/shared";
-import { and, eq, gt, notInArray } from "drizzle-orm";
-import type { Executor } from "../db/client";
-import { agentClaims, agentRuns, type AgentClaimRow } from "../db/schema";
-import { recomputeAiState } from "./aiState";
+import { AGENT_LIMITS, type AgentName } from '@postdog/shared';
+import { and, eq, gt, notInArray } from 'drizzle-orm';
+import type { Executor } from '../db/client';
+import { agentClaims, agentRuns, type AgentClaimRow } from '../db/schema';
+import { recomputeAiState } from './aiState';
 
 export interface ClaimHolder {
   runId: number;
@@ -11,7 +11,7 @@ export interface ClaimHolder {
 
 export type ClaimResult = { claimed: true } | { claimed: false; heldBy: ClaimHolder };
 
-const taskIdsOf = (rows: readonly Pick<AgentClaimRow, "taskId">[]) => rows.map((r) => r.taskId);
+const taskIdsOf = (rows: readonly Pick<AgentClaimRow, 'taskId'>[]) => rows.map((r) => r.taskId);
 
 export function findActiveClaim(
   ex: Executor,
@@ -96,7 +96,7 @@ export function deleteClaimsOfStoppedRuns(ex: Executor, now: number): void {
     const running = tx
       .select({ id: agentRuns.id })
       .from(agentRuns)
-      .where(eq(agentRuns.status, "running"));
+      .where(eq(agentRuns.status, 'running'));
     const deleted = tx
       .delete(agentClaims)
       .where(notInArray(agentClaims.runId, running))

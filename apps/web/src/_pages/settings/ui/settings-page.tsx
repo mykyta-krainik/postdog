@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
-import { SettingsView } from "./settings-view";
+import type { Metadata } from 'next';
+import { SettingsView } from './settings-view';
 
-export const metadata: Metadata = { title: "Settings" };
+export const metadata: Metadata = { title: 'Settings' };
 
 export function SettingsPage() {
   return (

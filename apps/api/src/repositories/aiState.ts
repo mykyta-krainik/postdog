@@ -1,7 +1,7 @@
-import type { AiState, SuggestionKind } from "@postdog/shared";
-import { inArray, sql, type SQL, type SQLWrapper } from "drizzle-orm";
-import type { Executor } from "../db/client";
-import { agentClaims, agentSuggestions, tasks } from "../db/schema";
+import type { AiState, SuggestionKind } from '@postdog/shared';
+import { inArray, sql, type SQL, type SQLWrapper } from 'drizzle-orm';
+import type { Executor } from '../db/client';
+import { agentClaims, agentSuggestions, tasks } from '../db/schema';
 
 /** The suggestion row targets the task, or lists it in a related group. */
 export function affectsTask(taskId: SQLWrapper | number): SQL {
@@ -19,9 +19,9 @@ function hasPending(kind?: SuggestionKind): SQL {
 
 function derivedAiState(now: number): SQL<AiState> {
   const precedence: [AiState, SQL][] = [
-    ["processing", hasActiveClaim(now)],
-    ["clarification_pending", hasPending("clarification")],
-    ["suggestion_pending", hasPending()],
+    ['processing', hasActiveClaim(now)],
+    ['clarification_pending', hasPending('clarification')],
+    ['suggestion_pending', hasPending()],
   ];
   const rules = precedence.map(([state, when]) => sql`when ${when} then ${state}`);
   return sql<AiState>`case ${sql.join(rules, sql` `)} else 'none' end`;

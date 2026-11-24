@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { TodayFocus } from "@/widgets/today-focus";
-import { useSettings } from "@/entities/settings";
-import { routes } from "@/shared/config";
-import { Button } from "@/shared/ui/button";
-import { LoadError } from "@/shared/ui/load-error";
-import { LogoMark } from "@/shared/ui/wordmark";
+import Link from 'next/link';
+import { TodayFocus } from '@/widgets/today-focus';
+import { useSettings } from '@/entities/settings';
+import { routes } from '@/shared/config';
+import { Button } from '@/shared/ui/button';
+import { LoadError } from '@/shared/ui/load-error';
+import { LogoMark } from '@/shared/ui/wordmark';
 
 function TodayHeader() {
   return (

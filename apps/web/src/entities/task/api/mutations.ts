@@ -4,12 +4,12 @@ import {
   taskDetailSchema,
   type TaskDetail,
   type UpdateTaskInput,
-} from "@postdog/shared";
-import { mutate } from "swr";
-import { z } from "zod";
-import { apiKey, apiRequest } from "@/shared/api";
-import { isOptimisticPatch, patchTaskCache, type TaskCacheEntry } from "../model/optimistic";
-import { taskKeys } from "./keys";
+} from '@postdog/shared';
+import { mutate } from 'swr';
+import { z } from 'zod';
+import { apiKey, apiRequest } from '@/shared/api';
+import { isOptimisticPatch, patchTaskCache, type TaskCacheEntry } from '../model/optimistic';
+import { taskKeys } from './keys';
 
 export type CreateTaskValues = z.input<typeof createTaskInputSchema>;
 export type CreateSubtasksValues = z.input<typeof createSubtasksInputSchema>;
@@ -27,15 +27,15 @@ function revalidateTasks(except?: string) {
 function cachedTaskKeys(): string[] {
   const keys: string[] = [];
   void mutate((key) => {
-    if (typeof key === "string" && taskKeys.holdsTasks(key)) keys.push(key);
+    if (typeof key === 'string' && taskKeys.holdsTasks(key)) keys.push(key);
     return false;
   });
   return keys;
 }
 
 export async function createTask(input: CreateTaskValues): Promise<TaskDetail> {
-  const created = await apiRequest(apiKey("/tasks"), taskDetailSchema, {
-    method: "POST",
+  const created = await apiRequest(apiKey('/tasks'), taskDetailSchema, {
+    method: 'POST',
     body: input,
   });
   await mutate(taskKeys.detail(created.id), created, { revalidate: false });
@@ -49,7 +49,7 @@ export async function createTask(input: CreateTaskValues): Promise<TaskDetail> {
  */
 export async function updateTask(id: number, patch: UpdateTaskInput): Promise<TaskDetail> {
   const request = apiRequest(taskKeys.detail(id), taskDetailSchema, {
-    method: "PATCH",
+    method: 'PATCH',
     body: patch,
   });
   if (isOptimisticPatch(patch)) {
@@ -71,7 +71,7 @@ export async function updateTask(id: number, patch: UpdateTaskInput): Promise<Ta
 }
 
 export async function deleteTask(id: number): Promise<void> {
-  await apiRequest(taskKeys.detail(id), z.undefined(), { method: "DELETE" });
+  await apiRequest(taskKeys.detail(id), z.undefined(), { method: 'DELETE' });
   await mutate(taskKeys.detail(id), undefined, { revalidate: false });
   await revalidateTasks(taskKeys.detail(id));
 }
@@ -82,7 +82,7 @@ export async function createSubtasks(
   input: CreateSubtasksValues,
 ): Promise<TaskDetail> {
   const parent = await apiRequest(apiKey(`/tasks/${parentId}/subtasks`), taskDetailSchema, {
-    method: "POST",
+    method: 'POST',
     body: input,
   });
   await mutate(taskKeys.detail(parentId), parent, { revalidate: false });

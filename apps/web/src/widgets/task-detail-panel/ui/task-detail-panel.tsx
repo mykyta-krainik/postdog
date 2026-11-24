@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { ArrowLeft, CornerLeftUp, X } from "lucide-react";
-import Link from "next/link";
-import type { ReactNode } from "react";
-import { DeleteTaskButton } from "@/features/task-delete";
-import { TaskContentForm, TaskPriorityPicker, TaskStatusPicker } from "@/features/task-edit";
-import { WriteStatusUpdateButton } from "@/features/write-status-update";
-import { StatusIcon, useTask, useTaskListParams, type TaskDetail } from "@/entities/task";
-import { ApiError } from "@/shared/api";
-import { formatDateTime, formatShortDate } from "@/shared/lib/format";
-import { Button } from "@/shared/ui/button";
-import { Skeleton } from "@/shared/ui/skeleton";
-import { LinksSection } from "./links-section";
-import { NotesSection } from "./notes-section";
-import { SubtasksSection } from "./subtasks-section";
+import { ArrowLeft, CornerLeftUp, X } from 'lucide-react';
+import Link from 'next/link';
+import type { ReactNode } from 'react';
+import { DeleteTaskButton } from '@/features/task-delete';
+import { TaskContentForm, TaskPriorityPicker, TaskStatusPicker } from '@/features/task-edit';
+import { WriteStatusUpdateButton } from '@/features/write-status-update';
+import { StatusIcon, useTask, useTaskListParams, type TaskDetail } from '@/entities/task';
+import { ApiError } from '@/shared/api';
+import { formatDateTime, formatShortDate } from '@/shared/lib/format';
+import { Button } from '@/shared/ui/button';
+import { Skeleton } from '@/shared/ui/skeleton';
+import { LinksSection } from './links-section';
+import { NotesSection } from './notes-section';
+import { SubtasksSection } from './subtasks-section';
 
 export type TaskDetailPanelProps = {
   taskId: number;
@@ -53,7 +53,7 @@ function TaskDetailBody({
   suggestions,
 }: {
   task: TaskDetail;
-  suggestions: TaskDetailPanelProps["suggestions"];
+  suggestions: TaskDetailPanelProps['suggestions'];
 }) {
   return (
     <article className="flex flex-col gap-6">
@@ -96,7 +96,7 @@ function PanelSkeleton() {
           <Skeleton className="h-3.5 w-3/5" />
         </div>
       </div>
-      {["w-3/4", "w-2/3"].map((width) => (
+      {['w-3/4', 'w-2/3'].map((width) => (
         <div key={width} className="flex flex-col gap-3 border-t border-border pt-5">
           <Skeleton className="h-3.5 w-20" />
           <Skeleton className={`h-3.5 ${width}`} />
@@ -118,22 +118,22 @@ function PanelError({
   onRetry: () => void;
   onClose: () => void;
 }) {
-  const gone = error instanceof ApiError && error.code === "not_found";
-  const unreachable = error instanceof ApiError && error.code === "network_error";
+  const gone = error instanceof ApiError && error.code === 'not_found';
+  const unreachable = error instanceof ApiError && error.code === 'network_error';
   return (
     <div role="alert" className="flex flex-col items-start gap-3 py-6">
       <div className="flex flex-col gap-1">
         <h2 className="text-sm font-medium">
-          {gone ? "This task is gone" : "This task didn't load"}
+          {gone ? 'This task is gone' : "This task didn't load"}
         </h2>
         <p className="text-[13px] text-muted-foreground">
           {gone
-            ? "It may have been deleted, maybe in another tab. Pick another task from the list."
+            ? 'It may have been deleted, maybe in another tab. Pick another task from the list.'
             : unreachable
               ? "Postdog can't reach the API. Check that it is running, then try again."
               : error instanceof Error
                 ? error.message
-                : "The API returned an error."}
+                : 'The API returned an error.'}
         </p>
       </div>
       {gone ? (
@@ -148,7 +148,7 @@ function PanelError({
           disabled={retrying}
           onClick={onRetry}
         >
-          {retrying ? "Trying again…" : "Try again"}
+          {retrying ? 'Trying again…' : 'Try again'}
         </Button>
       )}
     </div>

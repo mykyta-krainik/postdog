@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { ChevronRight } from "lucide-react";
-import { useState } from "react";
-import { CreateTaskButton } from "@/features/task-create";
-import { useSettings } from "@/entities/settings";
+import { ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { CreateTaskButton } from '@/features/task-create';
+import { useSettings } from '@/entities/settings';
 import {
   StatusIcon,
   TASK_STATUS_META,
@@ -14,11 +14,11 @@ import {
   useTaskListParams,
   useTasks,
   type TaskStatus,
-} from "@/entities/task";
-import { ApiError } from "@/shared/api";
-import { cn } from "@/shared/lib/utils";
-import { Button } from "@/shared/ui/button";
-import { ListMessage, TaskListSkeleton } from "./list-states";
+} from '@/entities/task';
+import { ApiError } from '@/shared/api';
+import { cn } from '@/shared/lib/utils';
+import { Button } from '@/shared/ui/button';
+import { ListMessage, TaskListSkeleton } from './list-states';
 
 /** Top-level tasks grouped by status. Collapsed groups are local state, everything else is in the URL. */
 export function TaskList() {
@@ -28,7 +28,7 @@ export function TaskList() {
   const [collapsed, setCollapsed] = useState<ReadonlySet<TaskStatus>>(new Set());
 
   if (error && !data) {
-    const unreachable = error instanceof ApiError && error.code === "network_error";
+    const unreachable = error instanceof ApiError && error.code === 'network_error';
     return (
       <ListMessage
         title="Tasks didn't load"
@@ -42,7 +42,7 @@ export function TaskList() {
           ? "Postdog can't reach the API. Check that it is running, then try again."
           : error instanceof Error
             ? error.message
-            : "The API returned an error."}
+            : 'The API returned an error.'}
       </ListMessage>
     );
   }
@@ -63,13 +63,13 @@ export function TaskList() {
         title={
           q
             ? `Nothing matches “${q}”`
-            : `No ${TASK_STATUS_META[params.status ?? "todo"].label.toLowerCase()} tasks`
+            : `No ${TASK_STATUS_META[params.status ?? 'todo'].label.toLowerCase()} tasks`
         }
         action={
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setParams({ status: undefined, q: "" })}
+            onClick={() => setParams({ status: undefined, q: '' })}
           >
             Clear filters
           </Button>
@@ -103,8 +103,8 @@ export function TaskList() {
               >
                 <ChevronRight
                   className={cn(
-                    "size-3.5 text-muted-foreground transition-transform duration-150",
-                    !isCollapsed && "rotate-90",
+                    'size-3.5 text-muted-foreground transition-transform duration-150',
+                    !isCollapsed && 'rotate-90',
                   )}
                   aria-hidden
                 />

@@ -1,11 +1,11 @@
-import type { ChangesetTaskSummary } from "@postdog/shared";
-import Link from "next/link";
-import type { ReactNode } from "react";
-import { routes } from "@/shared/config";
-import { linksChip, subtasksChip } from "../model/describe";
-import { ChangesetStateBadge } from "./notification-marks";
+import type { ChangesetTaskSummary } from '@postdog/shared';
+import Link from 'next/link';
+import type { ReactNode } from 'react';
+import { routes } from '@/shared/config';
+import { linksChip, subtasksChip } from '../model/describe';
+import { ChangesetStateBadge } from './notification-marks';
 
-const CHIP = "rounded-sm bg-muted px-1.5 py-0.5 text-xs text-muted-foreground tabular-nums";
+const CHIP = 'rounded-sm bg-muted px-1.5 py-0.5 text-xs text-muted-foreground tabular-nums';
 
 /**
  * One task's part of a changeset: the task as a link, what was created under it, its rollback
@@ -23,7 +23,7 @@ export function ChangesetTaskRow({
       <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
         {task.identifier ?? `#${task.taskId}`}
       </span>
-      <span className="min-w-0 truncate">{task.title ?? "Deleted task"}</span>
+      <span className="min-w-0 truncate">{task.title ?? 'Deleted task'}</span>
     </>
   );
   return (

@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
 import {
   STATUS_UPDATE_TONES,
   type StatusUpdateTone,
   type StatusUpdaterInput,
   type StatusUpdaterRun,
-} from "@postdog/shared";
+} from '@postdog/shared';
 import {
   Check,
   Copy,
@@ -16,22 +16,22 @@ import {
   Sparkles,
   TriangleAlert,
   type LucideIcon,
-} from "lucide-react";
-import { useId, useRef, useState } from "react";
-import { toast } from "sonner";
-import { SuggestedBadge } from "@/entities/agent-run";
-import { copyText } from "@/shared/lib/clipboard";
-import { Badge } from "@/shared/ui/badge";
-import { Button } from "@/shared/ui/button";
-import { Textarea } from "@/shared/ui/textarea";
-import { ToggleGroup, ToggleGroupItem } from "@/shared/ui/toggle-group";
+} from 'lucide-react';
+import { useId, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { SuggestedBadge } from '@/entities/agent-run';
+import { copyText } from '@/shared/lib/clipboard';
+import { Badge } from '@/shared/ui/badge';
+import { Button } from '@/shared/ui/button';
+import { Textarea } from '@/shared/ui/textarea';
+import { ToggleGroup, ToggleGroupItem } from '@/shared/ui/toggle-group';
 import {
   isDraftEdited,
   regenerateInput,
   TONE_META,
   type UpdateOutput,
-} from "../model/status-update";
-import type { DraftStore } from "../model/use-status-update";
+} from '../model/status-update';
+import type { DraftStore } from '../model/use-status-update';
 
 const TONE_ICON: Record<StatusUpdateTone, LucideIcon> = {
   celebrate: PartyPopper,
@@ -40,9 +40,9 @@ const TONE_ICON: Record<StatusUpdateTone, LucideIcon> = {
   blocked: OctagonX,
 };
 
-const ACTION = "h-10 gap-1.5 px-3 text-[13px] md:h-8";
+const ACTION = 'h-10 gap-1.5 px-3 text-[13px] md:h-8';
 
-function Warnings({ warnings }: { warnings: UpdateOutput["warnings"] }) {
+function Warnings({ warnings }: { warnings: UpdateOutput['warnings'] }) {
   if (warnings.length === 0) return null;
   return (
     <div
@@ -52,8 +52,8 @@ function Warnings({ warnings }: { warnings: UpdateOutput["warnings"] }) {
       <TriangleAlert className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden />
       <div className="flex min-w-0 flex-col gap-1">
         <p className="text-[13px] font-medium">
-          Postdog checked the draft against your tasks and fixed{" "}
-          {warnings.length === 1 ? "one thing" : `${warnings.length} things`}
+          Postdog checked the draft against your tasks and fixed{' '}
+          {warnings.length === 1 ? 'one thing' : `${warnings.length} things`}
         </p>
         <ul className="flex flex-col gap-0.5 text-[13px] text-muted-foreground">
           {warnings.map((warning, index) => (
@@ -129,16 +129,16 @@ export function UpdateResult({
 
   const copy = async () => {
     const result = await copyText(draft.text);
-    if (result === "manual") {
+    if (result === 'manual') {
       textarea.current?.focus();
       textarea.current?.select();
-      toast.message("Your browser blocked the clipboard", {
-        description: "The update is selected. Press Ctrl+C or ⌘+C to copy it.",
+      toast.message('Your browser blocked the clipboard', {
+        description: 'The update is selected. Press Ctrl+C or ⌘+C to copy it.',
       });
       return;
     }
     drafts.markCopied(run.id, draft.text);
-    toast.success("Copied. Paste it into Slack.");
+    toast.success('Copied. Paste it into Slack.');
   };
 
   return (

@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { idSchema, timestampSchema } from "./common";
+import { z } from 'zod';
+import { idSchema, timestampSchema } from './common';
 import {
   changesetOpStateSchema,
   changesetOpTypeSchema,
@@ -9,7 +9,7 @@ import {
   type ChangesetOpState,
   type ChangesetStatus,
   type ChangesetTaskState,
-} from "./enums";
+} from './enums';
 
 const countSchema = z.number().int().nonnegative();
 
@@ -52,28 +52,28 @@ export const changesetSummarySchema = z.object({
 });
 export type ChangesetSummary = z.infer<typeof changesetSummarySchema>;
 
-type OpStates = readonly Pick<ChangesetOp, "state">[];
+type OpStates = readonly Pick<ChangesetOp, 'state'>[];
 
 function countStates(ops: OpStates) {
   const count = (state: ChangesetOpState) => ops.filter((op) => op.state === state).length;
-  return { applied: count("applied"), rolledBack: count("rolled_back"), total: ops.length };
+  return { applied: count('applied'), rolledBack: count('rolled_back'), total: ops.length };
 }
 
 /** One task's part, from the states of its ops. See the package README. */
 export function changesetTaskStateOf(ops: OpStates): ChangesetTaskState {
   const { applied, rolledBack, total } = countStates(ops);
-  if (applied === total) return "applied";
-  if (rolledBack === total) return "rolled_back";
-  if (rolledBack === 0) return "kept";
-  return "partially_rolled_back";
+  if (applied === total) return 'applied';
+  if (rolledBack === total) return 'rolled_back';
+  if (rolledBack === 0) return 'kept';
+  return 'partially_rolled_back';
 }
 
 /** The whole changeset, from the states of all its ops. */
 export function changesetStatusOf(ops: OpStates): ChangesetStatus {
   const { applied, rolledBack, total } = countStates(ops);
-  if (applied === total) return "applied";
-  if (rolledBack === total) return "rolled_back";
-  return "partially_rolled_back";
+  if (applied === total) return 'applied';
+  if (rolledBack === total) return 'rolled_back';
+  return 'partially_rolled_back';
 }
 
 export const rollbackInputSchema = z.object({

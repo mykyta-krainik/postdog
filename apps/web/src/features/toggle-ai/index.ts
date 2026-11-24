@@ -1,1 +1,1 @@
-export { AiToggle } from "./ui/ai-toggle";
+export { AiToggle } from './ui/ai-toggle';

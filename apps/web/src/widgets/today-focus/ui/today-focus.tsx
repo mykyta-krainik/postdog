@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { LoaderCircle, RotateCw, Sparkles } from "lucide-react";
-import Link from "next/link";
-import type { ReactNode } from "react";
-import { usePlanDay } from "@/features/plan-day";
+import { LoaderCircle, RotateCw, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import type { ReactNode } from 'react';
+import { usePlanDay } from '@/features/plan-day';
 import {
   AgentRunStatus,
   MockAiBadge,
@@ -11,13 +11,13 @@ import {
   isRunBusy,
   usePlannerLatest,
   useRunningRuns,
-} from "@/entities/agent-run";
-import { ApiError } from "@/shared/api";
-import { routes } from "@/shared/config";
-import { Button } from "@/shared/ui/button";
-import { Skeleton } from "@/shared/ui/skeleton";
-import { LogoMark } from "@/shared/ui/wordmark";
-import { PlanView } from "./plan-view";
+} from '@/entities/agent-run';
+import { ApiError } from '@/shared/api';
+import { routes } from '@/shared/config';
+import { Button } from '@/shared/ui/button';
+import { Skeleton } from '@/shared/ui/skeleton';
+import { LogoMark } from '@/shared/ui/wordmark';
+import { PlanView } from './plan-view';
 
 function Message({
   title,
@@ -46,7 +46,7 @@ function PlanSkeleton() {
       <div className="flex h-10 items-center border-b border-border px-4 md:px-5">
         <Skeleton className="h-3 w-40" />
       </div>
-      {["w-3/5", "w-1/2", "w-2/3"].map((width) => (
+      {['w-3/5', 'w-1/2', 'w-2/3'].map((width) => (
         <div key={width} className="flex gap-4 border-b border-border/60 px-4 py-3 md:px-5">
           <Skeleton className="size-4" />
           <div className="flex flex-1 flex-col gap-2">
@@ -71,10 +71,10 @@ export function TodayFocus() {
   const runner = usePlanDay();
   const { runs } = useRunningRuns();
   const busy = isRunBusy(runner.view);
-  const ownRunId = "run" in runner.view ? runner.view.run.id : undefined;
-  const elsewhere = busy ? undefined : findRunning(runs, { agent: "planner" }, ownRunId);
+  const ownRunId = 'run' in runner.view ? runner.view.run.id : undefined;
+  const elsewhere = busy ? undefined : findRunning(runs, { agent: 'planner' }, ownRunId);
 
-  const planButton = (label: string, variant: "default" | "outline") => {
+  const planButton = (label: string, variant: 'default' | 'outline') => {
     if (elsewhere) {
       return (
         <div className="flex items-center gap-2">
@@ -100,12 +100,12 @@ export function TodayFocus() {
       >
         {busy ? (
           <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
-        ) : label === "Refresh" ? (
+        ) : label === 'Refresh' ? (
           <RotateCw className="size-4" aria-hidden />
         ) : (
           <Sparkles className="size-4" aria-hidden />
         )}
-        {busy ? "Planning…" : label}
+        {busy ? 'Planning…' : label}
       </Button>
     );
   };
@@ -113,7 +113,7 @@ export function TodayFocus() {
   const body = (() => {
     if (latest === undefined) {
       if (!error) return <PlanSkeleton />;
-      const unreachable = error instanceof ApiError && error.code === "network_error";
+      const unreachable = error instanceof ApiError && error.code === 'network_error';
       return (
         <Message
           title="Today's plan didn't load"
@@ -125,7 +125,7 @@ export function TodayFocus() {
               disabled={isValidating}
               onClick={() => void mutate()}
             >
-              {isValidating ? "Trying again…" : "Try again"}
+              {isValidating ? 'Trying again…' : 'Try again'}
             </Button>
           }
         >
@@ -133,13 +133,13 @@ export function TodayFocus() {
             ? "Postdog can't reach the API. Check that it is running, then try again."
             : error instanceof Error
               ? error.message
-              : "The API returned an error."}
+              : 'The API returned an error.'}
         </Message>
       );
     }
     if (latest === null) {
       return (
-        <Message title="Nothing planned yet" action={!busy && planButton("Plan my day", "default")}>
+        <Message title="Nothing planned yet" action={!busy && planButton('Plan my day', 'default')}>
           Ask Postdog what to start with.
         </Message>
       );
@@ -161,11 +161,11 @@ export function TodayFocus() {
           <h1 className="text-[15px] font-semibold tracking-[-0.01em]">Today</h1>
           <MockAiBadge aiEnabled />
         </div>
-        {latest && planButton("Refresh", "outline")}
+        {latest && planButton('Refresh', 'outline')}
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="flex w-full max-w-[820px] flex-col gap-3 pt-3">
-          {runner.view.status !== "completed" && runner.view.status !== "idle" && (
+          {runner.view.status !== 'completed' && runner.view.status !== 'idle' && (
             <AgentRunStatus
               view={runner.view}
               agent="planner"

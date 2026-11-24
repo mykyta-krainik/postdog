@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import type { DecomposerOutcome, DecomposerRun } from "@postdog/shared";
+import type { DecomposerOutcome, DecomposerRun } from '@postdog/shared';
 import {
   Ban,
   CircleCheck,
@@ -14,21 +14,21 @@ import {
   PencilLine,
   TriangleAlert,
   type LucideIcon,
-} from "lucide-react";
-import Link from "next/link";
-import { useTaskListParams } from "@/entities/task";
-import { routes } from "@/shared/config";
-import { OUTCOME_LABEL, relatedGroupText, summaryLine } from "../model/result";
+} from 'lucide-react';
+import Link from 'next/link';
+import { useTaskListParams } from '@/entities/task';
+import { routes } from '@/shared/config';
+import { OUTCOME_LABEL, relatedGroupText, summaryLine } from '../model/result';
 
 const OUTCOME_ICON: Record<DecomposerOutcome, { icon: LucideIcon; className: string }> = {
-  suggested_subtasks: { icon: ListTree, className: "text-brand" },
-  applied_subtasks: { icon: CircleCheck, className: "text-status-done" },
-  needs_clarification: { icon: MessageCircleQuestionMark, className: "text-brand" },
-  skipped: { icon: CircleSlash, className: "text-muted-foreground" },
-  duplicate: { icon: Copy, className: "text-muted-foreground" },
-  claimed: { icon: Hourglass, className: "text-muted-foreground" },
-  superseded: { icon: PencilLine, className: "text-muted-foreground" },
-  failed: { icon: Ban, className: "text-destructive" },
+  suggested_subtasks: { icon: ListTree, className: 'text-brand' },
+  applied_subtasks: { icon: CircleCheck, className: 'text-status-done' },
+  needs_clarification: { icon: MessageCircleQuestionMark, className: 'text-brand' },
+  skipped: { icon: CircleSlash, className: 'text-muted-foreground' },
+  duplicate: { icon: Copy, className: 'text-muted-foreground' },
+  claimed: { icon: Hourglass, className: 'text-muted-foreground' },
+  superseded: { icon: PencilLine, className: 'text-muted-foreground' },
+  failed: { icon: Ban, className: 'text-destructive' },
 };
 
 /**
@@ -115,10 +115,10 @@ export function DecomposeResult({
               <li key={group.suggestionId} className="flex min-w-0 items-start gap-2.5 text-[13px]">
                 <Link2
                   aria-hidden
-                  className={`mt-0.5 size-3.5 shrink-0 ${group.applied ? "text-status-done" : "text-brand"}`}
+                  className={`mt-0.5 size-3.5 shrink-0 ${group.applied ? 'text-status-done' : 'text-brand'}`}
                 />
                 <span className="min-w-0 wrap-anywhere">
-                  <span className="font-medium">{status}</span>{" "}
+                  <span className="font-medium">{status}</span>{' '}
                   <span className="text-muted-foreground">{names}</span>
                 </span>
               </li>
@@ -131,8 +131,8 @@ export function DecomposeResult({
           <TriangleAlert className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden />
           <div className="flex min-w-0 flex-col gap-1">
             <p className="text-[13px] font-medium">
-              Postdog dropped{" "}
-              {output.warnings.length === 1 ? "one item" : `${output.warnings.length} items`} that
+              Postdog dropped{' '}
+              {output.warnings.length === 1 ? 'one item' : `${output.warnings.length} items`} that
               failed its checks
             </p>
             <ul className="flex flex-col gap-0.5 text-[13px] text-muted-foreground">

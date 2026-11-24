@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { PRIORITIES, createTaskInputSchema, type CreateTaskInput } from "@postdog/shared";
-import { Controller, useForm, type FieldPath } from "react-hook-form";
-import { toast } from "sonner";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { PRIORITIES, createTaskInputSchema, type CreateTaskInput } from '@postdog/shared';
+import { Controller, useForm, type FieldPath } from 'react-hook-form';
+import { toast } from 'sonner';
 import {
   PriorityIcon,
   StatusIcon,
@@ -13,13 +13,13 @@ import {
   createTask,
   useTaskListParams,
   type CreateTaskValues,
-} from "@/entities/task";
-import { ApiError, getValidationIssues } from "@/shared/api";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Label } from "@/shared/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
-import { Textarea } from "@/shared/ui/textarea";
+} from '@/entities/task';
+import { ApiError, getValidationIssues } from '@/shared/api';
+import { Button } from '@/shared/ui/button';
+import { Input } from '@/shared/ui/input';
+import { Label } from '@/shared/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
+import { Textarea } from '@/shared/ui/textarea';
 
 const FIELDS = new Set<string>(Object.keys(createTaskInputSchema.shape));
 
@@ -30,10 +30,10 @@ function isField(path: string): path is FieldPath<CreateTaskValues> {
 /** Plain-language messages for the limits users hit. Any other issue keeps Zod's message. */
 const MESSAGES: Record<string, Partial<Record<string, string>>> = {
   title: {
-    too_small: "Give the task a title.",
-    too_big: "Keep the title under 200 characters.",
+    too_small: 'Give the task a title.',
+    too_big: 'Keep the title under 200 characters.',
   },
-  description: { too_big: "Keep the description under 10,000 characters." },
+  description: { too_big: 'Keep the description under 10,000 characters.' },
 };
 
 const resolver = zodResolver(createTaskInputSchema, {
@@ -52,10 +52,10 @@ export function CreateTaskForm({
   const form = useForm<CreateTaskValues, unknown, CreateTaskInput>({
     resolver,
     defaultValues: {
-      title: "",
-      description: "",
-      status: params.status ?? "todo",
-      priority: "medium",
+      title: '',
+      description: '',
+      status: params.status ?? 'todo',
+      priority: 'medium',
     },
   });
   const { errors, isSubmitting } = form.formState;
@@ -66,8 +66,8 @@ export function CreateTaskForm({
       toast.success(`Created ${task.identifier}`, {
         description: task.title,
         action: {
-          label: "Open",
-          onClick: () => setParams({ selectedTaskId: task.id }, { history: "push" }),
+          label: 'Open',
+          onClick: () => setParams({ selectedTaskId: task.id }, { history: 'push' }),
         },
       });
       onCreated();
@@ -79,9 +79,9 @@ export function CreateTaskForm({
         fieldErrors += 1;
       }
       if (fieldErrors === 0) {
-        form.setError("root", {
+        form.setError('root', {
           message:
-            error instanceof ApiError ? error.message : "The task was not created. Try again.",
+            error instanceof ApiError ? error.message : 'The task was not created. Try again.',
         });
       }
     }
@@ -91,7 +91,7 @@ export function CreateTaskForm({
     <form
       onSubmit={submit}
       onKeyDown={(event) => {
-        if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) void submit();
+        if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) void submit();
       }}
       noValidate
       className="flex flex-col gap-4"
@@ -104,14 +104,14 @@ export function CreateTaskForm({
           autoComplete="off"
           placeholder="What needs doing?"
           aria-invalid={errors.title ? true : undefined}
-          {...form.register("title")}
+          {...form.register('title')}
         />
         {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
       </div>
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="task-description">
-          Description{" "}
+          Description{' '}
           <span className="font-normal text-muted-foreground">(optional, markdown)</span>
         </Label>
         <Textarea
@@ -120,7 +120,7 @@ export function CreateTaskForm({
           placeholder="Add context, links or acceptance criteria"
           aria-invalid={errors.description ? true : undefined}
           className="max-h-60"
-          {...form.register("description")}
+          {...form.register('description')}
         />
         {errors.description && (
           <p className="text-xs text-destructive">{errors.description.message}</p>
@@ -185,7 +185,7 @@ export function CreateTaskForm({
           Cancel
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Creating…" : "Create task"}
+          {isSubmitting ? 'Creating…' : 'Create task'}
         </Button>
       </div>
     </form>

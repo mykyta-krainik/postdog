@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { PRIORITIES, type Priority, type Suggestion } from "@postdog/shared";
-import { X } from "lucide-react";
-import { useId, useReducer } from "react";
-import { PriorityIcon, TASK_PRIORITY_META, type TaskDetail } from "@/entities/task";
-import { Button } from "@/shared/ui/button";
+import { PRIORITIES, type Priority, type Suggestion } from '@postdog/shared';
+import { X } from 'lucide-react';
+import { useId, useReducer } from 'react';
+import { PriorityIcon, TASK_PRIORITY_META, type TaskDetail } from '@/entities/task';
+import { Button } from '@/shared/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from "@/shared/ui/dropdown-menu";
-import { Input } from "@/shared/ui/input";
-import { Textarea } from "@/shared/ui/textarea";
+} from '@/shared/ui/dropdown-menu';
+import { Input } from '@/shared/ui/input';
+import { Textarea } from '@/shared/ui/textarea';
 import {
   MIN_SUBTASKS_MESSAGE,
   checkDraft,
@@ -23,11 +23,11 @@ import {
   type DraftAction,
   type DraftItem,
   type ItemErrors,
-} from "../model/subtasks-draft";
-import { useReview } from "../model/use-review";
-import { ReviewActions } from "./review-actions";
+} from '../model/subtasks-draft';
+import { useReview } from '../model/use-review';
+import { ReviewActions } from './review-actions';
 
-type SubtasksSuggestion = Extract<Suggestion, { kind: "subtasks" }>;
+type SubtasksSuggestion = Extract<Suggestion, { kind: 'subtasks' }>;
 
 function PriorityPicker({
   label,
@@ -96,15 +96,15 @@ function DraftRow({
           aria-invalid={errors?.title ? true : undefined}
           aria-describedby={errors?.title ? `${id}-title` : undefined}
           onChange={(event) =>
-            dispatch({ type: "edit", key: item.key, field: "title", value: event.target.value })
+            dispatch({ type: 'edit', key: item.key, field: 'title', value: event.target.value })
           }
           className="h-10 min-w-0 flex-1 border-transparent bg-transparent px-2 text-[13px] shadow-none hover:border-input md:h-8 md:text-[13px] dark:bg-transparent"
         />
         <PriorityPicker
           label={`${name} priority`}
-          value={item.priority ?? "medium"}
+          value={item.priority ?? 'medium'}
           disabled={disabled}
-          onChange={(value) => dispatch({ type: "priority", key: item.key, value })}
+          onChange={(value) => dispatch({ type: 'priority', key: item.key, value })}
         />
         <Button
           variant="ghost"
@@ -112,7 +112,7 @@ function DraftRow({
           disabled={disabled}
           aria-label={`Remove ${name.toLowerCase()}`}
           title="Remove"
-          onClick={() => dispatch({ type: "remove", key: item.key })}
+          onClick={() => dispatch({ type: 'remove', key: item.key })}
           className="size-10 shrink-0 text-muted-foreground md:size-8"
         >
           <X className="size-4" aria-hidden />
@@ -132,9 +132,9 @@ function DraftRow({
         aria-invalid={errors?.description ? true : undefined}
         onChange={(event) =>
           dispatch({
-            type: "edit",
+            type: 'edit',
             key: item.key,
-            field: "description",
+            field: 'description',
             value: event.target.value,
           })
         }
@@ -154,7 +154,7 @@ export function SubtasksReview({
   task,
 }: {
   suggestion: SubtasksSuggestion;
-  task: Pick<TaskDetail, "identifier" | "updatedAt">;
+  task: Pick<TaskDetail, 'identifier' | 'updatedAt'>;
 }) {
   const [draft, dispatch] = useReducer(draftReducer, suggestion.payload, initialDraft);
   const review = useReview(suggestion.id, task.identifier);

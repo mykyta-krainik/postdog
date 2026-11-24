@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import Link from "next/link";
+import Link from 'next/link';
 import {
   StatusIcon,
   linkLabel,
   sortLinks,
   useTaskListParams,
   type TaskDetailLink,
-} from "@/entities/task";
-import { PanelSection } from "./panel-section";
+} from '@/entities/task';
+import { PanelSection } from './panel-section';
 
 /** Read-only in phase 1. Each row opens the linked task. Hidden when the task has no links. */
 export function LinksSection({ links }: { links: TaskDetailLink[] }) {

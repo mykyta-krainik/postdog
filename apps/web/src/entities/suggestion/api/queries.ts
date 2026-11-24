@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { listSuggestionsResponseSchema } from "@postdog/shared";
-import useSWR from "swr";
-import { fetcherFor } from "@/shared/api";
-import { suggestionKeys, type SuggestionsQuery } from "./keys";
+import { listSuggestionsResponseSchema } from '@postdog/shared';
+import useSWR from 'swr';
+import { fetcherFor } from '@/shared/api';
+import { suggestionKeys, type SuggestionsQuery } from './keys';
 
 const fetchSuggestions = fetcherFor(listSuggestionsResponseSchema);
 

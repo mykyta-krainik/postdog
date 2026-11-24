@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { idSchema, timestampSchema } from "./common";
+import { z } from 'zod';
+import { idSchema, timestampSchema } from './common';
 
 export const createNoteInputSchema = z.object({
   body: z.string().trim().min(1).max(5000),

@@ -1,8 +1,8 @@
-import type { z } from "zod";
-import { ApiError, apiErrorFromBody } from "./api-error";
+import type { z } from 'zod';
+import { ApiError, apiErrorFromBody } from './api-error';
 
 export type RequestOptions = {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   body?: unknown;
   signal?: AbortSignal;
 };
@@ -26,21 +26,21 @@ async function readJson(response: Response): Promise<unknown> {
 export async function apiRequest<Schema extends z.ZodType>(
   url: string,
   schema: Schema,
-  { method = "GET", body, signal }: RequestOptions = {},
+  { method = 'GET', body, signal }: RequestOptions = {},
 ): Promise<z.output<Schema>> {
   // The API answers a write without a JSON body with 415, its guard against cross-site writes.
-  const isWrite = method !== "GET";
+  const isWrite = method !== 'GET';
   let response: Response;
   try {
     response = await fetch(url, {
       method,
       signal,
-      headers: isWrite ? { "Content-Type": "application/json" } : undefined,
+      headers: isWrite ? { 'Content-Type': 'application/json' } : undefined,
       body: isWrite ? JSON.stringify(body ?? {}) : undefined,
     });
   } catch (error) {
     if (signal?.aborted) throw error;
-    throw new ApiError(0, "network_error", "Postdog can't reach the API.");
+    throw new ApiError(0, 'network_error', "Postdog can't reach the API.");
   }
 
   const json = await readJson(response);
@@ -50,7 +50,7 @@ export async function apiRequest<Schema extends z.ZodType>(
   if (!parsed.success) {
     throw new ApiError(
       response.status,
-      "unexpected_response",
+      'unexpected_response',
       `The API answered ${method} ${url} with an unexpected shape.`,
       parsed.error.issues,
     );

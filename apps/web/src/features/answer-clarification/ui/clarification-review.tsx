@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { Suggestion } from "@postdog/shared";
-import { MessageCircleQuestionMark } from "lucide-react";
-import { useId } from "react";
-import { useForm, useWatch } from "react-hook-form";
-import { cn } from "@/shared/lib/utils";
-import { Button } from "@/shared/ui/button";
-import { Textarea } from "@/shared/ui/textarea";
+import { zodResolver } from '@hookform/resolvers/zod';
+import type { Suggestion } from '@postdog/shared';
+import { MessageCircleQuestionMark } from 'lucide-react';
+import { useId } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
+import { cn } from '@/shared/lib/utils';
+import { Button } from '@/shared/ui/button';
+import { Textarea } from '@/shared/ui/textarea';
 import {
   ANSWER_MAX,
   answersFormSchema,
@@ -15,23 +15,23 @@ import {
   emptyAnswers,
   generateAnywayInput,
   type AnswerValues,
-} from "../model/clarify";
-import type { Clarifier } from "../model/use-clarify";
+} from '../model/clarify';
+import type { Clarifier } from '../model/use-clarify';
 
-type ClarificationSuggestion = Extract<Suggestion, { kind: "clarification" }>;
+type ClarificationSuggestion = Extract<Suggestion, { kind: 'clarification' }>;
 
 const resolver = zodResolver(answersFormSchema);
-const ACTION = "h-10 px-3 text-[13px] md:h-8";
+const ACTION = 'h-10 px-3 text-[13px] md:h-8';
 
 function Counter({ length }: { length: number }) {
   return (
     <span
       className={cn(
-        "text-xs tabular-nums",
-        length > ANSWER_MAX ? "text-destructive" : "text-muted-foreground",
+        'text-xs tabular-nums',
+        length > ANSWER_MAX ? 'text-destructive' : 'text-muted-foreground',
       )}
     >
-      {length}/{ANSWER_MAX.toLocaleString("en")}
+      {length}/{ANSWER_MAX.toLocaleString('en')}
     </span>
   );
 }
@@ -51,10 +51,10 @@ export function ClarificationReview({
   const { questions, whatIsUnclear } = suggestion.payload;
   const form = useForm<AnswerValues>({
     resolver,
-    mode: "onTouched",
+    mode: 'onTouched',
     defaultValues: emptyAnswers(questions),
   });
-  const answers = useWatch({ control: form.control, name: "answers" });
+  const answers = useWatch({ control: form.control, name: 'answers' });
   const { errors } = form.formState;
   const disabled = clarifier.busy;
 

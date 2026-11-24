@@ -1,29 +1,29 @@
-"use client";
+'use client';
 
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { routes } from "@/shared/config";
-import { cn } from "@/shared/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
-import { Wordmark } from "@/shared/ui/wordmark";
-import { useRunningRuns } from "@/entities/agent-run";
-import { UnreadCountBadge, useUnreadCount } from "@/entities/notification";
-import { useSettings } from "@/entities/settings";
-import { isActive, navItemsFor } from "../config/nav";
-import { RunningMark } from "./running-mark";
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useState } from 'react';
+import { routes } from '@/shared/config';
+import { cn } from '@/shared/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip';
+import { Wordmark } from '@/shared/ui/wordmark';
+import { useRunningRuns } from '@/entities/agent-run';
+import { UnreadCountBadge, useUnreadCount } from '@/entities/notification';
+import { useSettings } from '@/entities/settings';
+import { isActive, navItemsFor } from '../config/nav';
+import { RunningMark } from './running-mark';
 
 /** Labels hide on the tablet rail until it is expanded. Desktop always shows them. */
-const RAIL_HIDDEN = "md:max-lg:group-data-[expanded=false]/sidebar:sr-only";
+const RAIL_HIDDEN = 'md:max-lg:group-data-[expanded=false]/sidebar:sr-only';
 
 /** On the collapsed tablet rail the badge sits on the icon's corner. */
 const RAIL_CORNER =
-  "ml-auto md:max-lg:group-data-[expanded=false]/sidebar:absolute md:max-lg:group-data-[expanded=false]/sidebar:-top-1 md:max-lg:group-data-[expanded=false]/sidebar:right-0";
+  'ml-auto md:max-lg:group-data-[expanded=false]/sidebar:absolute md:max-lg:group-data-[expanded=false]/sidebar:-top-1 md:max-lg:group-data-[expanded=false]/sidebar:right-0';
 
 /** Only on the collapsed tablet rail: a dot on the icon's corner instead of the running count. */
 const RAIL_ONLY_DOT =
-  "hidden md:max-lg:group-data-[expanded=false]/sidebar:block absolute top-1 right-1.5 size-2 rounded-full bg-brand ring-2 ring-sidebar";
+  'hidden md:max-lg:group-data-[expanded=false]/sidebar:block absolute top-1 right-1.5 size-2 rounded-full bg-brand ring-2 ring-sidebar';
 
 /** Tablet: a collapsible icon rail. Desktop: the full sidebar. Hidden on mobile. */
 export function Sidebar() {
@@ -56,11 +56,11 @@ export function Sidebar() {
               <TooltipTrigger asChild>
                 <Link
                   href={href}
-                  aria-current={active ? "page" : undefined}
+                  aria-current={active ? 'page' : undefined}
                   className={cn(
-                    "relative flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium outline-none",
-                    "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-1 focus-visible:ring-ring",
-                    active && "bg-sidebar-accent text-sidebar-accent-foreground",
+                    'relative flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium outline-none',
+                    'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-1 focus-visible:ring-ring',
+                    active && 'bg-sidebar-accent text-sidebar-accent-foreground',
                   )}
                 >
                   <Icon className="size-4 shrink-0" aria-hidden />
@@ -89,7 +89,7 @@ export function Sidebar() {
           type="button"
           onClick={() => setExpanded((value) => !value)}
           aria-expanded={expanded}
-          aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
+          aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
           className="flex cursor-pointer h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[13px] text-muted-foreground outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-1 focus-visible:ring-ring"
         >
           <ToggleIcon className="size-4 shrink-0" aria-hidden />

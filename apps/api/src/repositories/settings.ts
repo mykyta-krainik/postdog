@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
-import type { Executor } from "../db/client";
-import { settings, type SettingKey, type StoredSettings } from "../db/schema";
+import { eq } from 'drizzle-orm';
+import type { Executor } from '../db/client';
+import { settings, type SettingKey, type StoredSettings } from '../db/schema';
 
 export function getSetting<K extends SettingKey>(
   ex: Executor,

@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import type { AgentName, AgentRun } from "@postdog/shared";
-import { AlertTriangle, CircleSlash, LoaderCircle, RotateCw } from "lucide-react";
-import type { ReactNode } from "react";
-import { errorMessage } from "@/shared/lib/form-errors";
-import { cn } from "@/shared/lib/utils";
-import { Button } from "@/shared/ui/button";
-import { AGENT_ERROR_LABEL, AGENT_META } from "../model/agents";
-import type { RunView } from "../model/run-view";
-import { progressText } from "../model/trace";
-import { TraceTimeline } from "./trace-timeline";
+import type { AgentName, AgentRun } from '@postdog/shared';
+import { AlertTriangle, CircleSlash, LoaderCircle, RotateCw } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { errorMessage } from '@/shared/lib/form-errors';
+import { cn } from '@/shared/lib/utils';
+import { Button } from '@/shared/ui/button';
+import { AGENT_ERROR_LABEL, AGENT_META } from '../model/agents';
+import type { RunView } from '../model/run-view';
+import { progressText } from '../model/trace';
+import { TraceTimeline } from './trace-timeline';
 
-const ACTION_BUTTON = "h-10 shrink-0 gap-1.5 px-3 text-[13px] md:h-8";
+const ACTION_BUTTON = 'h-10 shrink-0 gap-1.5 px-3 text-[13px] md:h-8';
 
 function Notice({
   tone,
@@ -20,7 +20,7 @@ function Notice({
   action,
   children,
 }: {
-  tone: "error" | "quiet";
+  tone: 'error' | 'quiet';
   icon: ReactNode;
   title: string;
   action?: ReactNode;
@@ -28,10 +28,10 @@ function Notice({
 }) {
   return (
     <div
-      role={tone === "error" ? "alert" : "status"}
+      role={tone === 'error' ? 'alert' : 'status'}
       className={cn(
-        "flex items-start gap-3 rounded-md border px-3 py-2.5",
-        tone === "error" ? "border-destructive/35 bg-destructive/5" : "border-border bg-muted/40",
+        'flex items-start gap-3 rounded-md border px-3 py-2.5',
+        tone === 'error' ? 'border-destructive/35 bg-destructive/5' : 'border-border bg-muted/40',
       )}
     >
       <span className="mt-0.5 shrink-0">{icon}</span>
@@ -44,7 +44,7 @@ function Notice({
   );
 }
 
-function RetryButton({ onRetry, label = "Retry" }: { onRetry?: () => void; label?: string }) {
+function RetryButton({ onRetry, label = 'Retry' }: { onRetry?: () => void; label?: string }) {
   if (!onRetry) return null;
   return (
     <Button variant="outline" size="sm" className={ACTION_BUTTON} onClick={onRetry}>
@@ -117,20 +117,20 @@ export function AgentRunStatus<Run extends AgentRun>({
 
   const body = (() => {
     switch (view.status) {
-      case "idle":
+      case 'idle':
         return null;
-      case "starting":
+      case 'starting':
         return <Working agent={agent} onCancel={onCancel} />;
-      case "running":
+      case 'running':
         return <Working agent={agent} run={view.run} onCancel={onCancel} />;
-      case "completed":
+      case 'completed':
         return (
           <>
             {result?.(view.run)}
             <TraceTimeline trace={view.run.trace} />
           </>
         );
-      case "failed": {
+      case 'failed': {
         const error = view.run.error;
         return (
           <>
@@ -143,7 +143,7 @@ export function AgentRunStatus<Run extends AgentRun>({
               <p className="text-[13px] text-muted-foreground">
                 {error
                   ? `${AGENT_ERROR_LABEL[error.code]}. ${error.message}`
-                  : "The API gave no reason."}
+                  : 'The API gave no reason.'}
               </p>
               {error && (
                 <p className="text-xs text-muted-foreground">
@@ -155,7 +155,7 @@ export function AgentRunStatus<Run extends AgentRun>({
           </>
         );
       }
-      case "cancelled":
+      case 'cancelled':
         return (
           <>
             <Notice
@@ -167,7 +167,7 @@ export function AgentRunStatus<Run extends AgentRun>({
             <TraceTimeline trace={view.run.trace} />
           </>
         );
-      case "request_failed":
+      case 'request_failed':
         return (
           <Notice
             tone="error"
@@ -176,7 +176,7 @@ export function AgentRunStatus<Run extends AgentRun>({
             action={<RetryButton onRetry={onRetry} />}
           >
             <p className="text-[13px] text-muted-foreground">
-              {errorMessage(view.error, "The API returned an error.")}
+              {errorMessage(view.error, 'The API returned an error.')}
             </p>
           </Notice>
         );
@@ -184,5 +184,5 @@ export function AgentRunStatus<Run extends AgentRun>({
   })();
 
   if (!body) return null;
-  return <div className={cn("flex min-w-0 flex-col gap-1.5", className)}>{body}</div>;
+  return <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>{body}</div>;
 }

@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { createNoteInputSchema, idSchema, type StatusUpdaterRun } from "@postdog/shared";
-import { MessageSquareText } from "lucide-react";
-import { useId } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Button } from "@/shared/ui/button";
-import { Textarea } from "@/shared/ui/textarea";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createNoteInputSchema, idSchema, type StatusUpdaterRun } from '@postdog/shared';
+import { MessageSquareText } from 'lucide-react';
+import { useId } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { Button } from '@/shared/ui/button';
+import { Textarea } from '@/shared/ui/textarea';
 import {
   NOTE_MAX_LENGTH,
   notesInput,
   type NoteValues,
   type NotesRequest as NotesRequestOutput,
-} from "../model/status-update";
-import type { StatusUpdater } from "../model/use-status-update";
+} from '../model/status-update';
+import type { StatusUpdater } from '../model/use-status-update';
 
 const noteBody = createNoteInputSchema.shape.body;
 
@@ -23,8 +23,8 @@ const notesFormSchema = z.object({
   notes: z.array(
     z.object({
       taskId: idSchema,
-      body: z.string().refine((body) => body.trim() === "" || noteBody.safeParse(body).success, {
-        message: `Keep notes under ${NOTE_MAX_LENGTH.toLocaleString("en")} characters.`,
+      body: z.string().refine((body) => body.trim() === '' || noteBody.safeParse(body).success, {
+        message: `Keep notes under ${NOTE_MAX_LENGTH.toLocaleString('en')} characters.`,
       }),
     }),
   ),
@@ -45,7 +45,7 @@ export function NotesRequest({
   const id = useId();
   const form = useForm<NoteValues>({
     resolver,
-    defaultValues: { notes: output.tasks.map((task) => ({ taskId: task.taskId, body: "" })) },
+    defaultValues: { notes: output.tasks.map((task) => ({ taskId: task.taskId, body: '' })) },
   });
   const { errors } = form.formState;
 
@@ -53,8 +53,8 @@ export function NotesRequest({
     const next = notesInput(run.input, values);
     if (next) updater.run(next);
     else {
-      form.setError("root", {
-        message: "Write a note for at least one task. Leave the others empty to skip them.",
+      form.setError('root', {
+        message: 'Write a note for at least one task. Leave the others empty to skip them.',
       });
     }
   });
@@ -82,7 +82,7 @@ export function NotesRequest({
               <label htmlFor={fieldId} className="flex min-w-0 items-baseline gap-2 text-[13px]">
                 <span className="shrink-0 text-muted-foreground tabular-nums">
                   {task.identifier}
-                </span>{" "}
+                </span>{' '}
                 <span className="min-w-0 truncate font-medium">{task.title}</span>
               </label>
               <Textarea
@@ -92,7 +92,7 @@ export function NotesRequest({
                 aria-invalid={error ? true : undefined}
                 className="min-h-14 leading-relaxed md:text-[13px]"
                 {...form.register(`notes.${index}.body`, {
-                  onChange: () => form.clearErrors("root"),
+                  onChange: () => form.clearErrors('root'),
                 })}
               />
               {error && <p className="text-xs text-destructive">{error}</p>}

@@ -1,1 +1,1 @@
-export { TodayPage, metadata } from "./ui/today-page";
+export { TodayPage, metadata } from './ui/today-page';

@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import type { TraceStep, TraceStepType } from "@postdog/shared";
-import { ChevronRight, ShieldCheck, Sparkles, Wrench, type LucideIcon } from "lucide-react";
-import { formatCompactNumber, formatDuration } from "@/shared/lib/format";
-import { cn } from "@/shared/lib/utils";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/ui/collapsible";
-import { describeStep, summarizeTrace } from "../model/trace";
+import type { TraceStep, TraceStepType } from '@postdog/shared';
+import { ChevronRight, ShieldCheck, Sparkles, Wrench, type LucideIcon } from 'lucide-react';
+import { formatCompactNumber, formatDuration } from '@/shared/lib/format';
+import { cn } from '@/shared/lib/utils';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/collapsible';
+import { describeStep, summarizeTrace } from '../model/trace';
 
 const STEP_ICON: Record<TraceStepType, { icon: LucideIcon; label: string; className: string }> = {
-  llm: { icon: Sparkles, label: "Model call", className: "text-brand" },
-  tool: { icon: Wrench, label: "Tool call", className: "text-muted-foreground" },
-  validation: { icon: ShieldCheck, label: "Validation", className: "text-status-done" },
+  llm: { icon: Sparkles, label: 'Model call', className: 'text-brand' },
+  tool: { icon: Wrench, label: 'Tool call', className: 'text-muted-foreground' },
+  validation: { icon: ShieldCheck, label: 'Validation', className: 'text-status-done' },
 };
 
 function totals(trace: readonly TraceStep[]) {
@@ -31,7 +31,7 @@ function StepRow({ step }: { step: TraceStep }) {
       <span className="flex w-5 shrink-0 justify-end pt-px text-xs text-muted-foreground tabular-nums">
         {step.step}
       </span>
-      <Icon role="img" aria-label={label} className={cn("mt-0.5 size-3.5 shrink-0", className)} />
+      <Icon role="img" aria-label={label} className={cn('mt-0.5 size-3.5 shrink-0', className)} />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <div className="flex items-baseline gap-2">
           <span className="min-w-0 flex-1 truncate text-[13px] text-foreground">
@@ -66,7 +66,7 @@ function StepRow({ step }: { step: TraceStep }) {
  */
 export function TraceTimeline({
   trace,
-  title = "How Postdog got here",
+  title = 'How Postdog got here',
   defaultOpen = false,
   className,
 }: {
@@ -79,7 +79,7 @@ export function TraceTimeline({
   const summary = summarizeTrace(trace);
 
   return (
-    <Collapsible defaultOpen={defaultOpen} className={cn("group/trace min-w-0", className)}>
+    <Collapsible defaultOpen={defaultOpen} className={cn('group/trace min-w-0', className)}>
       <CollapsibleTrigger className="flex min-h-10 w-full min-w-0 items-center gap-2 rounded-md px-1.5 text-left text-xs text-muted-foreground outline-none hover:bg-accent/50 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring md:min-h-8">
         <ChevronRight
           className="size-3.5 shrink-0 transition-transform duration-150 group-data-[state=open]/trace:rotate-90"
@@ -88,7 +88,7 @@ export function TraceTimeline({
         <span className="shrink-0 font-medium text-foreground/80">{title}</span>
         <span className="min-w-0 flex-1 truncate max-md:hidden">{summary}</span>
         <span className="ml-auto shrink-0 tabular-nums">
-          {trace.length} {trace.length === 1 ? "step" : "steps"}
+          {trace.length} {trace.length === 1 ? 'step' : 'steps'}
           <span className="ml-2">{formatDuration(durationMs)}</span>
           {tokens > 0 && (
             <span className="ml-2 max-md:hidden">{formatCompactNumber(tokens)} tok</span>

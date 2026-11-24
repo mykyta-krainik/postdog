@@ -1,9 +1,9 @@
-import type { Request, RequestHandler } from "express";
-import type { ZodType } from "zod";
-import { validationError } from "../lib/errors";
+import type { Request, RequestHandler } from 'express';
+import type { ZodType } from 'zod';
+import { validationError } from '../lib/errors';
 
-type DefaultParams = Request["params"];
-type DefaultQuery = Request["query"];
+type DefaultParams = Request['params'];
+type DefaultQuery = Request['query'];
 
 /**
  * Parses each request part with its schema and replaces it with the parsed value,
@@ -24,7 +24,7 @@ export function validate<P = DefaultParams, Q = DefaultQuery, B = unknown>(schem
       const result = schema.safeParse(value);
       if (result.success) return result.data;
       for (const issue of result.error.issues) {
-        issues.push({ path: issue.path.join("."), message: issue.message });
+        issues.push({ path: issue.path.join('.'), message: issue.message });
       }
       return value;
     };
@@ -35,7 +35,7 @@ export function validate<P = DefaultParams, Q = DefaultQuery, B = unknown>(schem
     if (issues.length > 0) return next(validationError(issues));
 
     req.params = params as P;
-    Object.defineProperty(req, "query", { value: query, enumerable: true });
+    Object.defineProperty(req, 'query', { value: query, enumerable: true });
     req.body = body as B;
     next();
   };

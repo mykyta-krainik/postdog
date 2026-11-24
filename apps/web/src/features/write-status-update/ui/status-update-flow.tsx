@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { CircleSlash, RotateCw } from "lucide-react";
-import { AgentRunStatus, TraceTimeline } from "@/entities/agent-run";
-import { Button } from "@/shared/ui/button";
-import type { StatusUpdater } from "../model/use-status-update";
-import { NotesRequest } from "./notes-request";
-import { UpdateResult } from "./update-result";
+import { CircleSlash, RotateCw } from 'lucide-react';
+import { AgentRunStatus, TraceTimeline } from '@/entities/agent-run';
+import { Button } from '@/shared/ui/button';
+import type { StatusUpdater } from '../model/use-status-update';
+import { NotesRequest } from './notes-request';
+import { UpdateResult } from './update-result';
 
 /** Every state of one status update: progress and Cancel, the draft, the request for notes, or what failed. */
 export function StatusUpdateFlow({ updater }: { updater: StatusUpdater }) {
   const { view } = updater;
 
   switch (view.kind) {
-    case "idle":
+    case 'idle':
       return null;
-    case "run_state":
+    case 'run_state':
       return (
         <AgentRunStatus
           view={view.view}
@@ -23,7 +23,7 @@ export function StatusUpdateFlow({ updater }: { updater: StatusUpdater }) {
           onRetry={updater.retry}
         />
       );
-    case "update":
+    case 'update':
       return (
         <div className="flex min-w-0 flex-col gap-3">
           <UpdateResult
@@ -36,14 +36,14 @@ export function StatusUpdateFlow({ updater }: { updater: StatusUpdater }) {
           <TraceTimeline trace={view.run.trace} />
         </div>
       );
-    case "needs_notes":
+    case 'needs_notes':
       return (
         <div className="flex min-w-0 flex-col gap-3">
           <NotesRequest key={view.run.id} run={view.run} output={view.output} updater={updater} />
           <TraceTimeline trace={view.run.trace} />
         </div>
       );
-    case "empty":
+    case 'empty':
       return (
         <div className="flex min-w-0 flex-col gap-1.5">
           <div

@@ -1,1 +1,1 @@
-export { AgentTrace } from "./ui/agent-trace";
+export { AgentTrace } from './ui/agent-trace';

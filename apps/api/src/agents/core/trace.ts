@@ -1,16 +1,16 @@
-import type { AgentUsage, TraceStep } from "@postdog/shared";
+import type { AgentUsage, TraceStep } from '@postdog/shared';
 
 export const TRACE_INPUT_MAX = 500;
 const SUMMARY_MAX = 500;
 
-export type TraceEntry = Omit<TraceStep, "step" | "input"> & { input: unknown };
+export type TraceEntry = Omit<TraceStep, 'step' | 'input'> & { input: unknown };
 
 export function truncate(text: string, max: number): string {
   return text.length <= max ? text : `${text.slice(0, max - 1)}…`;
 }
 
 export function toText(value: unknown): string {
-  if (typeof value === "string") return value;
+  if (typeof value === 'string') return value;
   return JSON.stringify(value) ?? String(value);
 }
 

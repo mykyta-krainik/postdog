@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Link2, ListTree } from "lucide-react";
-import { Button } from "@/shared/ui/button";
+import { Link2, ListTree } from 'lucide-react';
+import { Button } from '@/shared/ui/button';
 import {
   Dialog,
   DialogClose,
@@ -10,11 +10,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/shared/ui/dialog";
+} from '@/shared/ui/dialog';
 
 const AUTO_MAY = [
-  { icon: ListTree, text: "Create subtasks under the tasks it splits" },
-  { icon: Link2, text: "Add relates links between overlapping tasks" },
+  { icon: ListTree, text: 'Create subtasks under the tasks it splits' },
+  { icon: Link2, text: 'Add relates links between overlapping tasks' },
 ] as const;
 
 /** Explains what Auto may change before the user turns it on. Closing it keeps Suggest. */

@@ -4,17 +4,17 @@ import type {
   ProposeSubtasksInput,
   RelatedPayload,
   SubtasksPayload,
-} from "@postdog/shared";
-import type { Executor } from "../../db/client";
-import type { TaskRow } from "../../db/schema";
-import { findTask, listTasks } from "../../repositories/tasks";
-import { findLink } from "../../repositories/links";
-import { truncate } from "../core/trace";
+} from '@postdog/shared';
+import type { Executor } from '../../db/client';
+import type { TaskRow } from '../../db/schema';
+import { findTask, listTasks } from '../../repositories/tasks';
+import { findLink } from '../../repositories/links';
+import { truncate } from '../core/trace';
 
 export type Decision =
-  | { kind: "subtasks"; payload: SubtasksPayload }
-  | { kind: "clarification"; payload: ClarificationPayload }
-  | { kind: "skip"; detail: string };
+  | { kind: 'subtasks'; payload: SubtasksPayload }
+  | { kind: 'clarification'; payload: ClarificationPayload }
+  | { kind: 'skip'; detail: string };
 
 export interface Dropped {
   item: unknown;
@@ -28,7 +28,7 @@ function warning(message: string, taskId?: number): AgentWarning {
 }
 
 function groupKey(taskIds: readonly number[]): string {
-  return [...taskIds].sort((a, b) => a - b).join(",");
+  return [...taskIds].sort((a, b) => a - b).join(',');
 }
 
 export function sameGroup(a: readonly number[], b: readonly number[]): boolean {
@@ -40,7 +40,7 @@ function whyNotGroupable(ex: Executor, id: number, batchIds: ReadonlySet<number>
   const task = findTask(ex, id);
   if (!task) return `task ${id} does not exist`;
   if (task.parentId !== null) return `${task.identifier} is a subtask`;
-  if (task.status === "done") return `${task.identifier} is done`;
+  if (task.status === 'done') return `${task.identifier} is done`;
   return null;
 }
 
@@ -64,27 +64,27 @@ export function checkRelatedGroups(
     }
     const drop = (why: string) =>
       dropped.push({ item: group, warning: warning(`Dropped a related group: ${why}.`) });
-    if (taskIds.length < 2) drop("fewer than 2 valid tasks were left");
-    else if (!taskIds.some((id) => batchIds.has(id))) drop("none of its tasks is in this run");
-    else if (kept.some((other) => sameGroup(other.taskIds, taskIds))) drop("it repeats a group");
-    else if (isAlreadyLinked(ex, group.relation, taskIds)) drop("its tasks are already linked");
+    if (taskIds.length < 2) drop('fewer than 2 valid tasks were left');
+    else if (!taskIds.some((id) => batchIds.has(id))) drop('none of its tasks is in this run');
+    else if (kept.some((other) => sameGroup(other.taskIds, taskIds))) drop('it repeats a group');
+    else if (isAlreadyLinked(ex, group.relation, taskIds)) drop('its tasks are already linked');
     else kept.push({ ...group, taskIds: [...taskIds].sort((a, b) => a - b) });
   }
   return { groups: kept, dropped };
 }
 
 /** Accepting a related suggestion links the lowest id to every other task (a star). */
-function isAlreadyLinked(ex: Executor, relation: RelatedPayload["relation"], taskIds: number[]) {
+function isAlreadyLinked(ex: Executor, relation: RelatedPayload['relation'], taskIds: number[]) {
   const [first, ...rest] = [...taskIds].sort((a, b) => a - b);
   if (first === undefined) return false;
-  const type = relation === "duplicates" ? "duplicates" : "relates";
+  const type = relation === 'duplicates' ? 'duplicates' : 'relates';
   return rest.every(
     (id) =>
       findLink(ex, first, id, type) !== undefined || findLink(ex, id, first, type) !== undefined,
   );
 }
 
-const normalize = (title: string) => title.trim().replace(/\s+/g, " ").toLowerCase();
+const normalize = (title: string) => title.trim().replace(/\s+/g, ' ').toLowerCase();
 
 /**
  * Drops subtasks that repeat the task's title, an existing subtask or an earlier
@@ -97,12 +97,12 @@ export function checkProposal(
 ): { decision: Decision; dropped: Dropped[] } {
   const parentTitle = normalize(task.title);
   const existing = new Set(
-    listTasks(ex, { parentId: task.id, sort: "createdAt", order: "asc" }).map((s) =>
+    listTasks(ex, { parentId: task.id, sort: 'createdAt', order: 'asc' }).map((s) =>
       normalize(s.title),
     ),
   );
   const seen = new Set<string>();
-  const kept: SubtasksPayload["subtasks"] = [];
+  const kept: SubtasksPayload['subtasks'] = [];
   const dropped: Dropped[] = [];
 
   for (const subtask of proposal.subtasks) {
@@ -111,9 +111,9 @@ export function checkProposal(
       key === parentTitle
         ? "it repeats the task's own title"
         : existing.has(key)
-          ? "it duplicates an existing subtask"
+          ? 'it duplicates an existing subtask'
           : seen.has(key)
-            ? "it duplicates another proposed subtask"
+            ? 'it duplicates another proposed subtask'
             : null;
     if (why) {
       dropped.push({
@@ -132,9 +132,9 @@ export function checkProposal(
   if (kept.length < 2) {
     const why =
       kept.length === 0
-        ? "all proposed subtasks were duplicates"
-        : "only one proposed subtask was not a duplicate";
-    return { decision: { kind: "skip", detail: `already_atomic: ${why}` }, dropped };
+        ? 'all proposed subtasks were duplicates'
+        : 'only one proposed subtask was not a duplicate';
+    return { decision: { kind: 'skip', detail: `already_atomic: ${why}` }, dropped };
   }
-  return { decision: { kind: "subtasks", payload: { ...proposal, subtasks: kept } }, dropped };
+  return { decision: { kind: 'subtasks', payload: { ...proposal, subtasks: kept } }, dropped };
 }

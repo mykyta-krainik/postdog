@@ -1,8 +1,8 @@
-import { STALE_IN_PROGRESS_DAYS, type PlannerContextRow } from "@postdog/shared";
-import type { Executor } from "../db/client";
-import type { TaskLinkRow, TaskRow } from "../db/schema";
-import { listLinksOfType } from "../repositories/links";
-import { listAllTasks } from "../repositories/tasks";
+import { STALE_IN_PROGRESS_DAYS, type PlannerContextRow } from '@postdog/shared';
+import type { Executor } from '../db/client';
+import type { TaskLinkRow, TaskRow } from '../db/schema';
+import { listLinksOfType } from '../repositories/links';
+import { listAllTasks } from '../repositories/tasks';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -27,13 +27,13 @@ export function wholeDaysBetween(from: number, to: number): number {
 
 export function computeTaskFacts(
   tasks: readonly TaskRow[],
-  blockLinks: readonly Pick<TaskLinkRow, "fromTaskId" | "toTaskId">[],
+  blockLinks: readonly Pick<TaskLinkRow, 'fromTaskId' | 'toTaskId'>[],
   now: number,
 ): TaskFacts[] {
   const byId = new Map(tasks.map((task) => [task.id, task]));
   const isOpen = (id: number) => {
     const task = byId.get(id);
-    return task !== undefined && task.status !== "done";
+    return task !== undefined && task.status !== 'done';
   };
 
   return tasks.map((task) => {
@@ -56,18 +56,18 @@ export function computeTaskFacts(
       statusChangedAt: task.statusChangedAt,
       ageDays: wholeDaysBetween(task.createdAt, now),
       daysInStatus,
-      subtaskDone: subtasks.filter((t) => t.status === "done").length,
+      subtaskDone: subtasks.filter((t) => t.status === 'done').length,
       subtaskTotal: subtasks.length,
       blocksOpenCount: blockLinks.filter(
         (link) => link.fromTaskId === task.id && isOpen(link.toTaskId),
       ).length,
       isBlocked: openBlockers.length > 0,
-      isStale: task.status === "in_progress" && daysInStatus > STALE_IN_PROGRESS_DAYS,
+      isStale: task.status === 'in_progress' && daysInStatus > STALE_IN_PROGRESS_DAYS,
       openBlockers,
     };
   });
 }
 
 export function loadTaskFacts(ex: Executor, now: number): TaskFacts[] {
-  return computeTaskFacts(listAllTasks(ex), listLinksOfType(ex, "blocks"), now);
+  return computeTaskFacts(listAllTasks(ex), listLinksOfType(ex, 'blocks'), now);
 }

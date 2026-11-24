@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from 'react';
 import {
   DARK_QUERY,
   DEFAULT_THEME,
@@ -9,7 +9,7 @@ import {
   resolveTheme,
   type ResolvedTheme,
   type ThemePreference,
-} from "./theme";
+} from './theme';
 
 const listeners = new Set<() => void>();
 
@@ -28,7 +28,7 @@ function readResolvedTheme(): ResolvedTheme {
 function applyResolvedTheme() {
   const theme = readResolvedTheme();
   const root = document.documentElement;
-  root.classList.toggle("dark", theme === "dark");
+  root.classList.toggle('dark', theme === 'dark');
   root.style.colorScheme = theme;
 }
 
@@ -67,11 +67,11 @@ export function ThemeSync() {
     const onStorage = (event: StorageEvent) => {
       if (event.key === THEME_STORAGE_KEY) notify();
     };
-    media.addEventListener("change", notify);
-    window.addEventListener("storage", onStorage);
+    media.addEventListener('change', notify);
+    window.addEventListener('storage', onStorage);
     return () => {
-      media.removeEventListener("change", notify);
-      window.removeEventListener("storage", onStorage);
+      media.removeEventListener('change', notify);
+      window.removeEventListener('storage', onStorage);
     };
   }, []);
   return null;

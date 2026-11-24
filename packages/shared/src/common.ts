@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const idSchema = z.number().int().positive();
 
@@ -7,7 +7,7 @@ export function distinctIdsSchema(min: number, max: number) {
     .array(idSchema)
     .min(min)
     .max(max)
-    .refine((ids) => new Set(ids).size === ids.length, "Ids must be distinct");
+    .refine((ids) => new Set(ids).size === ids.length, 'Ids must be distinct');
 }
 
 export const timestampSchema = z.number().int().nonnegative();

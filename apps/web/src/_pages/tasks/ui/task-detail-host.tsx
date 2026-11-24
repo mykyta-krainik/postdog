@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
-import { SuggestionReview } from "@/widgets/suggestion-review";
-import { TaskDetailPanel } from "@/widgets/task-detail-panel";
-import type { TaskDetail } from "@/entities/task";
-import { MEDIA } from "@/shared/config";
-import { useMediaQuery } from "@/shared/lib/use-media-query";
-import { Sheet, SheetContent, SheetTitle } from "@/shared/ui/sheet";
+import { useEffect, useRef } from 'react';
+import { SuggestionReview } from '@/widgets/suggestion-review';
+import { TaskDetailPanel } from '@/widgets/task-detail-panel';
+import type { TaskDetail } from '@/entities/task';
+import { MEDIA } from '@/shared/config';
+import { useMediaQuery } from '@/shared/lib/use-media-query';
+import { Sheet, SheetContent, SheetTitle } from '@/shared/ui/sheet';
 
 /**
  * Places the selected task by width. Desktop: a side panel next to the list.

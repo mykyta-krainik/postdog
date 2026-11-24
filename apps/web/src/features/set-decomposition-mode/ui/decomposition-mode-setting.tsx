@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { DECOMPOSITION_MODES, type DecompositionMode } from "@postdog/shared";
-import { useId, useState } from "react";
-import { toast } from "sonner";
-import { updateSettings } from "@/entities/settings";
-import { RadioGroup, RadioGroupItem } from "@/shared/ui/radio-group";
-import { MODE_OPTIONS, needsConfirmation } from "../model/mode-change";
-import { AutoModeDialog } from "./auto-mode-dialog";
+import { DECOMPOSITION_MODES, type DecompositionMode } from '@postdog/shared';
+import { useId, useState } from 'react';
+import { toast } from 'sonner';
+import { updateSettings } from '@/entities/settings';
+import { RadioGroup, RadioGroupItem } from '@/shared/ui/radio-group';
+import { MODE_OPTIONS, needsConfirmation } from '../model/mode-change';
+import { AutoModeDialog } from './auto-mode-dialog';
 
 /** Suggest or Auto. An AI setting, so the page renders it only while AI is on. */
 export function DecompositionModeSetting({ mode }: { mode: DecompositionMode }) {
@@ -18,7 +18,7 @@ export function DecompositionModeSetting({ mode }: { mode: DecompositionMode }) 
       await updateSettings({ decompositionMode: next });
     } catch (error) {
       toast.error(`Decomposition is still ${MODE_OPTIONS[mode].label}`, {
-        description: error instanceof Error ? error.message : "The API rejected the change.",
+        description: error instanceof Error ? error.message : 'The API rejected the change.',
       });
     }
   }
@@ -78,7 +78,7 @@ export function DecompositionModeSetting({ mode }: { mode: DecompositionMode }) 
         onOpenChange={setConfirming}
         onConfirm={() => {
           setConfirming(false);
-          void save("auto");
+          void save('auto');
         }}
       />
     </div>

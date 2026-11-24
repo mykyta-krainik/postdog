@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import type { ChangesetSummary } from "@postdog/shared";
-import { Undo2 } from "lucide-react";
-import { useState } from "react";
-import { RollbackDialog } from "@/features/rollback-changeset";
-import { ChangesetTaskRow, canRollBackChangeset, canRollBackTask } from "@/entities/notification";
-import { Button } from "@/shared/ui/button";
+import type { ChangesetSummary } from '@postdog/shared';
+import { Undo2 } from 'lucide-react';
+import { useState } from 'react';
+import { RollbackDialog } from '@/features/rollback-changeset';
+import { ChangesetTaskRow, canRollBackChangeset, canRollBackTask } from '@/entities/notification';
+import { Button } from '@/shared/ui/button';
 
-const ROLLBACK = "h-10 gap-1.5 px-3 text-[13px] md:h-8";
+const ROLLBACK = 'h-10 gap-1.5 px-3 text-[13px] md:h-8';
 
 type Scope = { taskId?: number; label: string };
 
@@ -35,7 +35,7 @@ export function AutoDecompositionDetails({ changeset }: { changeset: ChangesetSu
                   disabled={scope !== null}
                   aria-label={`Roll back ${task.identifier ?? `task #${task.taskId}`}`}
                   onClick={() =>
-                    setScope({ taskId: task.taskId, label: task.identifier ?? "this task" })
+                    setScope({ taskId: task.taskId, label: task.identifier ?? 'this task' })
                   }
                 >
                   <Undo2 aria-hidden />
@@ -52,13 +52,13 @@ export function AutoDecompositionDetails({ changeset }: { changeset: ChangesetSu
           size="sm"
           className={`${ROLLBACK} self-start`}
           disabled={scope !== null}
-          onClick={() => setScope({ label: "everything" })}
+          onClick={() => setScope({ label: 'everything' })}
         >
           <Undo2 aria-hidden />
           Roll back everything
         </Button>
       )}
-      {changeset.status === "rolled_back" && (
+      {changeset.status === 'rolled_back' && (
         <p className="text-xs text-muted-foreground">Everything this run created was removed.</p>
       )}
       {scope && (

@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { sortOrderSchema, taskSortSchema, type SortOrder, type TaskSort } from "@postdog/shared";
-import { ArrowDownWideNarrow, ArrowUpNarrowWide } from "lucide-react";
-import { useTaskListParams } from "@/entities/task";
-import { Button } from "@/shared/ui/button";
+import { sortOrderSchema, taskSortSchema, type SortOrder, type TaskSort } from '@postdog/shared';
+import { ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react';
+import { useTaskListParams } from '@/entities/task';
+import { Button } from '@/shared/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,18 +12,18 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/shared/ui/dropdown-menu";
+} from '@/shared/ui/dropdown-menu';
 
 /** Each sort field with the words its two directions read as. */
 const SORT_OPTIONS: Record<TaskSort, { label: string; order: Record<SortOrder, string> }> = {
-  createdAt: { label: "Created", order: { desc: "Newest first", asc: "Oldest first" } },
-  priority: { label: "Priority", order: { desc: "Highest first", asc: "Lowest first" } },
+  createdAt: { label: 'Created', order: { desc: 'Newest first', asc: 'Oldest first' } },
+  priority: { label: 'Priority', order: { desc: 'Highest first', asc: 'Lowest first' } },
 };
 
 export function SortMenu() {
   const { params, setParams } = useTaskListParams();
   const current = SORT_OPTIONS[params.sort];
-  const Icon = params.order === "desc" ? ArrowDownWideNarrow : ArrowUpNarrowWide;
+  const Icon = params.order === 'desc' ? ArrowDownWideNarrow : ArrowUpNarrowWide;
 
   return (
     <DropdownMenu>

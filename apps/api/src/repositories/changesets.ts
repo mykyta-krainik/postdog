@@ -6,13 +6,13 @@ import {
   type ChangesetOp,
   type ChangesetOpType,
   type ChangesetSummary,
-} from "@postdog/shared";
-import { eq, inArray } from "drizzle-orm";
-import type { Executor } from "../db/client";
-import { agentChangesets, tasks, type AgentChangesetRow } from "../db/schema";
+} from '@postdog/shared';
+import { eq, inArray } from 'drizzle-orm';
+import type { Executor } from '../db/client';
+import { agentChangesets, tasks, type AgentChangesetRow } from '../db/schema';
 
 /** What the apply step records. Every new op is applied. */
-export type NewChangesetOp = Omit<ChangesetOp, "state">;
+export type NewChangesetOp = Omit<ChangesetOp, 'state'>;
 
 export interface NewChangeset {
   runId: number;
@@ -25,7 +25,7 @@ function toChangeset(row: AgentChangesetRow): Changeset {
 }
 
 function asApplied(ops: readonly NewChangesetOp[]): ChangesetOp[] {
-  return ops.map((op) => ({ ...op, state: "applied" }));
+  return ops.map((op) => ({ ...op, state: 'applied' }));
 }
 
 /** A run has at most one changeset: a second insert for the same run throws. */
@@ -107,14 +107,14 @@ export function summarizeChangeset(ex: Executor, changeset: Changeset): Changese
         taskId,
         identifier: nameOf.get(taskId)?.identifier ?? null,
         title: nameOf.get(taskId)?.title ?? null,
-        createdSubtasks: countOfType(ops, "create_task"),
-        createdLinks: countOfType(ops, "create_link"),
+        createdSubtasks: countOfType(ops, 'create_task'),
+        createdLinks: countOfType(ops, 'create_link'),
         state: changesetTaskStateOf(ops),
       };
     }),
     counts: {
-      subtasks: countOfType(changeset.ops, "create_task"),
-      links: countOfType(changeset.ops, "create_link"),
+      subtasks: countOfType(changeset.ops, 'create_task'),
+      links: countOfType(changeset.ops, 'create_link'),
     },
   };
 }

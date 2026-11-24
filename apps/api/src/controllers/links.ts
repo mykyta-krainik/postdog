@@ -1,6 +1,6 @@
-import type { CreateLinkInput, IdParams, TaskLink } from "@postdog/shared";
-import type { Request, Response } from "express";
-import type { LinkService } from "../services/links";
+import type { CreateLinkInput, IdParams, TaskLink } from '@postdog/shared';
+import type { Request, Response } from 'express';
+import type { LinkService } from '../services/links';
 
 export function createLinkController(links: LinkService) {
   return {

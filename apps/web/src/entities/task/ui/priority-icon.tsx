@@ -1,19 +1,19 @@
-import type { Priority } from "@postdog/shared";
-import { cn } from "@/shared/lib/utils";
+import type { Priority } from '@postdog/shared';
+import { cn } from '@/shared/lib/utils';
 
 /** Label, filled bar count and colour of each priority. Every priority UI reads this table. */
 export const TASK_PRIORITY_META: Record<
   Priority,
   { label: string; shortLabel: string; bars: 1 | 2 | 3; className: string }
 > = {
-  low: { label: "Low priority", shortLabel: "Low", bars: 1, className: "text-muted-foreground" },
+  low: { label: 'Low priority', shortLabel: 'Low', bars: 1, className: 'text-muted-foreground' },
   medium: {
-    label: "Medium priority",
-    shortLabel: "Medium",
+    label: 'Medium priority',
+    shortLabel: 'Medium',
     bars: 2,
-    className: "text-muted-foreground",
+    className: 'text-muted-foreground',
   },
-  high: { label: "High priority", shortLabel: "High", bars: 3, className: "text-foreground" },
+  high: { label: 'High priority', shortLabel: 'High', bars: 3, className: 'text-foreground' },
 };
 
 const BARS = [
@@ -29,7 +29,7 @@ export function PriorityIcon({ priority, className }: { priority: Priority; clas
       viewBox="0 0 14 14"
       role="img"
       aria-label={label}
-      className={cn("size-3.5 shrink-0", tone, className)}
+      className={cn('size-3.5 shrink-0', tone, className)}
     >
       {BARS.map((bar, index) => (
         <rect

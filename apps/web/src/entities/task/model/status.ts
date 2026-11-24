@@ -1,4 +1,4 @@
-import { TASK_STATUSES, type TaskStatus } from "@postdog/shared";
+import { TASK_STATUSES, type TaskStatus } from '@postdog/shared';
 
 /** Display rank of each status. Active work comes first, finished work last. */
 const STATUS_RANK: Record<TaskStatus, number> = { in_progress: 0, todo: 1, done: 2 };

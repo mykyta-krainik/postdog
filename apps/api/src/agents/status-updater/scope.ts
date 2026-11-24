@@ -1,8 +1,8 @@
-import { AGENT_LIMITS, type StatusUpdaterInput } from "@postdog/shared";
-import type { Executor } from "../../db/client";
-import type { TaskNoteRow } from "../../db/schema";
-import { listNotesSince } from "../../repositories/notes";
-import { loadTaskFacts, type TaskFacts } from "../context";
+import { AGENT_LIMITS, type StatusUpdaterInput } from '@postdog/shared';
+import type { Executor } from '../../db/client';
+import type { TaskNoteRow } from '../../db/schema';
+import { listNotesSince } from '../../repositories/notes';
+import { loadTaskFacts, type TaskFacts } from '../context';
 
 export interface StatusRow extends TaskFacts {
   parentIdentifier: string | null;
@@ -23,7 +23,7 @@ export interface StatusScope {
 }
 
 export function windowStartOf(input: StatusUpdaterInput, now: number): number {
-  const since = input.scope === "since" ? input.since : undefined;
+  const since = input.scope === 'since' ? input.since : undefined;
   return since ?? now - AGENT_LIMITS.statusUpdateDefaultWindowMs;
 }
 
@@ -58,7 +58,7 @@ export function loadStatusScope(ex: Executor, input: StatusUpdaterInput, now: nu
   const all = toRows(loadTaskFacts(ex, now), listNotesSince(ex, windowStart), windowStart);
   const identifiers = new Map(all.map((row) => [row.id, row.identifier]));
 
-  if (input.scope === "task") {
+  if (input.scope === 'task') {
     const root = all.find((row) => row.id === input.taskId);
     const rows = root ? [root, ...all.filter((row) => row.parentId === root.id)] : [];
     return {

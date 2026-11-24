@@ -3,9 +3,9 @@ import type {
   ListNotificationsQuery,
   ListNotificationsResponse,
   MarkNotificationReadResponse,
-} from "@postdog/shared";
-import type { Request, Response } from "express";
-import type { NotificationService } from "../services/notifications";
+} from '@postdog/shared';
+import type { Request, Response } from 'express';
+import type { NotificationService } from '../services/notifications';
 
 export function createNotificationController(notifications: NotificationService) {
   return {

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { decomposerRunSchema, type ClarifyInput, type DecomposerRun } from "@postdog/shared";
-import { useRef } from "react";
-import { isRunBusy, startClarifyRun, useAgentRunner, type AgentRunner } from "@/entities/agent-run";
-import { revalidateNotifications } from "@/entities/notification";
-import { revalidateSuggestions } from "@/entities/suggestion";
+import { decomposerRunSchema, type ClarifyInput, type DecomposerRun } from '@postdog/shared';
+import { useRef } from 'react';
+import { isRunBusy, startClarifyRun, useAgentRunner, type AgentRunner } from '@/entities/agent-run';
+import { revalidateNotifications } from '@/entities/notification';
+import { revalidateSuggestions } from '@/entities/suggestion';
 
 export type Clarifier = AgentRunner<DecomposerRun> & {
   /** Starts a run with the answers, or with generateAnyway. Ignored while one is going. */
@@ -23,7 +23,7 @@ export function useClarify(): Clarifier {
   const input = useRef<ClarifyInput | undefined>(undefined);
   const runner = useAgentRunner({
     start: async () => {
-      if (!input.current) throw new Error("Nothing to send yet.");
+      if (!input.current) throw new Error('Nothing to send yet.');
       const started = await startClarifyRun(input.current);
       void revalidateSuggestions();
       return started;

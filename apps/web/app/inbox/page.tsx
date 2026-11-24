@@ -1,1 +1,1 @@
-export { InboxPage as default, metadata } from "@/_pages/inbox";
+export { InboxPage as default, metadata } from '@/_pages/inbox';

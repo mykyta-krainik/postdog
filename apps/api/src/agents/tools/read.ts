@@ -3,16 +3,16 @@ import {
   getTaskNotesInputSchema,
   searchTasksInputSchema,
   type TaskDetailLink,
-} from "@postdog/shared";
-import type { Executor } from "../../db/client";
-import type { TaskRow } from "../../db/schema";
-import { findActiveClaim } from "../../repositories/claims";
-import { listLinksOfTask } from "../../repositories/links";
-import { listLatestNotes } from "../../repositories/notes";
-import { findTask, listTasks, searchTasks } from "../../repositories/tasks";
-import { wholeDaysBetween } from "../context";
-import { ToolError } from "../core/errors";
-import { defineReadTool } from "../core/tool";
+} from '@postdog/shared';
+import type { Executor } from '../../db/client';
+import type { TaskRow } from '../../db/schema';
+import { findActiveClaim } from '../../repositories/claims';
+import { listLinksOfTask } from '../../repositories/links';
+import { listLatestNotes } from '../../repositories/notes';
+import { findTask, listTasks, searchTasks } from '../../repositories/tasks';
+import { wholeDaysBetween } from '../context';
+import { ToolError } from '../core/errors';
+import { defineReadTool } from '../core/tool';
 
 export const TEXT_LIMIT = 1500;
 const LIST_LIMIT = 50;
@@ -30,25 +30,25 @@ function requireTask(ex: Executor, id: number): TaskRow {
 }
 
 function relation(link: TaskDetailLink): string {
-  if (link.type === "relates") return "relates";
-  if (link.type === "blocks") return link.direction === "out" ? "blocks" : "blocked_by";
-  return link.direction === "out" ? "duplicates" : "duplicated_by";
+  if (link.type === 'relates') return 'relates';
+  if (link.type === 'blocks') return link.direction === 'out' ? 'blocks' : 'blocked_by';
+  return link.direction === 'out' ? 'duplicates' : 'duplicated_by';
 }
 
 export function createReadTools(ex: Executor, now: () => number = Date.now) {
   const getTask = defineReadTool({
-    name: "get_task",
+    name: 'get_task',
     description: [
-      "Get one task by its numeric id: description, status, priority, age, subtasks, links (blocks, blocked_by, relates, duplicates, duplicated_by) and claimedBy, the agent run working on it right now or null.",
-      "Use it when you need details the table in the message does not show, such as the description or what blocks a task.",
-      "Do not use it to find tasks by words; use search_tasks for that.",
+      'Get one task by its numeric id: description, status, priority, age, subtasks, links (blocks, blocked_by, relates, duplicates, duplicated_by) and claimedBy, the agent run working on it right now or null.',
+      'Use it when you need details the table in the message does not show, such as the description or what blocks a task.',
+      'Do not use it to find tasks by words; use search_tasks for that.',
       'Example: {"id": 12}.',
-    ].join(" "),
+    ].join(' '),
     input: getTaskInputSchema,
     run: ({ id }) => {
       const task = requireTask(ex, id);
       const description = cut(task.description);
-      const subtasks = listTasks(ex, { parentId: task.id, sort: "createdAt", order: "asc" });
+      const subtasks = listTasks(ex, { parentId: task.id, sort: 'createdAt', order: 'asc' });
       const links = listLinksOfTask(ex, task.id);
       const at = now();
       const claim = findActiveClaim(ex, task.id, at);
@@ -86,13 +86,13 @@ export function createReadTools(ex: Executor, now: () => number = Date.now) {
   });
 
   const searchTasksTool = defineReadTool({
-    name: "search_tasks",
+    name: 'search_tasks',
     description: [
-      "Find tasks of any level (top-level tasks and subtasks) whose title or description contains every given word, most recently updated first.",
+      'Find tasks of any level (top-level tasks and subtasks) whose title or description contains every given word, most recently updated first.',
       "Use it to find a task's id, related work or possible duplicates.",
-      "Do not use it to read one task you already have the id of; use get_task for that.",
+      'Do not use it to read one task you already have the id of; use get_task for that.',
       'Example: {"query": "rate limit", "status": "todo", "limit": 5}.',
-    ].join(" "),
+    ].join(' '),
     input: searchTasksInputSchema,
     run: ({ query, status, limit }) => {
       const words = query.split(/\s+/).filter(Boolean).slice(0, 10);
@@ -109,24 +109,24 @@ export function createReadTools(ex: Executor, now: () => number = Date.now) {
         tasks,
         ...(rows.length > limit && { truncated: true }),
         ...(tasks.length === 0 && {
-          hint: `No tasks match "${query}"${status ? ` with status ${status}` : ""}. Try fewer or different words.`,
+          hint: `No tasks match "${query}"${status ? ` with status ${status}` : ''}. Try fewer or different words.`,
         }),
       };
     },
     summarize: ({ tasks }) =>
       tasks.length === 0
-        ? "No tasks found"
-        : `${tasks.length} tasks: ${tasks.map((t) => t.identifier).join(", ")}`,
+        ? 'No tasks found'
+        : `${tasks.length} tasks: ${tasks.map((t) => t.identifier).join(', ')}`,
   });
 
   const getTaskNotes = defineReadTool({
-    name: "get_task_notes",
+    name: 'get_task_notes',
     description: [
-      "Get the progress and completion notes people wrote on one task, newest first.",
-      "Use it to learn what actually happened on a task, optionally only since a time in ms since the epoch.",
+      'Get the progress and completion notes people wrote on one task, newest first.',
+      'Use it to learn what actually happened on a task, optionally only since a time in ms since the epoch.',
       "Do not use it for the task's own fields or subtasks; use get_task for those.",
       'Example: {"taskId": 12, "since": 1763600000000, "limit": 10}.',
-    ].join(" "),
+    ].join(' '),
     input: getTaskNotesInputSchema,
     run: ({ taskId, since, limit }) => {
       const task = requireTask(ex, taskId);
@@ -147,7 +147,7 @@ export function createReadTools(ex: Executor, now: () => number = Date.now) {
       };
     },
     summarize: ({ identifier, notes }) =>
-      `${notes.length} ${notes.length === 1 ? "note" : "notes"} on ${identifier}`,
+      `${notes.length} ${notes.length === 1 ? 'note' : 'notes'} on ${identifier}`,
   });
 
   return { getTask, searchTasks: searchTasksTool, getTaskNotes };

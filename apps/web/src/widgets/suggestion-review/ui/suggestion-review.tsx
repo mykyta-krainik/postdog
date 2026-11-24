@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { Link2, ListTree, MessageCircleQuestionMark, type LucideIcon } from "lucide-react";
-import { useId } from "react";
+import { Link2, ListTree, MessageCircleQuestionMark, type LucideIcon } from 'lucide-react';
+import { useId } from 'react';
 import {
   ClarificationReview,
   ClarifyRun,
   useClarify,
   type Clarifier,
-} from "@/features/answer-clarification";
-import { RelatedReview, SubtasksReview } from "@/features/review-suggestion";
-import { SuggestedBadge } from "@/entities/agent-run";
-import { useSettings } from "@/entities/settings";
-import { describeSuggestion, type Suggestion } from "@/entities/suggestion";
-import type { TaskDetail } from "@/entities/task";
+} from '@/features/answer-clarification';
+import { RelatedReview, SubtasksReview } from '@/features/review-suggestion';
+import { SuggestedBadge } from '@/entities/agent-run';
+import { useSettings } from '@/entities/settings';
+import { describeSuggestion, type Suggestion } from '@/entities/suggestion';
+import type { TaskDetail } from '@/entities/task';
 
-const KIND_ICON: Record<Suggestion["kind"], LucideIcon> = {
+const KIND_ICON: Record<Suggestion['kind'], LucideIcon> = {
   subtasks: ListTree,
   clarification: MessageCircleQuestionMark,
   related: Link2,
@@ -30,11 +30,11 @@ function SuggestionBody({
   clarifier: Clarifier;
 }) {
   switch (suggestion.kind) {
-    case "subtasks":
+    case 'subtasks':
       return <SubtasksReview suggestion={suggestion} task={task} />;
-    case "clarification":
+    case 'clarification':
       return <ClarificationReview suggestion={suggestion} clarifier={clarifier} />;
-    case "related":
+    case 'related':
       return <RelatedReview suggestion={suggestion} task={task} />;
   }
 }
@@ -78,7 +78,7 @@ export function SuggestionReview({ task }: { task: TaskDetail }) {
   const suggestions = task.pendingSuggestions;
 
   if (!aiEnabled) return null;
-  if (suggestions.length === 0 && clarifier.view.status === "idle") return null;
+  if (suggestions.length === 0 && clarifier.view.status === 'idle') return null;
 
   return (
     <section

@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { AddSubtaskForm } from "@/features/task-create";
-import { DoneToggle } from "@/features/task-edit";
+import Link from 'next/link';
+import { AddSubtaskForm } from '@/features/task-create';
+import { DoneToggle } from '@/features/task-edit';
 import {
   PriorityIcon,
   subtaskProgress,
@@ -10,15 +10,15 @@ import {
   type SubtaskProgress,
   type TaskDetail,
   type TaskStatus,
-} from "@/entities/task";
-import { cn } from "@/shared/lib/utils";
-import { EmptyNote, PanelSection } from "./panel-section";
+} from '@/entities/task';
+import { cn } from '@/shared/lib/utils';
+import { EmptyNote, PanelSection } from './panel-section';
 
 /** Finished work fills the bar from the left, then work in progress, then what is left. */
 const SEGMENTS: { status: TaskStatus; className: string }[] = [
-  { status: "done", className: "bg-status-done" },
-  { status: "in_progress", className: "bg-status-in-progress" },
-  { status: "todo", className: "bg-muted-foreground/25" },
+  { status: 'done', className: 'bg-status-done' },
+  { status: 'in_progress', className: 'bg-status-in-progress' },
+  { status: 'todo', className: 'bg-muted-foreground/25' },
 ];
 
 /** One segment per subtask, so the bar can be counted at a glance. */
@@ -29,7 +29,7 @@ function ProgressSegments({ progress }: { progress: SubtaskProgress }) {
         Array.from({ length: progress.counts[status] }, (_, index) => (
           <span
             key={`${status}-${index}`}
-            className={cn("h-full flex-1 rounded-full", className)}
+            className={cn('h-full flex-1 rounded-full', className)}
           />
         )),
       )}
@@ -69,9 +69,9 @@ export function SubtasksSection({ task }: { task: TaskDetail }) {
                   </span>
                   <span
                     className={cn(
-                      "min-w-0 flex-1 truncate",
-                      subtask.status === "done" &&
-                        "text-muted-foreground line-through decoration-muted-foreground/40",
+                      'min-w-0 flex-1 truncate',
+                      subtask.status === 'done' &&
+                        'text-muted-foreground line-through decoration-muted-foreground/40',
                     )}
                   >
                     {subtask.title}

@@ -1,1 +1,1 @@
-export { InboxPage, metadata } from "./ui/inbox-page";
+export { InboxPage, metadata } from './ui/inbox-page';

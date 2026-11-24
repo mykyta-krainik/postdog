@@ -1,7 +1,7 @@
-import type { ReactNode } from "react";
-import { MobileTopBar } from "./mobile-top-bar";
-import { RunsWatcher } from "./runs-watcher";
-import { Sidebar } from "./sidebar";
+import type { ReactNode } from 'react';
+import { MobileTopBar } from './mobile-top-bar';
+import { RunsWatcher } from './runs-watcher';
+import { Sidebar } from './sidebar';
 
 /** Mobile: top bar and sheet menu. Tablet: icon rail. Desktop: full sidebar. */
 export function AppShell({ children }: { children: ReactNode }) {

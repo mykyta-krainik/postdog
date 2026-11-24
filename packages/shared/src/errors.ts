@@ -1,16 +1,16 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const ERROR_CODES = [
-  "validation_error",
-  "not_found",
-  "conflict",
-  "stale",
-  "forbidden",
-  "unsupported_media_type",
-  "ai_disabled",
-  "agent_failed",
-  "step_limit",
-  "internal_error",
+  'validation_error',
+  'not_found',
+  'conflict',
+  'stale',
+  'forbidden',
+  'unsupported_media_type',
+  'ai_disabled',
+  'agent_failed',
+  'step_limit',
+  'internal_error',
 ] as const;
 export const errorCodeSchema = z.enum(ERROR_CODES);
 export type ErrorCode = z.infer<typeof errorCodeSchema>;

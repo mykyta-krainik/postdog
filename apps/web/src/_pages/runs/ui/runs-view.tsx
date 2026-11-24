@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { idSchema } from "@postdog/shared";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { RunsList } from "@/widgets/runs-list";
-import { useSettings } from "@/entities/settings";
-import { OPEN_RUN_PARAM, routes } from "@/shared/config";
-import { Button } from "@/shared/ui/button";
-import { LoadError } from "@/shared/ui/load-error";
-import { LogoMark } from "@/shared/ui/wordmark";
+import { idSchema } from '@postdog/shared';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { RunsList } from '@/widgets/runs-list';
+import { useSettings } from '@/entities/settings';
+import { OPEN_RUN_PARAM, routes } from '@/shared/config';
+import { Button } from '@/shared/ui/button';
+import { LoadError } from '@/shared/ui/load-error';
+import { LogoMark } from '@/shared/ui/wordmark';
 
 export function RunsHeader() {
   return (
@@ -20,7 +20,7 @@ export function RunsHeader() {
 
 /** The open run from ?run=, or undefined for a missing or malformed id. */
 export function parseOpenRunId(value: string | null): number | undefined {
-  const parsed = idSchema.safeParse(Number(value ?? ""));
+  const parsed = idSchema.safeParse(Number(value ?? ''));
   return parsed.success ? parsed.data : undefined;
 }
 

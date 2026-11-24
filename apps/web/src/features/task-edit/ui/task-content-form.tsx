@@ -1,30 +1,30 @@
-"use client";
+'use client';
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Check } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type FocusEvent, type ReactNode } from "react";
-import { useForm, useWatch, type FieldPath } from "react-hook-form";
-import { toast } from "sonner";
-import { updateTask, type TaskDetail, type UpdateTaskInput } from "@/entities/task";
-import { ApiError } from "@/shared/api";
-import { errorMessage, setApiErrors } from "@/shared/lib/form-errors";
-import { cn } from "@/shared/lib/utils";
-import { Button } from "@/shared/ui/button";
-import { Textarea } from "@/shared/ui/textarea";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Check } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type FocusEvent, type ReactNode } from 'react';
+import { useForm, useWatch, type FieldPath } from 'react-hook-form';
+import { toast } from 'sonner';
+import { updateTask, type TaskDetail, type UpdateTaskInput } from '@/entities/task';
+import { ApiError } from '@/shared/api';
+import { errorMessage, setApiErrors } from '@/shared/lib/form-errors';
+import { cn } from '@/shared/lib/utils';
+import { Button } from '@/shared/ui/button';
+import { Textarea } from '@/shared/ui/textarea';
 import {
   contentPatch,
   rebaseContent,
   taskContentSchema,
   type TaskContentValues,
-} from "../model/content";
+} from '../model/content';
 
 /** Plain-language messages for the limits users hit. Any other issue keeps Zod's message. */
 const MESSAGES: Record<string, Partial<Record<string, string>>> = {
   title: {
-    too_small: "Give the task a title.",
-    too_big: "Keep the title under 200 characters.",
+    too_small: 'Give the task a title.',
+    too_big: 'Keep the title under 200 characters.',
   },
-  description: { too_big: "Keep the description under 10,000 characters." },
+  description: { too_big: 'Keep the description under 10,000 characters.' },
 };
 
 const resolver = zodResolver(taskContentSchema, {
@@ -32,35 +32,35 @@ const resolver = zodResolver(taskContentSchema, {
 });
 
 const contentField = (path: string): FieldPath<TaskContentValues> | undefined =>
-  path === "title" || path === "description" ? path : undefined;
+  path === 'title' || path === 'description' ? path : undefined;
 
 const isEmpty = (patch: UpdateTaskInput) => Object.keys(patch).length === 0;
 
 const SAVED_NOTICE_MS = 2000;
 
-type SaveStatus = "idle" | "dirty" | "saving" | "failed" | "saved";
+type SaveStatus = 'idle' | 'dirty' | 'saving' | 'failed' | 'saved';
 
 /** A failed save shows the API's own message instead. */
-const SAVE_STATUS_TEXT: Record<Exclude<SaveStatus, "failed">, string> = {
-  idle: "",
-  dirty: "Unsaved changes",
-  saving: "Saving…",
-  saved: "Saved",
+const SAVE_STATUS_TEXT: Record<Exclude<SaveStatus, 'failed'>, string> = {
+  idle: '',
+  dirty: 'Unsaved changes',
+  saving: 'Saving…',
+  saved: 'Saved',
 };
 
 /** Borderless until hovered or focused, so the panel reads as a document. */
 const FIELD =
-  "-mx-2 w-[calc(100%+1rem)] resize-none border-transparent bg-transparent px-2 shadow-none hover:border-input focus-visible:border-ring dark:bg-transparent";
+  '-mx-2 w-[calc(100%+1rem)] resize-none border-transparent bg-transparent px-2 shadow-none hover:border-input focus-visible:border-ring dark:bg-transparent';
 
 /** A save that failed after the form unmounted. The toast keeps the patch so the user can retry. */
 function reportUnsaved(id: number, identifier: string, patch: UpdateTaskInput, error: unknown) {
   // The task was deleted, so there is nothing left to save.
-  if (error instanceof ApiError && error.code === "not_found") return;
+  if (error instanceof ApiError && error.code === 'not_found') return;
   toast.error(`Your edit to ${identifier} wasn't saved`, {
-    description: errorMessage(error, "Something went wrong."),
+    description: errorMessage(error, 'Something went wrong.'),
     duration: Infinity,
     action: {
-      label: "Retry",
+      label: 'Retry',
       onClick: () =>
         void updateTask(id, patch).then(
           () => toast.success(`Saved ${identifier}`),
@@ -71,7 +71,7 @@ function reportUnsaved(id: number, identifier: string, patch: UpdateTaskInput, e
 }
 
 type TaskContentFormProps = {
-  task: Pick<TaskDetail, "id" | "identifier" | "title" | "description">;
+  task: Pick<TaskDetail, 'id' | 'identifier' | 'title' | 'description'>;
   /** Rendered between the title and the description. */
   children?: ReactNode;
 };
@@ -87,18 +87,18 @@ export function TaskContentForm({ task, children }: TaskContentFormProps) {
     defaultValues: { title: task.title, description: task.description },
   });
   const { errors, isSubmitting } = form.formState;
-  const [title, description] = useWatch({ control: form.control, name: ["title", "description"] });
+  const [title, description] = useWatch({ control: form.control, name: ['title', 'description'] });
   const dirty = !isEmpty(contentPatch({ title, description }, task));
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const status: SaveStatus = isSubmitting
-    ? "saving"
+    ? 'saving'
     : dirty
       ? errors.root
-        ? "failed"
-        : "dirty"
+        ? 'failed'
+        : 'dirty'
       : savedAt !== null
-        ? "saved"
-        : "idle";
+        ? 'saved'
+        : 'idle';
 
   // The content the API last confirmed. Saves diff against it, and server changes rebase onto it.
   const savedRef = useRef<TaskContentValues>({ title: task.title, description: task.description });
@@ -111,9 +111,9 @@ export function TaskContentForm({ task, children }: TaskContentFormProps) {
     const current = form.getValues();
     const rebased = rebaseContent(savedRef.current, next, current);
     savedRef.current = next;
-    if (rebased.title !== current.title) form.setValue("title", rebased.title);
+    if (rebased.title !== current.title) form.setValue('title', rebased.title);
     if (rebased.description !== current.description) {
-      form.setValue("description", rebased.description);
+      form.setValue('description', rebased.description);
     }
   }, [form, task.title, task.description]);
 
@@ -155,8 +155,8 @@ export function TaskContentForm({ task, children }: TaskContentFormProps) {
   useEffect(() => {
     if (!dirty) return;
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
   }, [dirty]);
 
   useEffect(() => {
@@ -165,10 +165,10 @@ export function TaskContentForm({ task, children }: TaskContentFormProps) {
     return () => clearTimeout(timer);
   }, [savedAt]);
 
-  const titleField = form.register("title");
-  const descriptionField = form.register("description");
+  const titleField = form.register('title');
+  const descriptionField = form.register('description');
   const saveOnBlur = (event: FocusEvent<HTMLTextAreaElement>) => {
-    const field = event.currentTarget.name === "title" ? titleField : descriptionField;
+    const field = event.currentTarget.name === 'title' ? titleField : descriptionField;
     void field.onBlur(event);
     // Tabbing to Save or Discard must not save first.
     if (event.relatedTarget instanceof Node && statusRef.current?.contains(event.relatedTarget)) {
@@ -190,11 +190,11 @@ export function TaskContentForm({ task, children }: TaskContentFormProps) {
           rows={1}
           autoComplete="off"
           aria-invalid={errors.title ? true : undefined}
-          className={cn(FIELD, "min-h-0 py-1 text-lg leading-snug font-semibold md:text-lg")}
+          className={cn(FIELD, 'min-h-0 py-1 text-lg leading-snug font-semibold md:text-lg')}
           {...titleField}
           onBlur={saveOnBlur}
           onKeyDown={(event) => {
-            if (event.key !== "Enter") return;
+            if (event.key !== 'Enter') return;
             event.preventDefault();
             event.currentTarget.blur();
           }}
@@ -209,11 +209,11 @@ export function TaskContentForm({ task, children }: TaskContentFormProps) {
           aria-label="Description, in markdown"
           placeholder="Add a description. Markdown works here."
           aria-invalid={errors.description ? true : undefined}
-          className={cn(FIELD, "min-h-24 leading-relaxed md:text-[13px]")}
+          className={cn(FIELD, 'min-h-24 leading-relaxed md:text-[13px]')}
           {...descriptionField}
           onBlur={saveOnBlur}
           onKeyDown={(event) => {
-            if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey)) return;
+            if (event.key !== 'Enter' || !(event.metaKey || event.ctrlKey)) return;
             event.preventDefault();
             void save();
           }}
@@ -225,15 +225,15 @@ export function TaskContentForm({ task, children }: TaskContentFormProps) {
           <span
             aria-live="polite"
             className={cn(
-              "mr-auto flex min-w-0 items-center gap-1",
-              status !== "idle" && "py-1.5",
-              status === "failed" ? "text-destructive" : "text-muted-foreground",
+              'mr-auto flex min-w-0 items-center gap-1',
+              status !== 'idle' && 'py-1.5',
+              status === 'failed' ? 'text-destructive' : 'text-muted-foreground',
             )}
           >
-            {status === "saved" && <Check className="size-3.5" aria-hidden />}
-            {status === "failed" ? errors.root?.message : SAVE_STATUS_TEXT[status]}
+            {status === 'saved' && <Check className="size-3.5" aria-hidden />}
+            {status === 'failed' ? errors.root?.message : SAVE_STATUS_TEXT[status]}
           </span>
-          {(status === "dirty" || status === "failed") && (
+          {(status === 'dirty' || status === 'failed') && (
             <>
               <Button
                 type="button"
@@ -253,7 +253,7 @@ export function TaskContentForm({ task, children }: TaskContentFormProps) {
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => void save()}
               >
-                {status === "failed" ? "Try again" : "Save"}
+                {status === 'failed' ? 'Try again' : 'Save'}
               </Button>
             </>
           )}

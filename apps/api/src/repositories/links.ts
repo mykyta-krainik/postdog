@@ -1,10 +1,10 @@
-import type { LinkCreatedBy, LinkType, TaskDetailLink } from "@postdog/shared";
-import { and, count, eq, ne, or } from "drizzle-orm";
-import { alias } from "drizzle-orm/sqlite-core";
-import type { Executor } from "../db/client";
-import { taskLinks, tasks, type TaskLinkRow } from "../db/schema";
+import type { LinkCreatedBy, LinkType, TaskDetailLink } from '@postdog/shared';
+import { and, count, eq, ne, or } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/sqlite-core';
+import type { Executor } from '../db/client';
+import { taskLinks, tasks, type TaskLinkRow } from '../db/schema';
 
-const other = alias(tasks, "other");
+const other = alias(tasks, 'other');
 
 const linkWithOtherTask = {
   id: taskLinks.id,
@@ -44,14 +44,14 @@ export function listLinksOfTask(ex: Executor, taskId: number): TaskDetailLink[] 
     .innerJoin(other, eq(other.id, taskLinks.toTaskId))
     .where(eq(taskLinks.fromTaskId, taskId))
     .all()
-    .map((link) => ({ ...link, direction: "out" as const }));
+    .map((link) => ({ ...link, direction: 'out' as const }));
   const incoming = ex
     .select(linkWithOtherTask)
     .from(taskLinks)
     .innerJoin(other, eq(other.id, taskLinks.fromTaskId))
     .where(eq(taskLinks.toTaskId, taskId))
     .all()
-    .map((link) => ({ ...link, direction: "in" as const }));
+    .map((link) => ({ ...link, direction: 'in' as const }));
   return [...outgoing, ...incoming].sort((a, b) => a.id - b.id);
 }
 
@@ -59,7 +59,7 @@ export function listLinksOfType(ex: Executor, type: LinkType): TaskLinkRow[] {
   return ex.select().from(taskLinks).where(eq(taskLinks.type, type)).all();
 }
 
-export function insertLink(ex: Executor, row: Omit<TaskLinkRow, "id">): TaskLinkRow {
+export function insertLink(ex: Executor, row: Omit<TaskLinkRow, 'id'>): TaskLinkRow {
   return ex.insert(taskLinks).values(row).returning().get();
 }
 

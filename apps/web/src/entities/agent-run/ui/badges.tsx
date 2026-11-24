@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import type { LlmInfo, RunTrigger } from "@postdog/shared";
-import { Clock, FlaskConical, Sparkles } from "lucide-react";
-import { cn } from "@/shared/lib/utils";
-import { Badge } from "@/shared/ui/badge";
-import { useAgentsInfo } from "../api/queries";
+import type { LlmInfo, RunTrigger } from '@postdog/shared';
+import { Clock, FlaskConical, Sparkles } from 'lucide-react';
+import { cn } from '@/shared/lib/utils';
+import { Badge } from '@/shared/ui/badge';
+import { useAgentsInfo } from '../api/queries';
 
 /** Marks agent output the user has not acted on yet. */
 export function SuggestedBadge({ className }: { className?: string }) {
   return (
-    <Badge variant="brand" className={cn("font-normal", className)}>
+    <Badge variant="brand" className={cn('font-normal', className)}>
       <Sparkles aria-hidden />
       Suggested
     </Badge>
@@ -24,12 +24,12 @@ export function MockAiBadgeView({
   llm: LlmInfo | undefined;
   className?: string;
 }) {
-  if (llm?.mode !== "mock") return null;
+  if (llm?.mode !== 'mock') return null;
   return (
     <Badge
       variant="outline"
       title="Agents replay scripted answers. Set a provider key and LLM_MOCK=false to use a real model."
-      className={cn("border-brand/40 font-normal text-brand-text", className)}
+      className={cn('border-brand/40 font-normal text-brand-text', className)}
     >
       <FlaskConical aria-hidden />
       Mock AI
@@ -45,12 +45,12 @@ export function ScheduledBadge({
   trigger: RunTrigger;
   className?: string;
 }) {
-  if (trigger !== "scheduled") return null;
+  if (trigger !== 'scheduled') return null;
   return (
     <Badge
       variant="outline"
       title="The daily schedule started this run. Turn it off in Settings."
-      className={cn("font-normal text-muted-foreground", className)}
+      className={cn('font-normal text-muted-foreground', className)}
     >
       <Clock aria-hidden />
       Scheduled

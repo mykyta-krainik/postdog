@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import type { RollbackResponse } from "@postdog/shared";
-import { CircleCheck, LoaderCircle, TriangleAlert } from "lucide-react";
-import { useState } from "react";
-import { Button } from "@/shared/ui/button";
+import type { RollbackResponse } from '@postdog/shared';
+import { CircleCheck, LoaderCircle, TriangleAlert } from 'lucide-react';
+import { useState } from 'react';
+import { Button } from '@/shared/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -11,24 +11,24 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/shared/ui/dialog";
+} from '@/shared/ui/dialog';
 import {
   keptItemText,
   rollbackChangeset,
   rollbackErrorMessage,
   type RollbackTarget,
-} from "../model/rollback";
+} from '../model/rollback';
 
 type Step =
-  | { kind: "confirm" }
-  | { kind: "working" }
-  | { kind: "done"; result: RollbackResponse }
-  | { kind: "failed"; message: string };
+  | { kind: 'confirm' }
+  | { kind: 'working' }
+  | { kind: 'done'; result: RollbackResponse }
+  | { kind: 'failed'; message: string };
 
 export const ROLLBACK_EXPLAINER =
-  "Removes the untouched subtasks and links Postdog created. Anything you edited stays.";
+  'Removes the untouched subtasks and links Postdog created. Anything you edited stays.';
 
-const ACTION = "max-md:h-10";
+const ACTION = 'max-md:h-10';
 
 /**
  * Confirms a rollback, runs it, then shows the API's message and every item it kept, with why.
@@ -44,21 +44,21 @@ export function RollbackDialog({
   label: string;
   onClose: () => void;
 }) {
-  const [step, setStep] = useState<Step>({ kind: "confirm" });
-  const working = step.kind === "working";
+  const [step, setStep] = useState<Step>({ kind: 'confirm' });
+  const working = step.kind === 'working';
 
   function run() {
-    setStep({ kind: "working" });
+    setStep({ kind: 'working' });
     rollbackChangeset(target).then(
-      (result) => setStep({ kind: "done", result }),
-      (error: unknown) => setStep({ kind: "failed", message: rollbackErrorMessage(error) }),
+      (result) => setStep({ kind: 'done', result }),
+      (error: unknown) => setStep({ kind: 'failed', message: rollbackErrorMessage(error) }),
     );
   }
 
   return (
     <Dialog open onOpenChange={(open) => !open && !working && onClose()}>
       <DialogContent showCloseButton={false} className="gap-0 p-0 sm:max-w-md">
-        {step.kind === "done" ? (
+        {step.kind === 'done' ? (
           <RollbackResult result={step.result} onClose={onClose} />
         ) : (
           <>
@@ -68,7 +68,7 @@ export function RollbackDialog({
                 {ROLLBACK_EXPLAINER}
               </DialogDescription>
             </DialogHeader>
-            {step.kind === "failed" && (
+            {step.kind === 'failed' && (
               <p
                 role="alert"
                 className="mx-5 mt-3 flex gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[13px] leading-5"
@@ -97,7 +97,7 @@ export function RollbackDialog({
                 {working && (
                   <LoaderCircle className="animate-spin motion-reduce:animate-none" aria-hidden />
                 )}
-                {working ? "Rolling back…" : step.kind === "failed" ? "Try again" : "Roll back"}
+                {working ? 'Rolling back…' : step.kind === 'failed' ? 'Try again' : 'Roll back'}
               </Button>
             </DialogFooter>
           </>

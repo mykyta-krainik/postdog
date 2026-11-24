@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { decomposerRunSchema } from "@postdog/shared";
-import { ArrowRight, ChevronRight } from "lucide-react";
-import Link from "next/link";
-import { useState, type ReactNode } from "react";
-import { useAgentRun } from "@/entities/agent-run";
-import { routes } from "@/shared/config";
-import { Button } from "@/shared/ui/button";
+import { decomposerRunSchema } from '@postdog/shared';
+import { ArrowRight, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+import { useState, type ReactNode } from 'react';
+import { useAgentRun } from '@/entities/agent-run';
+import { routes } from '@/shared/config';
+import { Button } from '@/shared/ui/button';
 
 /** A run that finished while nobody watched it: its result waits on the Runs page. */
 export function OpenRunResult({ runId }: { runId: number }) {
@@ -40,10 +40,10 @@ export function FailedRunTrace({
         onClick={() => setOpen((value) => !value)}
       >
         <ChevronRight
-          className={open ? "rotate-90 transition-transform" : "transition-transform"}
+          className={open ? 'rotate-90 transition-transform' : 'transition-transform'}
           aria-hidden
         />
-        {open ? "Hide trace" : `Show trace of run #${runId}`}
+        {open ? 'Hide trace' : `Show trace of run #${runId}`}
       </Button>
       {open && renderTrace(runId)}
     </div>
@@ -56,7 +56,7 @@ export function FailedRunTrace({
  */
 export function ConflictTasks({ runId }: { runId: number }) {
   const { data: run } = useAgentRun(runId, decomposerRunSchema);
-  const tasks = run?.output?.tasks.filter((task) => task.outcome === "superseded") ?? [];
+  const tasks = run?.output?.tasks.filter((task) => task.outcome === 'superseded') ?? [];
   if (tasks.length === 0) return null;
   return (
     <ul aria-label="Tasks involved" className="flex flex-wrap gap-x-3">

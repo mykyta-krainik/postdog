@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { Check, X } from "lucide-react";
-import Link from "next/link";
-import { SuggestedBadge, type PlannerFocusItem } from "@/entities/agent-run";
-import { PriorityIcon, StatusIcon, useTask } from "@/entities/task";
-import { routes } from "@/shared/config";
-import { Badge } from "@/shared/ui/badge";
-import { Button } from "@/shared/ui/button";
-import { Skeleton } from "@/shared/ui/skeleton";
+import { Check, X } from 'lucide-react';
+import Link from 'next/link';
+import { SuggestedBadge, type PlannerFocusItem } from '@/entities/agent-run';
+import { PriorityIcon, StatusIcon, useTask } from '@/entities/task';
+import { routes } from '@/shared/config';
+import { Badge } from '@/shared/ui/badge';
+import { Button } from '@/shared/ui/button';
+import { Skeleton } from '@/shared/ui/skeleton';
 
 /**
  * One recommended task: its rank, the task as it is now, the Planner's reason and signals,
@@ -28,7 +28,7 @@ export function FocusItem({
 }) {
   const { data: task, error } = useTask(item.taskId);
   const gone = !task && error !== undefined;
-  const canStart = !started && !gone && (task === undefined || task.status === "todo");
+  const canStart = !started && !gone && (task === undefined || task.status === 'todo');
 
   return (
     <li className="flex gap-3 border-b border-border/60 py-3 pr-2 pl-4 md:gap-4 md:pr-3 md:pl-5">
@@ -70,7 +70,7 @@ export function FocusItem({
           )}
         </div>
         <p className="text-[13px] leading-5 text-muted-foreground">
-          {gone ? "This task no longer exists. " : null}
+          {gone ? 'This task no longer exists. ' : null}
           {item.reason}
         </p>
         {item.signals.length > 0 && (

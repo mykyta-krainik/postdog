@@ -1,6 +1,6 @@
-import { settingsSchema, type Settings, type UpdateSettingsInput } from "@postdog/shared";
-import { mutate } from "swr";
-import { apiRequest, settingsKey } from "@/shared/api";
+import { settingsSchema, type Settings, type UpdateSettingsInput } from '@postdog/shared';
+import { mutate } from 'swr';
+import { apiRequest, settingsKey } from '@/shared/api';
 
 function applyPatch(settings: Settings, patch: UpdateSettingsInput): Settings {
   const changes = Object.fromEntries(
@@ -14,7 +14,7 @@ function applyPatch(settings: Settings, patch: UpdateSettingsInput): Settings {
  * rejects it. Resolves with the settings the API saved, and rethrows the ApiError otherwise.
  */
 export async function updateSettings(patch: UpdateSettingsInput): Promise<Settings> {
-  const request = apiRequest(settingsKey, settingsSchema, { method: "PATCH", body: patch });
+  const request = apiRequest(settingsKey, settingsSchema, { method: 'PATCH', body: patch });
   await mutate<Settings | undefined>(settingsKey, request, {
     optimisticData: (_committed, displayed) => displayed && applyPatch(displayed, patch),
     rollbackOnError: true,

@@ -6,9 +6,9 @@ import type {
   ListTasksResponse,
   TaskDetail,
   UpdateTaskInput,
-} from "@postdog/shared";
-import type { Request, Response } from "express";
-import type { TaskService } from "../services/tasks";
+} from '@postdog/shared';
+import type { Request, Response } from 'express';
+import type { TaskService } from '../services/tasks';
 
 export function createTaskController(tasks: TaskService) {
   return {

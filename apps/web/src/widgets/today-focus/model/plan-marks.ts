@@ -1,11 +1,11 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 /** What the user did with the items of one plan. Only the latest plan's marks are kept. */
 export type PlanMarks = { dismissed: readonly number[]; started: readonly number[] };
 
 export const EMPTY_MARKS: PlanMarks = { dismissed: [], started: [] };
 
-export const PLAN_MARKS_KEY = "postdog:today-plan";
+export const PLAN_MARKS_KEY = 'postdog:today-plan';
 
 const storedSchema = z.object({
   runId: z.number(),
@@ -55,5 +55,5 @@ export function unexplainedChanges(changedSince: number, marks: PlanMarks): numb
 /** "3 tasks changed since this plan", or null when nothing changed. */
 export function changedSinceText(count: number): string | null {
   if (count <= 0) return null;
-  return `${count} ${count === 1 ? "task" : "tasks"} changed since this plan`;
+  return `${count} ${count === 1 ? 'task' : 'tasks'} changed since this plan`;
 }

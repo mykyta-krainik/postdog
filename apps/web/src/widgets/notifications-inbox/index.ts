@@ -1,1 +1,1 @@
-export { NotificationsInbox } from "./ui/notifications-inbox";
+export { NotificationsInbox } from './ui/notifications-inbox';

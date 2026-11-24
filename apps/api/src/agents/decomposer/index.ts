@@ -13,31 +13,31 @@ import {
   type DecomposerRunInput,
   type DecomposerTaskResult,
   type RelatedPayload,
-} from "@postdog/shared";
-import type { Db } from "../../db/client";
-import type { TaskRow } from "../../db/schema";
-import { conflict, invalidField, notFound } from "../../lib/errors";
-import { logger } from "../../lib/logger";
-import { findChangesetByRun } from "../../repositories/changesets";
-import { releaseTaskClaim, renewClaims, tryClaim } from "../../repositories/claims";
-import { findSuggestion, resolveSuggestion } from "../../repositories/suggestions";
-import { findTask, listSubtaskIds } from "../../repositories/tasks";
-import { plural } from "../../lib/text";
-import { defineAgent, type AgentContext } from "../core/definition";
-import { AgentError } from "../core/errors";
-import { registerMockScript } from "../core/llm";
-import { runAgent } from "../core/runAgent";
-import type { TraceRecorder } from "../core/trace";
+} from '@postdog/shared';
+import type { Db } from '../../db/client';
+import type { TaskRow } from '../../db/schema';
+import { conflict, invalidField, notFound } from '../../lib/errors';
+import { logger } from '../../lib/logger';
+import { findChangesetByRun } from '../../repositories/changesets';
+import { releaseTaskClaim, renewClaims, tryClaim } from '../../repositories/claims';
+import { findSuggestion, resolveSuggestion } from '../../repositories/suggestions';
+import { findTask, listSubtaskIds } from '../../repositories/tasks';
+import { plural } from '../../lib/text';
+import { defineAgent, type AgentContext } from '../core/definition';
+import { AgentError } from '../core/errors';
+import { registerMockScript } from '../core/llm';
+import { runAgent } from '../core/runAgent';
+import type { TraceRecorder } from '../core/trace';
 import {
   applierFor,
   decompositionMode,
   writeConflict,
   type ApplyRun,
   type RelatedApplied,
-} from "./apply";
-import { claimedResult, eligibilityCheck, exclusion, selectBatch, taskResult } from "./eligibility";
-import { relatedMockScript, taskMockScript } from "./mock";
-import { notifyAutoRun, type RunWrites } from "./notify";
+} from './apply';
+import { claimedResult, eligibilityCheck, exclusion, selectBatch, taskResult } from './eligibility';
+import { relatedMockScript, taskMockScript } from './mock';
+import { notifyAutoRun, type RunWrites } from './notify';
 import {
   DECOMPOSER_PROMPT_V1,
   DECOMPOSER_PROMPT_VERSION,
@@ -45,17 +45,17 @@ import {
   taskUserMessage,
   type ClarifyContext,
   type RelatedNote,
-} from "./prompt";
+} from './prompt';
 import {
   askClarification,
   decomposerReadTools,
   proposeSubtasks,
   reportRelated,
   skip,
-} from "./tools";
-import { checkProposal, checkRelatedGroups, type Decision, type Dropped } from "./validate";
+} from './tools';
+import { checkProposal, checkRelatedGroups, type Decision, type Dropped } from './validate';
 
-export const DECOMPOSER_LOOPS = { related: "decomposer:related", task: "decomposer:task" };
+export const DECOMPOSER_LOOPS = { related: 'decomposer:related', task: 'decomposer:task' };
 
 const TASK_LOOP_MAX_OUTPUT_TOKENS = 8192;
 export type DecomposerLoops = typeof DECOMPOSER_LOOPS;
@@ -76,16 +76,16 @@ interface TaskDone {
 }
 
 const SETTLED_OUTCOMES = new Set<DecomposerOutcome>([
-  "suggested_subtasks",
-  "applied_subtasks",
-  "needs_clarification",
-  "skipped",
+  'suggested_subtasks',
+  'applied_subtasks',
+  'needs_clarification',
+  'skipped',
 ]);
 
 function stopped(signal: AbortSignal): AgentError {
   return signal.reason instanceof AgentError
     ? signal.reason
-    : new AgentError("cancelled", "The run was cancelled.");
+    : new AgentError('cancelled', 'The run was cancelled.');
 }
 
 function traceFor(trace: TraceRecorder, identifier: string): TraceRecorder {
@@ -99,7 +99,7 @@ function traceFor(trace: TraceRecorder, identifier: string): TraceRecorder {
 function recordDropped(trace: TraceRecorder, tool: string, dropped: readonly Dropped[]): void {
   for (const { item, warning } of dropped) {
     trace.record({
-      type: "validation",
+      type: 'validation',
       tool,
       input: item,
       outputSummary: warning.message,
@@ -126,10 +126,10 @@ function createStage3(ctx: AgentContext) {
       const run = applyRun(ctx);
       const result = ctx.db.transaction((tx) => {
         const conflict = writeConflict(tx, run, task, supersedes);
-        if (conflict) return taskResult(task, "superseded", conflict);
+        if (conflict) return taskResult(task, 'superseded', conflict);
         const applied = applier.task(tx, run, task, decision);
         if (supersedes !== undefined && SETTLED_OUTCOMES.has(applied.outcome)) {
-          resolveSuggestion(tx, supersedes, "superseded", run.now);
+          resolveSuggestion(tx, supersedes, 'superseded', run.now);
         }
         return applied;
       });
@@ -169,7 +169,7 @@ async function withStage3(
     finished = true;
     return result;
   } finally {
-    if (ctx.mode === "auto") notifyAutoRun(ctx.db, ctx.runId, stage3.writes, !finished, Date.now());
+    if (ctx.mode === 'auto') notifyAutoRun(ctx.db, ctx.runId, stage3.writes, !finished, Date.now());
   }
 }
 
@@ -191,10 +191,10 @@ async function settleEach<T, R>(
 }
 
 function failedResult(task: TaskRow, err: unknown): DecomposerTaskResult {
-  if (err instanceof AgentError) return taskResult(task, "failed", err.message);
+  if (err instanceof AgentError) return taskResult(task, 'failed', err.message);
   logger.error(`The Decomposer crashed on ${task.identifier}`, { err });
   const message = err instanceof Error ? err.message : String(err);
-  return taskResult(task, "failed", `The agent crashed: ${message}`);
+  return taskResult(task, 'failed', `The agent crashed: ${message}`);
 }
 
 function buildOutput(
@@ -212,16 +212,16 @@ function buildOutput(
     changesetId: changeset?.id ?? null,
     counts: {
       considered: tasks.length,
-      suggestedSubtasks: count("suggested_subtasks"),
-      appliedSubtasks: count("applied_subtasks"),
-      createdSubtasks: ops("create_task"),
-      appliedLinks: ops("create_link"),
-      needsClarification: count("needs_clarification"),
-      skipped: count("skipped"),
-      duplicates: count("duplicate"),
-      claimed: count("claimed"),
-      superseded: count("superseded"),
-      failed: count("failed"),
+      suggestedSubtasks: count('suggested_subtasks'),
+      appliedSubtasks: count('applied_subtasks'),
+      createdSubtasks: ops('create_task'),
+      appliedLinks: ops('create_link'),
+      needsClarification: count('needs_clarification'),
+      skipped: count('skipped'),
+      duplicates: count('duplicate'),
+      claimed: count('claimed'),
+      superseded: count('superseded'),
+      failed: count('failed'),
     },
     warnings,
   };
@@ -238,7 +238,7 @@ async function relatedPass(ctx: AgentContext, loop: string, batch: TaskRow[]) {
   const checked = checkRelatedGroups(ctx.db, output.groups, batch);
   recordDropped(ctx.trace, reportRelated.name, checked.dropped);
   ctx.trace.record({
-    type: "validation",
+    type: 'validation',
     tool: reportRelated.name,
     input: output.groups,
     outputSummary: `Checked the related groups: kept ${checked.groups.length} of ${output.groups.length}`,
@@ -253,13 +253,13 @@ function decide(
   result: Awaited<ReturnType<typeof runTaskLoop>>,
 ): { decision: Decision; dropped: Dropped[] } {
   switch (result.toolName) {
-    case "propose_subtasks":
+    case 'propose_subtasks':
       return checkProposal(ctx.db, task, result.output);
-    case "ask_clarification":
-      return { decision: { kind: "clarification", payload: result.output }, dropped: [] };
-    case "skip": {
+    case 'ask_clarification':
+      return { decision: { kind: 'clarification', payload: result.output }, dropped: [] };
+    case 'skip': {
       const detail = `${result.output.reason}: ${result.output.explanation}`;
-      return { decision: { kind: "skip", detail }, dropped: [] };
+      return { decision: { kind: 'skip', detail }, dropped: [] };
     }
   }
 }
@@ -282,7 +282,7 @@ function runTaskLoop(ctx: AgentContext, loop: string, job: TaskJob, trace: Trace
 
 function leftAlone(ctx: AgentContext, result: DecomposerTaskResult): TaskDone {
   ctx.trace.record({
-    type: "validation",
+    type: 'validation',
     input: result.taskId,
     outputSummary: result.detail,
     durationMs: 0,
@@ -302,7 +302,7 @@ function recheck(ctx: AgentContext, job: TaskJob): DecomposerTaskResult | undefi
     if (excluded) return excluded;
   }
   const conflict = writeConflict(ctx.db, applyRun(ctx), job.task, job.supersedes);
-  return conflict === null ? undefined : taskResult(job.task, "superseded", conflict);
+  return conflict === null ? undefined : taskResult(job.task, 'superseded', conflict);
 }
 
 /**
@@ -318,7 +318,7 @@ async function decomposeTask(
 ): Promise<TaskDone> {
   const { task } = job;
   if (ctx.signal.aborted) throw stopped(ctx.signal);
-  const claim = tryClaim(ctx.db, task.id, ctx.runId, "decomposer", Date.now());
+  const claim = tryClaim(ctx.db, task.id, ctx.runId, 'decomposer', Date.now());
   if (!claim.claimed) return leftAlone(ctx, claimedResult(task, claim.heldBy));
   try {
     const refused = recheck(ctx, job);
@@ -330,7 +330,7 @@ async function decomposeTask(
     if (ctx.signal.aborted) throw stopped(ctx.signal);
     const result = stage3.task(task, decision, job.supersedes);
     trace.record({
-      type: "validation",
+      type: 'validation',
       input: decision,
       outputSummary: result.detail,
       durationMs: 0,
@@ -358,8 +358,8 @@ function failIfNothingWorked(
   settled: readonly PromiseSettledResult<TaskDone>[],
   output: DecomposerOutput,
 ): void {
-  const firstFailure = settled.find((s) => s.status === "rejected");
-  const allFailed = output.tasks.every((t) => t.outcome === "failed");
+  const firstFailure = settled.find((s) => s.status === 'rejected');
+  const allFailed = output.tasks.every((t) => t.outcome === 'failed');
   if (firstFailure && allFailed && output.related.length === 0) throw firstFailure.reason;
 }
 
@@ -370,10 +370,10 @@ async function runBatch(
   stage3: Stage3,
 ): Promise<{ output: DecomposerOutput }> {
   const batch = selectBatch(ctx.db, input.taskIds, ctx.runId, ctx.startedAt);
-  const picked = batch.tasks.map((t) => t.identifier).join(", ");
+  const picked = batch.tasks.map((t) => t.identifier).join(', ');
   ctx.trace.record({
-    type: "validation",
-    input: input.taskIds ?? "every eligible task",
+    type: 'validation',
+    input: input.taskIds ?? 'every eligible task',
     outputSummary:
       batch.tasks.length === 0
         ? `No eligible tasks; left out ${batch.excluded.length}`
@@ -381,7 +381,7 @@ async function runBatch(
     durationMs: 0,
   });
   if (batch.tasks.length === 0) {
-    const none = [{ message: "No eligible tasks" }];
+    const none = [{ message: 'No eligible tasks' }];
     return { output: buildOutput(batch.excluded, [], none, undefined) };
   }
 
@@ -410,7 +410,7 @@ async function runBatch(
   const duplicateGroup = new Map<number, RelatedPayload>();
   for (const group of groups) {
     const inBatch = group.taskIds.filter((id) => batchIds.has(id));
-    if (group.relation !== "duplicates" || inBatch.length < 2) continue;
+    if (group.relation !== 'duplicates' || inBatch.length < 2) continue;
     for (const id of inBatch) duplicateGroup.set(id, group);
   }
   const duplicates = batch.tasks.flatMap((task) => {
@@ -418,9 +418,9 @@ async function runBatch(
     if (!group) return [];
     const others = relatedNotes(ctx.db, task, [group])
       .map((n) => n.task.identifier)
-      .join(", ");
+      .join(', ');
     const detail = `Left out of this run: it duplicates ${others}. ${group.reason}`;
-    return [taskResult(task, "duplicate", detail, suggestionOf.get(group) ?? null)];
+    return [taskResult(task, 'duplicate', detail, suggestionOf.get(group) ?? null)];
   });
 
   const jobs = batch.tasks
@@ -432,7 +432,7 @@ async function runBatch(
   if (ctx.signal.aborted) throw stopped(ctx.signal);
 
   const done = settled.map((s, i): TaskDone =>
-    s.status === "fulfilled"
+    s.status === 'fulfilled'
       ? s.value
       : { result: failedResult(jobs[i]!.task, s.reason), warnings: [] },
   );
@@ -448,19 +448,19 @@ async function runBatch(
 
 async function runClarify(
   ctx: AgentContext,
-  loops: Pick<DecomposerLoops, "task">,
+  loops: Pick<DecomposerLoops, 'task'>,
   input: ClarifyInput,
   stage3: Stage3,
 ): Promise<{ output: DecomposerOutput }> {
   const suggestion = findSuggestion(ctx.db, input.suggestionId);
-  if (suggestion?.kind !== "clarification" || suggestion.status !== "pending") {
+  if (suggestion?.kind !== 'clarification' || suggestion.status !== 'pending') {
     throw new AgentError(
-      "nothing_valid",
+      'nothing_valid',
       `Suggestion #${input.suggestionId} is no longer a pending clarification.`,
     );
   }
   const task = findTask(ctx.db, suggestion.targetId);
-  if (!task) throw new AgentError("nothing_valid", `Task ${suggestion.targetId} no longer exists.`);
+  if (!task) throw new AgentError('nothing_valid', `Task ${suggestion.targetId} no longer exists.`);
 
   const job: TaskJob = {
     task,
@@ -475,7 +475,7 @@ async function runClarify(
   const settled = await settleEach([job], 1, (j) => decomposeTask(ctx, loops.task, stage3, j));
   if (ctx.signal.aborted) throw stopped(ctx.signal);
   const [only] = settled;
-  if (only!.status === "rejected") throw only!.reason;
+  if (only!.status === 'rejected') throw only!.reason;
   const { result, warnings } = only!.value;
   return {
     output: buildOutput([result], [], warnings, findChangesetByRun(ctx.db, ctx.runId)),
@@ -492,13 +492,13 @@ function prepareRun(db: Db, input: DecomposerRunInput): DecomposerRunInput {
 function prepareClarify(db: Db, input: ClarifyInput): ClarifyInput {
   const suggestion = findSuggestion(db, input.suggestionId);
   if (!suggestion) throw notFound(`Suggestion ${input.suggestionId} not found`);
-  if (suggestion.kind !== "clarification") {
+  if (suggestion.kind !== 'clarification') {
     throw invalidField(
-      "suggestionId",
+      'suggestionId',
       `Suggestion ${suggestion.id} is a ${suggestion.kind} suggestion, not a clarification`,
     );
   }
-  if (suggestion.status !== "pending") {
+  if (suggestion.status !== 'pending') {
     throw conflict(`Suggestion ${suggestion.id} is ${suggestion.status}, not pending`);
   }
   const { questions } = suggestion.payload;
@@ -507,16 +507,16 @@ function prepareClarify(db: Db, input: ClarifyInput): ClarifyInput {
     input.answers.every((a, i) => a.question === questions[i]);
   if (input.answers && !inOrder) {
     throw invalidField(
-      "answers",
+      'answers',
       `Send one answer per question of suggestion ${suggestion.id}, in the order of its questions`,
     );
   }
   const task = findTask(db, suggestion.targetId);
   if (task) {
-    if (task.status === "done") throw conflict(`${task.identifier} is done`);
+    if (task.status === 'done') throw conflict(`${task.identifier} is done`);
     const subtasks = listSubtaskIds(db, task.id).length;
     if (subtasks > 0) {
-      throw conflict(`${task.identifier} already has ${plural(subtasks, "subtask")}`);
+      throw conflict(`${task.identifier} already has ${plural(subtasks, 'subtask')}`);
     }
   }
   return input;
@@ -525,7 +525,7 @@ function prepareClarify(db: Db, input: ClarifyInput): ClarifyInput {
 export function createDecomposerAgent(loops: Partial<DecomposerLoops> = {}) {
   const names = { ...DECOMPOSER_LOOPS, ...loops };
   return defineAgent({
-    name: "decomposer",
+    name: 'decomposer',
     promptVersion: DECOMPOSER_PROMPT_VERSION,
     input: decomposerRunInputSchema,
     output: decomposerOutputSchema,
@@ -535,10 +535,10 @@ export function createDecomposerAgent(loops: Partial<DecomposerLoops> = {}) {
   });
 }
 
-export function createDecomposerClarifyAgent(loops: Partial<Pick<DecomposerLoops, "task">> = {}) {
+export function createDecomposerClarifyAgent(loops: Partial<Pick<DecomposerLoops, 'task'>> = {}) {
   const names = { task: loops.task ?? DECOMPOSER_LOOPS.task };
   return defineAgent({
-    name: "decomposer",
+    name: 'decomposer',
     promptVersion: DECOMPOSER_PROMPT_VERSION,
     input: clarifyInputSchema,
     output: decomposerOutputSchema,

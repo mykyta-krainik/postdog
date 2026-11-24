@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
-import { DecompositionModeSetting } from "@/features/set-decomposition-mode";
-import { AiToggle } from "@/features/toggle-ai";
-import { ScheduledRunsToggle } from "@/features/toggle-scheduled-runs";
-import { useSettings } from "@/entities/settings";
-import { LoadError } from "@/shared/ui/load-error";
-import { Skeleton } from "@/shared/ui/skeleton";
-import { ThemePicker } from "./theme-picker";
+import type { ReactNode } from 'react';
+import { DecompositionModeSetting } from '@/features/set-decomposition-mode';
+import { AiToggle } from '@/features/toggle-ai';
+import { ScheduledRunsToggle } from '@/features/toggle-scheduled-runs';
+import { useSettings } from '@/entities/settings';
+import { LoadError } from '@/shared/ui/load-error';
+import { Skeleton } from '@/shared/ui/skeleton';
+import { ThemePicker } from './theme-picker';
 
 function Section({
   title,
@@ -29,7 +29,7 @@ function Section({
   );
 }
 
-const GROUP = "divide-y divide-border overflow-hidden rounded-md border border-border bg-card";
+const GROUP = 'divide-y divide-border overflow-hidden rounded-md border border-border bg-card';
 
 function SettingsSkeleton() {
   return (
@@ -37,7 +37,7 @@ function SettingsSkeleton() {
       <div className="flex flex-col gap-3">
         <Skeleton className="h-3.5 w-10" />
         <div className={GROUP}>
-          {["w-24", "w-20", "w-28"].map((width) => (
+          {['w-24', 'w-20', 'w-28'].map((width) => (
             <div key={width} className="flex flex-col gap-2 px-4 py-4">
               <Skeleton className={`h-3 ${width}`} />
               <Skeleton className="h-3 w-4/5" />

@@ -1,5 +1,5 @@
-import type { ClarifyInput } from "@postdog/shared";
-import { z } from "zod";
+import type { ClarifyInput } from '@postdog/shared';
+import { z } from 'zod';
 
 /** clarifyInputSchema's bound on one answer. */
 export const ANSWER_MAX = 1000;
@@ -11,15 +11,15 @@ export const answersFormSchema = z.object({
       answer: z
         .string()
         .trim()
-        .min(1, "Answer this one, or use Generate anyway.")
-        .max(ANSWER_MAX, `Keep it under ${ANSWER_MAX.toLocaleString("en")} characters.`),
+        .min(1, 'Answer this one, or use Generate anyway.')
+        .max(ANSWER_MAX, `Keep it under ${ANSWER_MAX.toLocaleString('en')} characters.`),
     }),
   ),
 });
 export type AnswerValues = z.input<typeof answersFormSchema>;
 
 export function emptyAnswers(questions: readonly string[]): AnswerValues {
-  return { answers: questions.map(() => ({ answer: "" })) };
+  return { answers: questions.map(() => ({ answer: '' })) };
 }
 
 /** Pairs each question with its trimmed answer for POST /agents/decomposer/clarify. */
@@ -32,7 +32,7 @@ export function answersInput(
     suggestionId,
     answers: questions.map((question, index) => ({
       question,
-      answer: values.answers[index]?.answer.trim() ?? "",
+      answer: values.answers[index]?.answer.trim() ?? '',
     })),
   };
 }

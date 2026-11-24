@@ -1,25 +1,25 @@
-"use client";
+'use client';
 
-import { AlertTriangle, History, Users } from "lucide-react";
-import { useState, type ReactNode } from "react";
-import { toast } from "sonner";
+import { AlertTriangle, History, Users } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { toast } from 'sonner';
 import {
   TraceTimeline,
   revalidatePlannerLatest,
   type CompletedPlannerRun,
-} from "@/entities/agent-run";
-import { updateTask } from "@/entities/task";
-import { formatDateTime, formatDayTime } from "@/shared/lib/format";
-import { errorMessage } from "@/shared/lib/form-errors";
-import { Button } from "@/shared/ui/button";
+} from '@/entities/agent-run';
+import { updateTask } from '@/entities/task';
+import { formatDateTime, formatDayTime } from '@/shared/lib/format';
+import { errorMessage } from '@/shared/lib/form-errors';
+import { Button } from '@/shared/ui/button';
 import {
   changedSinceText,
   readPlanMarks,
   unexplainedChanges,
   writePlanMarks,
   type PlanMarks,
-} from "../model/plan-marks";
-import { FocusItem } from "./focus-item";
+} from '../model/plan-marks';
+import { FocusItem } from './focus-item';
 
 function NoteList({
   icon,
@@ -72,12 +72,12 @@ export function PlanView({
 
   function start(taskId: number, identifier: string) {
     save((current) => ({ ...current, started: [...current.started, taskId] }));
-    updateTask(taskId, { status: "in_progress" }).then(
+    updateTask(taskId, { status: 'in_progress' }).then(
       () => revalidatePlannerLatest(),
       (error: unknown) => {
         save((current) => ({ ...current, started: current.started.filter((id) => id !== taskId) }));
         toast.error(`${identifier} didn't start`, {
-          description: errorMessage(error, "Try again."),
+          description: errorMessage(error, 'Try again.'),
         });
       },
     );

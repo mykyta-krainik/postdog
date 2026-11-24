@@ -6,10 +6,10 @@ import {
   type PlannerInput,
   type StartRunResponse,
   type StatusUpdaterInput,
-} from "@postdog/shared";
-import { mutate } from "swr";
-import { ApiError, apiKey, apiRequest } from "@/shared/api";
-import { agentRunKeys } from "./keys";
+} from '@postdog/shared';
+import { mutate } from 'swr';
+import { ApiError, apiKey, apiRequest } from '@/shared/api';
+import { agentRunKeys } from './keys';
 
 /** The run endpoint and request body of each agent the UI can start. */
 type StartableAgents = {
@@ -19,9 +19,9 @@ type StartableAgents = {
 };
 
 const RUN_PATHS: Record<keyof StartableAgents, `/${string}`> = {
-  planner: "/agents/planner/run",
-  status_updater: "/agents/status-updater/run",
-  decomposer: "/agents/decomposer/run",
+  planner: '/agents/planner/run',
+  status_updater: '/agents/status-updater/run',
+  decomposer: '/agents/decomposer/run',
 };
 
 /** Starts a run. The API answers 202 with the run id at once; poll the run with useAgentRun. */
@@ -30,7 +30,7 @@ export async function startAgentRun<Agent extends keyof StartableAgents>(
   input: StartableAgents[Agent],
 ): Promise<StartRunResponse> {
   const started = await apiRequest(apiKey(RUN_PATHS[agent]), startRunResponseSchema, {
-    method: "POST",
+    method: 'POST',
     body: input,
   });
   void revalidateRunLists();
@@ -38,13 +38,13 @@ export async function startAgentRun<Agent extends keyof StartableAgents>(
 }
 
 export function startPlannerRun(): Promise<StartRunResponse> {
-  return startAgentRun("planner", {});
+  return startAgentRun('planner', {});
 }
 
 /** Answers a clarification, or asks the Decomposer to go ahead anyway. Starts a new run for that task. */
 export async function startClarifyRun(input: ClarifyInput): Promise<StartRunResponse> {
-  const started = await apiRequest(apiKey("/agents/decomposer/clarify"), startRunResponseSchema, {
-    method: "POST",
+  const started = await apiRequest(apiKey('/agents/decomposer/clarify'), startRunResponseSchema, {
+    method: 'POST',
     body: input,
   });
   void revalidateRunLists();
@@ -57,9 +57,9 @@ export async function startClarifyRun(input: ClarifyInput): Promise<StartRunResp
  */
 export async function cancelRun(id: number): Promise<void> {
   try {
-    await apiRequest(apiKey(`/agents/runs/${id}/cancel`), agentRunSchema, { method: "POST" });
+    await apiRequest(apiKey(`/agents/runs/${id}/cancel`), agentRunSchema, { method: 'POST' });
   } catch (error) {
-    if (!(error instanceof ApiError && error.code === "conflict")) throw error;
+    if (!(error instanceof ApiError && error.code === 'conflict')) throw error;
   } finally {
     await Promise.all([mutate(agentRunKeys.run(id)), revalidateRunLists()]);
   }

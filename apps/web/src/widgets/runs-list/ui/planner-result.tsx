@@ -1,8 +1,8 @@
-import type { PlannerRun } from "@postdog/shared";
-import { TriangleAlert } from "lucide-react";
-import Link from "next/link";
-import { routes } from "@/shared/config";
-import { Button } from "@/shared/ui/button";
+import type { PlannerRun } from '@postdog/shared';
+import { TriangleAlert } from 'lucide-react';
+import Link from 'next/link';
+import { routes } from '@/shared/config';
+import { Button } from '@/shared/ui/button';
 
 /** A finished plan, compact: each focus task with its reason, linking to the task, and Open Today. */
 export function PlannerResult({ run }: { run: PlannerRun }) {

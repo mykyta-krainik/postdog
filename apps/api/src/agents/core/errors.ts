@@ -1,4 +1,4 @@
-import type { AgentErrorCode, AgentRunError } from "@postdog/shared";
+import type { AgentErrorCode, AgentRunError } from '@postdog/shared';
 
 export class AgentError extends Error {
   constructor(

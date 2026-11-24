@@ -1,13 +1,13 @@
-type Level = "info" | "error";
+type Level = 'info' | 'error';
 
 function write(level: Level, message: string, fields?: Record<string, unknown>): void {
   const line = `${new Date().toISOString()} ${level.toUpperCase()} ${message}`;
-  const stream = level === "info" ? console.log : console.error;
+  const stream = level === 'info' ? console.log : console.error;
   if (fields) stream(line, fields);
   else stream(line);
 }
 
 export const logger = {
-  info: (message: string, fields?: Record<string, unknown>) => write("info", message, fields),
-  error: (message: string, fields?: Record<string, unknown>) => write("error", message, fields),
+  info: (message: string, fields?: Record<string, unknown>) => write('info', message, fields),
+  error: (message: string, fields?: Record<string, unknown>) => write('error', message, fields),
 };

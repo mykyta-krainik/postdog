@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { decomposerRunSchema } from "@postdog/shared";
-import { startAgentRun, useAgentRunner } from "@/entities/agent-run";
-import { revalidateNotifications } from "@/entities/notification";
-import { revalidateSuggestions } from "@/entities/suggestion";
+import { decomposerRunSchema } from '@postdog/shared';
+import { startAgentRun, useAgentRunner } from '@/entities/agent-run';
+import { revalidateNotifications } from '@/entities/notification';
+import { revalidateSuggestions } from '@/entities/suggestion';
 
 /**
  * One default Decomposer run: the server picks up to 10 eligible to-do tasks. The task list
@@ -13,7 +13,7 @@ import { revalidateSuggestions } from "@/entities/suggestion";
 export function useDecompose() {
   return useAgentRunner({
     start: async () => {
-      const started = await startAgentRun("decomposer", {});
+      const started = await startAgentRun('decomposer', {});
       void revalidateSuggestions();
       return started;
     },
