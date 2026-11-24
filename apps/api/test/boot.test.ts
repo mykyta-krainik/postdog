@@ -60,6 +60,7 @@ describe("fresh start", () => {
     expect((await api.get("/api/settings").expect(200)).body).toEqual({
       aiEnabled: true,
       decompositionMode: "suggest",
+      scheduledRunsEnabled: true,
     });
   });
 

@@ -17,6 +17,7 @@ const summaryColumns = {
   agent: agentRuns.agent,
   mode: agentRuns.mode,
   status: agentRuns.status,
+  trigger: agentRuns.trigger,
   promptVersion: agentRuns.promptVersion,
   input: agentRuns.input,
   error: agentRuns.error,

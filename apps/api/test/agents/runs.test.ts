@@ -102,6 +102,8 @@ describe("agent runs over HTTP", () => {
     const llmTokens = run.trace.flatMap((s) => (s.tokens ? [s.tokens.input] : []));
     expect(run.usage!.inputTokens).toBe(llmTokens[0]! + llmTokens[1]!);
     expect(run.finishedAt).toBeGreaterThanOrEqual(run.startedAt);
+    // The raw body, since the schema would read a missing trigger as manual.
+    expect((await app.get(`/api/agents/runs/${runId}`).expect(200)).body.trigger).toBe("manual");
   });
 
   it("stores a failed loop with its error code and the trace so far", async () => {
@@ -164,8 +166,13 @@ describe("agent runs over HTTP", () => {
       .expect(202);
     await waitForRun(app, second.body.runId);
 
-    const all = listAgentRunsResponseSchema.parse((await app.get("/api/agents/runs")).body);
+    const listed = await app.get("/api/agents/runs").expect(200);
+    const all = listAgentRunsResponseSchema.parse(listed.body);
     expect(all.items.map((r) => r.id)).toEqual([second.body.runId, first]);
+    expect(listed.body.items.map((r: { trigger: string }) => r.trigger)).toEqual([
+      "manual",
+      "manual",
+    ]);
     expect(all.items[0]).not.toHaveProperty("trace");
     expect(all.items[0]).not.toHaveProperty("input");
     expect(all.items[0]).not.toHaveProperty("output");

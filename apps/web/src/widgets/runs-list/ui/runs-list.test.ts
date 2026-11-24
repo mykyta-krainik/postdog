@@ -20,6 +20,7 @@ function summary(run: Partial<AgentRunSummary> & Pick<AgentRunSummary, "id">): A
     agent: "planner",
     mode: null,
     status: "completed",
+    trigger: "manual",
     promptVersion: "V1",
     error: null,
     langfuseTraceId: null,

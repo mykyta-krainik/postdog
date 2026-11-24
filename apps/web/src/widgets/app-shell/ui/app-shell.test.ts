@@ -18,6 +18,7 @@ function runningRun(id: number): AgentRunSummary {
     agent: "planner",
     mode: null,
     status: "running",
+    trigger: "manual",
     promptVersion: "V1",
     error: null,
     langfuseTraceId: null,
@@ -35,7 +36,7 @@ function render(
   unreadCount: number,
   running = 0,
 ): string {
-  const settings: Settings = { aiEnabled, decompositionMode: "auto" };
+  const settings: Settings = { aiEnabled, decompositionMode: "auto", scheduledRunsEnabled: true };
   const items = Array.from({ length: running }, (_, index) => runningRun(index + 1));
   return renderToStaticMarkup(
     createElement(

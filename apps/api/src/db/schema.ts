@@ -7,6 +7,7 @@ import {
   NOTIFICATION_KINDS,
   PRIORITIES,
   RUN_STATUSES,
+  RUN_TRIGGERS,
   SUGGESTION_KINDS,
   SUGGESTION_STATUSES,
   SUGGESTION_TARGET_TYPES,
@@ -17,6 +18,7 @@ import {
   type DecompositionMode,
   type LinkCreatedBy,
   type LlmInfo,
+  type ScheduledAgent,
   type TraceStep,
 } from "@postdog/shared";
 import {
@@ -82,12 +84,16 @@ export const taskLinks = sqliteTable(
   ],
 );
 
-export interface StoredSettings {
+export type StoredSettings = {
   aiEnabled: boolean;
   decompositionMode: DecompositionMode;
+  scheduledRunsEnabled: boolean;
   identifierCounter: number;
   seededAt: number;
-}
+} & {
+  /** The local date (YYYY-MM-DD) of the agent's latest scheduled slot that fired or was skipped. */
+  [A in ScheduledAgent as `lastScheduledRun:${A}`]: string;
+};
 export type SettingKey = keyof StoredSettings;
 
 export const settings = sqliteTable("settings", {
@@ -102,6 +108,7 @@ export const agentRuns = sqliteTable(
     agent: text("agent", { enum: AGENT_NAMES }).notNull(),
     mode: text("mode", { enum: DECOMPOSITION_MODES }),
     status: text("status", { enum: RUN_STATUSES }).notNull(),
+    trigger: text("trigger", { enum: RUN_TRIGGERS }).notNull().default("manual"),
     promptVersion: text("prompt_version").notNull(),
     input: text("input", { mode: "json" }).$type<unknown>().notNull(),
     output: text("output", { mode: "json" }).$type<unknown>(),

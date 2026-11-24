@@ -6,6 +6,7 @@ import {
   type AgentsInfo,
   type ListAgentRunsQuery,
   type PlannerLatestResponse,
+  type RunTrigger,
   type StartRunResponse,
 } from "@postdog/shared";
 import type { AgentContext, AgentDefinition } from "../agents/core/definition";
@@ -41,8 +42,8 @@ const INTERRUPTED: AgentRunError = {
 };
 
 /**
- * A run counts as watched while its start or its last GET /api/agents/runs/:id is at most this
- * old. The web polls every 1.5 s, and a throttled background tab about once a minute.
+ * A run counts as watched while a client's start of it or its last GET /api/agents/runs/:id is at
+ * most this old. The web polls every 1.5 s, and a throttled background tab about once a minute.
  */
 export const WATCH_WINDOW_MS = 8_000;
 
@@ -107,12 +108,12 @@ export function createAgentRunService(deps: {
   const { db, llm, tracer, agents, now = () => Date.now() } = deps;
   /**
    * The runs this process executes: how to stop each, its execute until it has saved, and when a
-   * client last showed it is there, by starting the run or reading it. The entry goes once the
-   * run has saved its end.
+   * client last showed it is there, by starting the run or reading it (null until a client reads a
+   * scheduled run). The entry goes once the run has saved its end.
    */
   const active = new Map<
     number,
-    { controller: AbortController; done: Promise<void>; lastSeenAt: number }
+    { controller: AbortController; done: Promise<void>; lastSeenAt: number | null }
   >();
   /** The run holding each slot of RUN_SLOTS. */
   const slots = new Map<string, number>();
@@ -129,7 +130,7 @@ export function createAgentRunService(deps: {
 
   function watched(id: number, at: number): boolean {
     const seenAt = active.get(id)?.lastSeenAt;
-    return seenAt !== undefined && at - seenAt <= WATCH_WINDOW_MS;
+    return seenAt != null && at - seenAt <= WATCH_WINDOW_MS;
   }
 
   /** Saves the run's end and its Inbox entry in one transaction, unless the run already ended. */
@@ -175,8 +176,15 @@ export function createAgentRunService(deps: {
   }
 
   return {
-    /** Starts the agent registered under `key`, or answers 409 while its slot is taken. */
-    start<K extends AgentKey>(key: K, body: InputOf<K>): StartRunResponse {
+    /**
+     * Starts the agent registered under `key`, or answers 409 while its slot is taken. A scheduled
+     * run has no client that started it, so it starts unwatched.
+     */
+    start<K extends AgentKey>(
+      key: K,
+      body: InputOf<K>,
+      trigger: RunTrigger = "manual",
+    ): StartRunResponse {
       const { slot, busy } = (RUN_SLOTS[key] as RunSlot<InputOf<K>>)(body);
       const holder = slots.get(slot);
       if (holder !== undefined) throw conflict(`${busy} (run #${holder}).`);
@@ -189,6 +197,7 @@ export function createAgentRunService(deps: {
         agent: definition.name,
         mode,
         status: "running",
+        trigger,
         promptVersion: definition.promptVersion,
         input,
         trace: [],
@@ -217,7 +226,11 @@ export function createAgentRunService(deps: {
       const done = execute(definition, ctx, input)
         .catch((err: unknown) => logger.error(`Agent run ${run.id} could not be saved`, { err }))
         .finally(() => active.delete(run.id));
-      active.set(run.id, { controller, done, lastSeenAt: startedAt });
+      active.set(run.id, {
+        controller,
+        done,
+        lastSeenAt: trigger === "manual" ? startedAt : null,
+      });
       slots.set(slot, run.id);
       return { runId: run.id };
     },

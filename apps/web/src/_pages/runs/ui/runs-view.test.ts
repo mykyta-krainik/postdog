@@ -12,7 +12,11 @@ vi.mock("next/navigation", () => ({
 }));
 
 function render(aiEnabled: boolean): string {
-  const settings: Settings = { aiEnabled, decompositionMode: "suggest" };
+  const settings: Settings = {
+    aiEnabled,
+    decompositionMode: "suggest",
+    scheduledRunsEnabled: true,
+  };
   return renderToStaticMarkup(
     createElement(
       SWRConfig,

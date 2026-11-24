@@ -26,15 +26,17 @@ afterEach(() => {
 
 describe("apiRequest", () => {
   it("returns the body parsed with the schema", async () => {
-    respondWith(200, { aiEnabled: false, decompositionMode: "auto" });
-    await expect(apiRequest("/api/settings", settingsSchema)).resolves.toEqual({
-      aiEnabled: false,
-      decompositionMode: "auto",
-    });
+    const settings = { aiEnabled: false, decompositionMode: "auto", scheduledRunsEnabled: true };
+    respondWith(200, settings);
+    await expect(apiRequest("/api/settings", settingsSchema)).resolves.toEqual(settings);
   });
 
   it("sends a JSON body with the method", async () => {
-    const fetchMock = respondWith(200, { aiEnabled: true, decompositionMode: "suggest" });
+    const fetchMock = respondWith(200, {
+      aiEnabled: true,
+      decompositionMode: "suggest",
+      scheduledRunsEnabled: true,
+    });
     await apiRequest("/api/settings", settingsSchema, {
       method: "PATCH",
       body: { aiEnabled: true },
@@ -63,7 +65,11 @@ describe("apiRequest", () => {
   });
 
   it("sends a read without a body or a content type", async () => {
-    const fetchMock = respondWith(200, { aiEnabled: true, decompositionMode: "suggest" });
+    const fetchMock = respondWith(200, {
+      aiEnabled: true,
+      decompositionMode: "suggest",
+      scheduledRunsEnabled: true,
+    });
     await apiRequest("/api/settings", settingsSchema);
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/settings",

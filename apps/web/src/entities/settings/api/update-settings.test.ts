@@ -4,7 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, settingsKey } from "@/shared/api";
 import { updateSettings } from "./update-settings";
 
-const saved: Settings = { aiEnabled: true, decompositionMode: "suggest" };
+const saved: Settings = {
+  aiEnabled: true,
+  decompositionMode: "suggest",
+  scheduledRunsEnabled: true,
+};
 
 /** What every useSettings() caller, such as the task list, renders right now. */
 function displayed(): Settings | undefined {
@@ -48,20 +52,20 @@ describe("updateSettings", () => {
     const { respond } = deferredResponse();
     const update = updateSettings({ aiEnabled: false });
 
-    expect(displayed()).toEqual({ aiEnabled: false, decompositionMode: "suggest" });
+    expect(displayed()).toEqual({ ...saved, aiEnabled: false });
 
-    respond(200, { aiEnabled: false, decompositionMode: "suggest" });
-    await expect(update).resolves.toEqual({ aiEnabled: false, decompositionMode: "suggest" });
-    expect(displayed()).toEqual({ aiEnabled: false, decompositionMode: "suggest" });
+    respond(200, { ...saved, aiEnabled: false });
+    await expect(update).resolves.toEqual({ ...saved, aiEnabled: false });
+    expect(displayed()).toEqual({ ...saved, aiEnabled: false });
   });
 
   it("shows what the API saved when it differs from the patch", async () => {
     const { respond } = deferredResponse();
     const update = updateSettings({ decompositionMode: "auto" });
-    respond(200, { aiEnabled: false, decompositionMode: "auto" });
+    respond(200, { ...saved, aiEnabled: false, decompositionMode: "auto" });
     await update;
 
-    expect(displayed()).toEqual({ aiEnabled: false, decompositionMode: "auto" });
+    expect(displayed()).toEqual({ ...saved, aiEnabled: false, decompositionMode: "auto" });
   });
 
   it("rolls back and rethrows when the API rejects the change", async () => {

@@ -72,7 +72,11 @@ const list = listNotificationsResponseSchema.parse({
 });
 
 function render(data: ListNotificationsResponse): string {
-  const settings: Settings = { aiEnabled: true, decompositionMode: "auto" };
+  const settings: Settings = {
+    aiEnabled: true,
+    decompositionMode: "auto",
+    scheduledRunsEnabled: true,
+  };
   return renderToStaticMarkup(
     createElement(
       SWRConfig,

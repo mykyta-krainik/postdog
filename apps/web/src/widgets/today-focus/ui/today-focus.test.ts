@@ -12,6 +12,7 @@ const plannerRun: AgentRunSummary = {
   agent: "planner",
   mode: null,
   status: "running",
+  trigger: "manual",
   promptVersion: "V1",
   error: null,
   langfuseTraceId: null,
@@ -23,7 +24,11 @@ const plannerRun: AgentRunSummary = {
 };
 
 function render(running: AgentRunSummary[]): string {
-  const settings: Settings = { aiEnabled: true, decompositionMode: "suggest" };
+  const settings: Settings = {
+    aiEnabled: true,
+    decompositionMode: "suggest",
+    scheduledRunsEnabled: true,
+  };
   return renderToStaticMarkup(
     createElement(
       SWRConfig,
