@@ -60,7 +60,12 @@ export const RELATED_RELATIONS = ["duplicates", "overlaps"] as const;
 export const relatedRelationSchema = z.enum(RELATED_RELATIONS);
 export type RelatedRelation = z.infer<typeof relatedRelationSchema>;
 
-export const NOTIFICATION_KINDS = ["auto_decomposition", "agent_failed", "conflict"] as const;
+export const NOTIFICATION_KINDS = [
+  "auto_decomposition",
+  "agent_failed",
+  "conflict",
+  "run_finished",
+] as const;
 export const notificationKindSchema = z.enum(NOTIFICATION_KINDS);
 export type NotificationKind = z.infer<typeof notificationKindSchema>;
 

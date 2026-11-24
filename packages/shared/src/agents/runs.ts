@@ -64,11 +64,10 @@ export const agentRunSchema = z.object({
 });
 export type AgentRun = z.infer<typeof agentRunSchema>;
 
-export const agentRunSummarySchema = agentRunSchema.omit({
-  input: true,
-  output: true,
-  trace: true,
-});
+/** One line for run lists: what the run was for, such as "Plan my day" or "Status update for PD-7". */
+export const agentRunSummarySchema = agentRunSchema
+  .omit({ input: true, output: true, trace: true })
+  .extend({ label: z.string() });
 export type AgentRunSummary = z.infer<typeof agentRunSummarySchema>;
 
 export const startRunResponseSchema = z.object({

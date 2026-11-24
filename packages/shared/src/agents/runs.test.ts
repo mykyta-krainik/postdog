@@ -60,9 +60,11 @@ describe("agentRunSchema", () => {
   });
 
   it("leaves input, output and trace out of the summary", () => {
-    expect(agentRunSummarySchema.parse(run)).not.toHaveProperty("trace");
-    expect(agentRunSummarySchema.parse(run)).not.toHaveProperty("input");
-    expect(agentRunSummarySchema.parse(run)).not.toHaveProperty("output");
+    const summary = agentRunSummarySchema.parse({ ...run, label: "Plan my day" });
+    expect(summary).not.toHaveProperty("trace");
+    expect(summary).not.toHaveProperty("input");
+    expect(summary).not.toHaveProperty("output");
+    expect(summary.label).toBe("Plan my day");
   });
 });
 

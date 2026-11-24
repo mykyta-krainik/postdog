@@ -11,6 +11,7 @@ export const NOTIFICATION_KIND_LABEL: Record<NotificationKind, string> = {
   auto_decomposition: "Auto decomposition",
   agent_failed: "An agent run failed",
   conflict: "Skipped an edited task",
+  run_finished: "An agent run finished",
 };
 
 export function notificationTitle(notification: Pick<Notification, "kind" | "title">): string {

@@ -33,6 +33,7 @@ import { recomputeAllAiStates } from "../repositories/aiState";
 import { deleteClaimsOfStoppedRuns, releaseClaims } from "../repositories/claims";
 import { insertNotification, type NewNotification } from "../repositories/notifications";
 import { countTasksUpdatedAfter } from "../repositories/tasks";
+import { runLabel } from "./runLabel";
 
 const INTERRUPTED: AgentRunError = {
   code: "interrupted",
@@ -219,7 +220,10 @@ export function createAgentRunService(deps: {
     },
 
     list(query: ListAgentRunsQuery): AgentRunSummary[] {
-      return listRuns(db, query);
+      return listRuns(db, query).map(({ input, ...run }) => ({
+        ...run,
+        label: runLabel(db, run.agent, input),
+      }));
     },
 
     cancel(id: number): AgentRun {

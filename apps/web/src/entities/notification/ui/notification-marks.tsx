@@ -1,5 +1,5 @@
 import type { ChangesetTaskState, NotificationKind } from "@postdog/shared";
-import { ListTree, PencilLine, TriangleAlert, type LucideIcon } from "lucide-react";
+import { CircleCheck, ListTree, PencilLine, TriangleAlert, type LucideIcon } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 import {
@@ -13,6 +13,7 @@ const KIND_ICON: Record<NotificationKind, { icon: LucideIcon; className: string 
   auto_decomposition: { icon: ListTree, className: "text-brand" },
   agent_failed: { icon: TriangleAlert, className: "text-destructive" },
   conflict: { icon: PencilLine, className: "text-muted-foreground" },
+  run_finished: { icon: CircleCheck, className: "text-brand" },
 };
 
 export function NotificationKindIcon({

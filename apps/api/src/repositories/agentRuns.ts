@@ -1,4 +1,4 @@
-import type { AgentName, AgentRunSummary, RunStatus } from "@postdog/shared";
+import type { AgentName, RunStatus } from "@postdog/shared";
 import { and, desc, eq, type SQL } from "drizzle-orm";
 import type { Executor } from "../db/client";
 import { agentRuns, type AgentRunRow, type NewAgentRunRow } from "../db/schema";
@@ -18,6 +18,7 @@ const summaryColumns = {
   mode: agentRuns.mode,
   status: agentRuns.status,
   promptVersion: agentRuns.promptVersion,
+  input: agentRuns.input,
   error: agentRuns.error,
   langfuseTraceId: agentRuns.langfuseTraceId,
   usage: agentRuns.usage,
@@ -36,7 +37,10 @@ export function findRun(ex: Executor, id: number): AgentRunRow | undefined {
   return ex.select().from(agentRuns).where(eq(agentRuns.id, id)).get();
 }
 
-export function listRuns(ex: Executor, filter: RunListFilter): AgentRunSummary[] {
+/** A run row without its output and trace, as the list needs it. `input` only feeds the label. */
+export type RunListRow = Pick<AgentRunRow, keyof typeof summaryColumns>;
+
+export function listRuns(ex: Executor, filter: RunListFilter): RunListRow[] {
   const conditions: SQL[] = [];
   if (filter.agent) conditions.push(eq(agentRuns.agent, filter.agent));
   if (filter.status) conditions.push(eq(agentRuns.status, filter.status));
