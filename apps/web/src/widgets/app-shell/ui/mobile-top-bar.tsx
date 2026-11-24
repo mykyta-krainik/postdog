@@ -8,16 +8,20 @@ import { routes } from "@/shared/config";
 import { cn } from "@/shared/lib/utils";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/shared/ui/sheet";
 import { Wordmark } from "@/shared/ui/wordmark";
+import { useRunningRuns } from "@/entities/agent-run";
 import { UnreadCountBadge, unreadBadgeText, useUnreadCount } from "@/entities/notification";
 import { useSettings } from "@/entities/settings";
-import { isActive, navItemsFor } from "../config/nav";
+import { isActive, menuButtonLabel, navItemsFor } from "../config/nav";
+import { RunningMark } from "./running-mark";
 
 /** Mobile only: the wordmark and a menu button that opens the navigation sheet. */
 export function MobileTopBar() {
   const pathname = usePathname();
   const { aiEnabled } = useSettings();
   const unread = useUnreadCount(aiEnabled);
+  const { count: running } = useRunningRuns(aiEnabled);
   const [open, setOpen] = useState(false);
+  const marked = unreadBadgeText(unread) !== null || running > 0;
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-1 border-b border-sidebar-border bg-sidebar px-1.5 md:hidden">
@@ -25,11 +29,11 @@ export function MobileTopBar() {
         <SheetTrigger asChild>
           <button
             type="button"
-            aria-label={unreadBadgeText(unread) ? `Open menu, ${unread} unread` : "Open menu"}
+            aria-label={menuButtonLabel(unread, running)}
             className="relative flex size-10 items-center justify-center rounded-md text-sidebar-foreground outline-none hover:bg-sidebar-accent focus-visible:ring-1 focus-visible:ring-ring"
           >
             <Menu className="size-5" aria-hidden />
-            {unreadBadgeText(unread) && (
+            {marked && (
               <span
                 aria-hidden
                 className="absolute top-2 right-2 size-2 rounded-full bg-brand ring-2 ring-sidebar"
@@ -54,7 +58,8 @@ export function MobileTopBar() {
             </SheetClose>
           </div>
           <nav aria-label="Main" className="flex flex-col gap-1 px-2 pt-1">
-            {navItemsFor(aiEnabled).map(({ href, label, icon: Icon, unread: showsUnread }) => {
+            {navItemsFor(aiEnabled).map((item) => {
+              const { href, label, icon: Icon } = item;
               const active = isActive(pathname, href);
               return (
                 <Link
@@ -70,7 +75,8 @@ export function MobileTopBar() {
                 >
                   <Icon className="size-4" aria-hidden />
                   {label}
-                  {showsUnread && <UnreadCountBadge count={unread} className="ml-auto" />}
+                  {item.unread && <UnreadCountBadge count={unread} className="ml-auto" />}
+                  {item.running && <RunningMark count={running} className="ml-auto" />}
                 </Link>
               );
             })}

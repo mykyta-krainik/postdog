@@ -13,20 +13,41 @@ import {
   type StatusUpdateView,
 } from "./status-update";
 
-/** The user's edits to one run's draft. It lives here, so closing the dialog keeps them. */
+/** The user's edits to one run's draft. */
 type Draft = { runId: number; text: string; copied: boolean };
 
-export type StatusUpdater = {
+/** The draft the user is editing: the generated text until they change or copy it. */
+export type DraftStore = {
+  draftFor: (runId: number, generated: string) => { text: string; copied: boolean };
+  editDraft: (runId: number, text: string) => void;
+  markCopied: (runId: number, text: string) => void;
+};
+
+export function useDraftStore(): DraftStore {
+  const [draft, setDraft] = useState<Draft | undefined>(undefined);
+  return {
+    draftFor: (runId, generated) =>
+      draft?.runId === runId ? draft : { text: generated, copied: false },
+    editDraft: (runId, text) =>
+      setDraft((current) => ({
+        runId,
+        text,
+        copied: current?.runId === runId ? current.copied : false,
+      })),
+    markCopied: (runId, text) => setDraft({ runId, text, copied: true }),
+  };
+}
+
+export type StatusUpdater = DraftStore & {
   view: StatusUpdateView;
+  /** The run this conversation shows, so an entry point can tell it from a run elsewhere. */
+  runId: number | undefined;
   /** Starts the first run of the scope. Does nothing once a run exists, so reopening shows it. */
   begin: () => void;
   /** Starts a run with this input: Regenerate and the answer to ask_for_notes. */
   run: (input: StatusUpdaterInput) => void;
   retry: () => void;
   cancel: () => void;
-  draftFor: (runId: number, generated: string) => { text: string; copied: boolean };
-  editDraft: (runId: number, text: string) => void;
-  markCopied: (runId: number, text: string) => void;
 };
 
 /**
@@ -44,29 +65,24 @@ export function useStatusUpdate(scope: StatusUpdateScope): StatusUpdater {
       for (const note of settled.input.notes ?? []) void mutate(taskKeys.notes(note.taskId));
     },
   });
-  const [draft, setDraft] = useState<Draft | undefined>(undefined);
+  // It lives here, so closing the dialog keeps the user's edits.
+  const drafts = useDraftStore();
 
   const run = (next: StatusUpdaterInput) => {
     input.current = next;
     runner.start();
   };
 
+  const { view } = runner;
   return {
-    view: toStatusUpdateView(runner.view),
+    view: toStatusUpdateView(view),
+    runId: "run" in view ? view.run.id : undefined,
     begin: () => {
       if (runner.view.status === "idle") run(initialInput(scope));
     },
     run,
     retry: () => run(retryInput(input.current, runner.view.status !== "request_failed")),
     cancel: runner.cancel,
-    draftFor: (runId, generated) =>
-      draft?.runId === runId ? draft : { text: generated, copied: false },
-    editDraft: (runId, text) =>
-      setDraft((current) => ({
-        runId,
-        text,
-        copied: current?.runId === runId ? current.copied : false,
-      })),
-    markCopied: (runId, text) => setDraft({ runId, text, copied: true }),
+    ...drafts,
   };
 }

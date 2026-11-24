@@ -1,6 +1,11 @@
 "use client";
 
-import { STATUS_UPDATE_TONES, type StatusUpdateTone, type StatusUpdaterRun } from "@postdog/shared";
+import {
+  STATUS_UPDATE_TONES,
+  type StatusUpdateTone,
+  type StatusUpdaterInput,
+  type StatusUpdaterRun,
+} from "@postdog/shared";
 import {
   Check,
   Copy,
@@ -26,7 +31,7 @@ import {
   TONE_META,
   type UpdateOutput,
 } from "../model/status-update";
-import type { StatusUpdater } from "../model/use-status-update";
+import type { DraftStore } from "../model/use-status-update";
 
 const TONE_ICON: Record<StatusUpdateTone, LucideIcon> = {
   celebrate: PartyPopper,
@@ -96,27 +101,30 @@ function ToneHint({
 
 /**
  * The draft: the tone picker, the Slack text to edit, Regenerate and Copy. Key it by run, so a
- * new run starts from its own tone.
+ * new run starts from its own tone. Without `onRegenerate` it shows only the tone line, the
+ * text and Copy, for a run opened outside the conversation that made it.
  */
 export function UpdateResult({
   run,
   output,
-  updater,
+  drafts,
+  onRegenerate,
 }: {
   run: StatusUpdaterRun;
   output: UpdateOutput;
-  updater: StatusUpdater;
+  drafts: DraftStore;
+  onRegenerate?: (input: StatusUpdaterInput) => void;
 }) {
   const [tone, setTone] = useState<StatusUpdateTone>(output.update.tone);
   const [confirming, setConfirming] = useState(false);
   const textId = useId();
   const textarea = useRef<HTMLTextAreaElement>(null);
-  const draft = updater.draftFor(run.id, output.text);
+  const draft = drafts.draftFor(run.id, output.text);
   const edited = isDraftEdited(draft.text, output.text);
 
   const regenerate = () => {
     setConfirming(false);
-    updater.run(regenerateInput(run.input, tone, output.update.tone));
+    onRegenerate?.(regenerateInput(run.input, tone, output.update.tone));
   };
 
   const copy = async () => {
@@ -129,7 +137,7 @@ export function UpdateResult({
       });
       return;
     }
-    updater.markCopied(run.id, draft.text);
+    drafts.markCopied(run.id, draft.text);
     toast.success("Copied. Paste it into Slack.");
   };
 
@@ -137,38 +145,42 @@ export function UpdateResult({
     <div className="flex flex-col gap-4">
       <Warnings warnings={output.warnings} />
 
-      <div className="flex flex-col gap-2">
-        <span id={`${textId}-tone`} className="text-[13px] font-medium">
-          Tone
-        </span>
-        <ToggleGroup
-          type="single"
-          value={tone}
-          onValueChange={(value) => {
-            if (value) setTone(value as StatusUpdateTone);
-          }}
-          aria-labelledby={`${textId}-tone`}
-          className="grid grid-cols-2 sm:grid-cols-4"
-        >
-          {STATUS_UPDATE_TONES.map((value) => {
-            const Icon = TONE_ICON[value];
-            return (
-              <ToggleGroupItem
-                key={value}
-                value={value}
-                className="h-10 text-[13px] font-normal md:h-8"
-              >
-                <Icon className="size-3.5" aria-hidden />
-                {TONE_META[value].label}
-                {value === output.update.tone && run.input.tone === undefined && (
-                  <span className="sr-only"> (Postdog&apos;s pick)</span>
-                )}
-              </ToggleGroupItem>
-            );
-          })}
-        </ToggleGroup>
-        <ToneHint run={run} output={output} chosen={tone} />
-      </div>
+      {onRegenerate ? (
+        <div className="flex flex-col gap-2">
+          <span id={`${textId}-tone`} className="text-[13px] font-medium">
+            Tone
+          </span>
+          <ToggleGroup
+            type="single"
+            value={tone}
+            onValueChange={(value) => {
+              if (value) setTone(value as StatusUpdateTone);
+            }}
+            aria-labelledby={`${textId}-tone`}
+            className="grid grid-cols-2 sm:grid-cols-4"
+          >
+            {STATUS_UPDATE_TONES.map((value) => {
+              const Icon = TONE_ICON[value];
+              return (
+                <ToggleGroupItem
+                  key={value}
+                  value={value}
+                  className="h-10 text-[13px] font-normal md:h-8"
+                >
+                  <Icon className="size-3.5" aria-hidden />
+                  {TONE_META[value].label}
+                  {value === output.update.tone && run.input.tone === undefined && (
+                    <span className="sr-only"> (Postdog&apos;s pick)</span>
+                  )}
+                </ToggleGroupItem>
+              );
+            })}
+          </ToggleGroup>
+          <ToneHint run={run} output={output} chosen={tone} />
+        </div>
+      ) : (
+        <ToneHint run={run} output={output} chosen={output.update.tone} />
+      )}
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
@@ -189,7 +201,7 @@ export function UpdateResult({
           id={textId}
           ref={textarea}
           value={draft.text}
-          onChange={(event) => updater.editDraft(run.id, event.target.value)}
+          onChange={(event) => drafts.editDraft(run.id, event.target.value)}
           spellCheck
           className="max-h-[50dvh] min-h-40 leading-relaxed md:text-[13px]"
         />
@@ -220,15 +232,17 @@ export function UpdateResult({
         </div>
       ) : (
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className={`${ACTION} border-brand/40 hover:border-brand/70`}
-            onClick={() => (edited ? setConfirming(true) : regenerate())}
-          >
-            <RotateCw className="size-3.5 text-brand" aria-hidden />
-            Regenerate
-          </Button>
+          {onRegenerate && (
+            <Button
+              variant="outline"
+              size="sm"
+              className={`${ACTION} border-brand/40 hover:border-brand/70`}
+              onClick={() => (edited ? setConfirming(true) : regenerate())}
+            >
+              <RotateCw className="size-3.5 text-brand" aria-hidden />
+              Regenerate
+            </Button>
+          )}
           <Button size="sm" className={ACTION} onClick={() => void copy()}>
             <Copy className="size-3.5" aria-hidden />
             Copy

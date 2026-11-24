@@ -34,14 +34,14 @@ const OUTCOME_ICON: Record<DecomposerOutcome, { icon: LucideIcon; className: str
 /**
  * A completed Decomposer run: the counts in one line, one row per task that opens it for
  * review, the related groups, then the warnings. An auto run that changed something links to the
- * Inbox, where it can be undone. `onOpenTask` closes the dialog so the task panel or Inbox shows.
+ * Inbox, where it can be undone. `onOpenTask` closes a dialog so the task panel or Inbox shows.
  */
 export function DecomposeResult({
   run,
   onOpenTask,
 }: {
   run: DecomposerRun;
-  onOpenTask: () => void;
+  onOpenTask?: () => void;
 }) {
   const { hrefWith } = useTaskListParams();
   const output = run.output;

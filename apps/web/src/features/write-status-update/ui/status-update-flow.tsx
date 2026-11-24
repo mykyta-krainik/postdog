@@ -26,7 +26,13 @@ export function StatusUpdateFlow({ updater }: { updater: StatusUpdater }) {
     case "update":
       return (
         <div className="flex min-w-0 flex-col gap-3">
-          <UpdateResult key={view.run.id} run={view.run} output={view.output} updater={updater} />
+          <UpdateResult
+            key={view.run.id}
+            run={view.run}
+            output={view.output}
+            drafts={updater}
+            onRegenerate={updater.run}
+          />
           <TraceTimeline trace={view.run.trace} />
         </div>
       );
