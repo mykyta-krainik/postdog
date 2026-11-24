@@ -9,3 +9,10 @@ export const RUN_POLL_INTERVAL_MS = 1500;
 export function runPollInterval(run: Pick<AgentRun, "status"> | undefined): number {
   return run?.status === "running" ? RUN_POLL_INTERVAL_MS : 0;
 }
+
+/** A run list is refetched like a run while any run in it is running. */
+export function runListPollInterval(
+  list: { items: readonly Pick<AgentRun, "status">[] } | undefined,
+): number {
+  return list?.items.some((run) => run.status === "running") ? RUN_POLL_INTERVAL_MS : 0;
+}

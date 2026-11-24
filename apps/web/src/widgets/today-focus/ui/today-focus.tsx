@@ -1,10 +1,19 @@
 "use client";
 
 import { LoaderCircle, RotateCw, Sparkles } from "lucide-react";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { usePlanDay } from "@/features/plan-day";
-import { AgentRunStatus, MockAiBadge, isRunBusy, usePlannerLatest } from "@/entities/agent-run";
+import {
+  AgentRunStatus,
+  MockAiBadge,
+  findRunning,
+  isRunBusy,
+  usePlannerLatest,
+  useRunningRuns,
+} from "@/entities/agent-run";
 import { ApiError } from "@/shared/api";
+import { routes } from "@/shared/config";
 import { Button } from "@/shared/ui/button";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { LogoMark } from "@/shared/ui/wordmark";
@@ -53,30 +62,53 @@ function PlanSkeleton() {
 
 /**
  * The Today page body: the Planner's latest plan with its warnings, a staleness hint and the
- * trace, Refresh to plan again, and the run's progress while it plans. Mount it only while AI is on.
+ * trace, Refresh to plan again, and the run's progress while it plans. A Planner run started
+ * elsewhere, in another tab or before the user left, disables planning and links to the run;
+ * its plan shows once it finishes. Mount it only while AI is on.
  */
 export function TodayFocus() {
   const { latest, error, isValidating, mutate } = usePlannerLatest();
   const runner = usePlanDay();
+  const { runs } = useRunningRuns();
   const busy = isRunBusy(runner.view);
+  const ownRunId = "run" in runner.view ? runner.view.run.id : undefined;
+  const elsewhere = busy ? undefined : findRunning(runs, { agent: "planner" }, ownRunId);
 
-  const planButton = (label: string, variant: "default" | "outline") => (
-    <Button
-      variant={variant}
-      className="h-10 gap-1.5 px-3 text-[13px] md:h-8"
-      disabled={busy}
-      onClick={runner.start}
-    >
-      {busy ? (
-        <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
-      ) : label === "Refresh" ? (
-        <RotateCw className="size-4" aria-hidden />
-      ) : (
-        <Sparkles className="size-4" aria-hidden />
-      )}
-      {busy ? "Planning…" : label}
-    </Button>
-  );
+  const planButton = (label: string, variant: "default" | "outline") => {
+    if (elsewhere) {
+      return (
+        <div className="flex items-center gap-2">
+          <Link
+            href={routes.run(elsewhere.id)}
+            className="flex h-10 items-center rounded-md px-1.5 text-[13px] text-brand-text underline-offset-2 outline-none hover:underline focus-visible:ring-1 focus-visible:ring-ring md:h-8"
+          >
+            Watch the run
+          </Link>
+          <Button variant={variant} className="h-10 gap-1.5 px-3 text-[13px] md:h-8" disabled>
+            <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
+            Planning your day…
+          </Button>
+        </div>
+      );
+    }
+    return (
+      <Button
+        variant={variant}
+        className="h-10 gap-1.5 px-3 text-[13px] md:h-8"
+        disabled={busy}
+        onClick={runner.start}
+      >
+        {busy ? (
+          <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
+        ) : label === "Refresh" ? (
+          <RotateCw className="size-4" aria-hidden />
+        ) : (
+          <Sparkles className="size-4" aria-hidden />
+        )}
+        {busy ? "Planning…" : label}
+      </Button>
+    );
+  };
 
   const body = (() => {
     if (latest === undefined) {

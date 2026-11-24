@@ -23,7 +23,7 @@ function Notice({
   tone: "error" | "quiet";
   icon: ReactNode;
   title: string;
-  action: ReactNode;
+  action?: ReactNode;
   children?: ReactNode;
 }) {
   return (
@@ -44,7 +44,8 @@ function Notice({
   );
 }
 
-function RetryButton({ onRetry, label = "Retry" }: { onRetry: () => void; label?: string }) {
+function RetryButton({ onRetry, label = "Retry" }: { onRetry?: () => void; label?: string }) {
+  if (!onRetry) return null;
   return (
     <Button variant="outline" size="sm" className={ACTION_BUTTON} onClick={onRetry}>
       <RotateCw className="size-3.5" aria-hidden />
@@ -94,7 +95,8 @@ function Working({
 /**
  * The UX states of one AI action: running with staged progress and Cancel, then the result,
  * or what failed with Retry and the trace. Idle renders nothing. `result` renders a completed
- * run above its trace; leave it out when the caller shows the result elsewhere.
+ * run above its trace; leave it out when the caller shows the result elsewhere. Without
+ * `onRetry`, a failed or cancelled run shows no Retry, for places that only look at a run.
  */
 export function AgentRunStatus<Run extends AgentRun>({
   view,
@@ -107,7 +109,7 @@ export function AgentRunStatus<Run extends AgentRun>({
   view: RunView<Run>;
   agent: AgentName;
   onCancel: () => void;
-  onRetry: () => void;
+  onRetry?: () => void;
   result?: (run: Run) => ReactNode;
   className?: string;
 }) {

@@ -31,6 +31,21 @@ export function formatDuration(ms: number): string {
   return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`;
 }
 
+/** A wall-clock span: "under 1 s", "42 s", "3 min 5 s", "1 h 4 min". */
+export function formatElapsed(ms: number): string {
+  const seconds = Math.round(ms / 1000);
+  if (seconds < 1) return "under 1 s";
+  if (seconds < 60) return `${seconds} s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) {
+    const rest = seconds % 60;
+    return rest === 0 ? `${minutes} min` : `${minutes} min ${rest} s`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+}
+
 const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
 
 /** "940", "1.2K". */

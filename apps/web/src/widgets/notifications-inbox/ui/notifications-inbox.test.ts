@@ -40,8 +40,16 @@ const changeset = {
 const base = { runId: 41, changesetId: null, changeset: null, readAt: null, createdAt: 1 };
 
 const list = listNotificationsResponseSchema.parse({
-  unreadCount: 2,
+  unreadCount: 3,
   items: [
+    {
+      ...base,
+      id: 4,
+      kind: "run_finished",
+      title: "Your status update is ready",
+      body: "The draft for PD-7 is waiting on the Runs page.",
+      runId: 52,
+    },
     {
       ...base,
       id: 3,
@@ -82,13 +90,16 @@ function render(data: ListNotificationsResponse): string {
 describe("NotificationsInbox", () => {
   it("lists every kind newest first and marks the unread ones", () => {
     const html = render(list);
-    const order = ["Split 2 tasks", "The Planner failed", "Skipped PD-7"].map((title) =>
-      html.indexOf(title),
-    );
+    const order = [
+      "Your status update is ready",
+      "Split 2 tasks",
+      "The Planner failed",
+      "Skipped PD-7",
+    ].map((title) => html.indexOf(title));
     expect(order).toEqual([...order].sort((a, b) => a - b));
-    expect(html.match(/data-unread="true"/g)).toHaveLength(2);
-    expect(html.match(/>Unread</g)).toHaveLength(2);
-    expect(html.match(/Mark as read/g)).toHaveLength(2);
+    expect(html.match(/data-unread="true"/g)).toHaveLength(3);
+    expect(html.match(/>Unread</g)).toHaveLength(3);
+    expect(html.match(/Mark as read/g)).toHaveLength(3);
   });
 
   it("lists an auto run's tasks as links with what it created and their state", () => {
@@ -109,7 +120,7 @@ describe("NotificationsInbox", () => {
   });
 
   it("hides Roll back everything once nothing can roll back", () => {
-    const [auto] = list.items;
+    const auto = list.items.find((item) => item.kind === "auto_decomposition");
     const done = {
       ...auto!,
       changeset: {
@@ -121,6 +132,15 @@ describe("NotificationsInbox", () => {
     const html = render({ unreadCount: 0, items: [done] });
     expect(html).not.toContain("Roll back");
     expect(html).toContain("Everything this run created was removed.");
+  });
+
+  it("links a finished run to its result on the Runs page", () => {
+    const html = render(list);
+    expect(html).toContain("The draft for PD-7 is waiting on the Runs page.");
+    expect(html).toContain('href="/runs?run=52"');
+    expect(html).toContain("Open result");
+    // Only the failed run offers its trace.
+    expect(html.match(/Show trace of run/g)).toHaveLength(1);
   });
 
   it("offers a failed run's trace", () => {
