@@ -41,8 +41,8 @@ const INTERRUPTED: AgentRunError = {
 };
 
 /**
- * A run counts as watched while its last GET /api/agents/runs/:id is at most this old. The web
- * polls every 1.5 s, and a throttled background tab about once a minute.
+ * A run counts as watched while its start or its last GET /api/agents/runs/:id is at most this
+ * old. The web polls every 1.5 s, and a throttled background tab about once a minute.
  */
 export const WATCH_WINDOW_MS = 8_000;
 
@@ -106,12 +106,13 @@ export function createAgentRunService(deps: {
 }) {
   const { db, llm, tracer, agents, now = () => Date.now() } = deps;
   /**
-   * The runs this process executes: how to stop each, its execute until it has saved, and when
-   * GET /api/agents/runs/:id last read it. The entry goes once the run has saved its end.
+   * The runs this process executes: how to stop each, its execute until it has saved, and when a
+   * client last showed it is there, by starting the run or reading it. The entry goes once the
+   * run has saved its end.
    */
   const active = new Map<
     number,
-    { controller: AbortController; done: Promise<void>; lastPolledAt?: number }
+    { controller: AbortController; done: Promise<void>; lastSeenAt: number }
   >();
   /** The run holding each slot of RUN_SLOTS. */
   const slots = new Map<string, number>();
@@ -127,8 +128,8 @@ export function createAgentRunService(deps: {
   }
 
   function watched(id: number, at: number): boolean {
-    const polledAt = active.get(id)?.lastPolledAt;
-    return polledAt !== undefined && at - polledAt <= WATCH_WINDOW_MS;
+    const seenAt = active.get(id)?.lastSeenAt;
+    return seenAt !== undefined && at - seenAt <= WATCH_WINDOW_MS;
   }
 
   /** Saves the run's end and its Inbox entry in one transaction, unless the run already ended. */
@@ -216,7 +217,7 @@ export function createAgentRunService(deps: {
       const done = execute(definition, ctx, input)
         .catch((err: unknown) => logger.error(`Agent run ${run.id} could not be saved`, { err }))
         .finally(() => active.delete(run.id));
-      active.set(run.id, { controller, done });
+      active.set(run.id, { controller, done, lastSeenAt: startedAt });
       slots.set(slot, run.id);
       return { runId: run.id };
     },
@@ -225,7 +226,7 @@ export function createAgentRunService(deps: {
     get(id: number): AgentRun {
       const run = requireRun(id);
       const live = active.get(id);
-      if (live) live.lastPolledAt = now();
+      if (live) live.lastSeenAt = now();
       return run;
     },
 

@@ -126,10 +126,13 @@ async function inbox(api: Api) {
 
 const kinds = async (api: Api) => (await inbox(api)).items.map((n) => [n.kind, n.runId]);
 
+const LATER = WATCH_WINDOW_MS + 1;
+
 describe("the watch window", () => {
-  it("notifies when nobody polled a run that completed", async () => {
-    const { db, api, planner } = setup();
+  it("notifies when nobody looked at a run for longer than the window before it completed", async () => {
+    const { db, api, clock, planner } = setup();
     const runId = await start(api, "planner/run");
+    clock.now += LATER;
     planner.complete(plan(3));
     expect(await ended(db, runId)).toBe("completed");
 
@@ -144,15 +147,25 @@ describe("the watch window", () => {
         changesetId: null,
         changeset: null,
         readAt: null,
-        createdAt: START,
+        createdAt: START + LATER,
       },
     ]);
     expect(unreadCount).toBe(1);
   });
 
+  it("counts starting a run as watching it, so a run that ends before the first poll stays quiet", async () => {
+    const { db, api, clock, planner } = setup();
+    const runId = await start(api, "planner/run");
+    clock.now += WATCH_WINDOW_MS;
+    planner.complete(plan(3));
+    await ended(db, runId);
+    expect(await kinds(api)).toEqual([]);
+  });
+
   it("writes nothing when the run was polled within the window", async () => {
     const { db, api, clock, planner } = setup();
     const runId = await start(api, "planner/run");
+    clock.now += 5_000;
     await poll(api, runId);
     clock.now += WATCH_WINDOW_MS;
     planner.complete(plan(3));
@@ -166,23 +179,25 @@ describe("the watch window", () => {
     await poll(api, runId);
     clock.now += 1_500;
     await poll(api, runId);
-    clock.now += WATCH_WINDOW_MS + 1;
+    clock.now += LATER;
     planner.complete(plan(3));
     await ended(db, runId);
     expect(await kinds(api)).toEqual([["run_finished", runId]]);
   });
 
   it("does not count the run list as watching a run", async () => {
-    const { db, api, planner } = setup();
+    const { db, api, clock, planner } = setup();
     const runId = await start(api, "planner/run");
+    clock.now += 5_000;
     await api.get("/api/agents/runs").expect(200);
+    clock.now += 5_000;
     planner.complete(plan(3));
     await ended(db, runId);
     expect(await kinds(api)).toEqual([["run_finished", runId]]);
   });
 
-  it("forgets a run's polls once it ends, so the next run in its slot starts unwatched", async () => {
-    const { db, api, planner } = setup();
+  it("forgets a run's polls once it ends, so the next run in its slot is judged on its own", async () => {
+    const { db, api, clock, planner } = setup();
     const first = await start(api, "planner/run");
     await poll(api, first);
     planner.complete(plan(3));
@@ -190,6 +205,7 @@ describe("the watch window", () => {
     await poll(api, first);
 
     const second = await start(api, "planner/run");
+    clock.now += LATER;
     planner.complete(plan(2));
     await ended(db, second);
     expect(await kinds(api)).toEqual([["run_finished", second]]);
@@ -198,13 +214,14 @@ describe("the watch window", () => {
 
 describe("failed and stopped runs", () => {
   it("notifies a Planner failure only when nobody watched", async () => {
-    const { db, api, planner } = setup();
+    const { db, api, clock, planner } = setup();
     const watched = await start(api, "planner/run");
     await poll(api, watched);
     planner.fail(new AgentError("no_terminal_tool", "The model never submitted a plan."));
     expect(await ended(db, watched)).toBe("failed");
 
     const unwatched = await start(api, "planner/run");
+    clock.now += LATER;
     planner.fail(new AgentError("no_terminal_tool", "The model never submitted a plan."));
     await ended(db, unwatched);
 
@@ -219,13 +236,14 @@ describe("failed and stopped runs", () => {
   });
 
   it("writes exactly one agent_failed for a Decomposer failure, watched or not", async () => {
-    const { db, api, decomposer } = setup();
+    const { db, api, clock, decomposer } = setup();
     const watched = await start(api, "decomposer/run");
     await poll(api, watched);
     decomposer.fail(new AgentError("llm_error", "The model is down."));
     await ended(db, watched);
 
     const unwatched = await start(api, "decomposer/run");
+    clock.now += LATER;
     decomposer.fail(new AgentError("llm_error", "The model is down."));
     await ended(db, unwatched);
 
@@ -237,8 +255,9 @@ describe("failed and stopped runs", () => {
   });
 
   it("never notifies a run the user cancelled, even unwatched", async () => {
-    const { db, api } = setup();
+    const { db, api, clock } = setup();
     const runId = await start(api, "planner/run");
+    clock.now += LATER;
     await api.post(`/api/agents/runs/${runId}/cancel`).expect(200);
     expect(await ended(db, runId)).toBe("cancelled");
     await new Promise((resolve) => setTimeout(resolve, 20));
@@ -246,9 +265,10 @@ describe("failed and stopped runs", () => {
   });
 
   it("never notifies the runs the kill switch stopped", async () => {
-    const { db, api } = setup();
+    const { db, api, clock } = setup();
     const planner = await start(api, "planner/run");
     const decomposer = await start(api, "decomposer/run");
+    clock.now += LATER;
     await api.patch("/api/settings").send({ aiEnabled: false }).expect(200);
     expect(await ended(db, planner)).toBe("cancelled");
     expect(await ended(db, decomposer)).toBe("cancelled");
@@ -463,7 +483,19 @@ describe("what each agent says", () => {
   });
 });
 
-describe("the real agents on the mock model, unwatched", () => {
+/**
+ * The mock model answers at once, so these runs end within the window of their start and stay
+ * quiet. What each would have said unwatched is read from the stored run.
+ */
+describe("the real agents on the mock model", () => {
+  async function finished(db: Db, api: Api, path: string, body: object = {}) {
+    const runId = await start(api, path, body);
+    expect(await ended(db, runId)).toBe("completed");
+    const kindsLeft = (await inbox(api)).items.map((n) => n.kind);
+    expect(kindsLeft).not.toContain("run_finished");
+    return runEndNotification(findRun(db, runId)!, false, Date.now());
+  }
+
   it.each([
     ["planner/run", {}, "Your plan for today is ready", "3 tasks to start with."],
     [
@@ -477,37 +509,29 @@ describe("the real agents on the mock model, unwatched", () => {
     const db = createTestDb();
     seedDatabase(db, Date.now());
     const api = jsonClient(createApp(db));
-    const runId = await start(api, path, body);
-    expect(await ended(db, runId)).toBe("completed");
-    expect((await inbox(api)).items).toEqual([
-      expect.objectContaining({ kind: "run_finished", title, body: text, runId }),
-    ]);
+    expect(await finished(db, api, path, body)).toMatchObject({
+      kind: "run_finished",
+      title,
+      body: text,
+    });
   });
 
   it("sums up a suggest-mode Decomposer run on the seeded data", async () => {
     setNow(T0);
     const { db, api } = decomposerSetup({ seed: true });
-    const runId = await start(api, "decomposer/run");
-    expect(await ended(db, runId)).toBe("completed");
-    expect((await inbox(api)).items).toEqual([
-      expect.objectContaining({
-        kind: "run_finished",
-        title: "The Decomposer has suggestions to review",
-        body: "5 tasks have subtasks to review, 2 tasks need your answers, 1 group of related tasks to review.",
-        runId,
-      }),
-    ]);
+    expect(await finished(db, api, "decomposer/run")).toMatchObject({
+      kind: "run_finished",
+      title: "The Decomposer has suggestions to review",
+      body: "5 tasks have subtasks to review, 2 tasks need your answers, 1 group of related tasks to review.",
+    });
   });
 
   it("leaves an auto-mode Decomposer run to its own summary", async () => {
     setNow(T0);
     const { db, api } = decomposerSetup({ seed: true });
     await api.patch("/api/settings").send({ decompositionMode: "auto" }).expect(200);
-    const runId = await start(api, "decomposer/run");
-    expect(await ended(db, runId)).toBe("completed");
-    const { items } = await inbox(api);
-    expect(items.map((n) => n.kind)).toContain("auto_decomposition");
-    expect(items.map((n) => n.kind)).not.toContain("run_finished");
+    expect(await finished(db, api, "decomposer/run")).toBeUndefined();
+    expect((await inbox(api)).items.map((n) => n.kind)).toContain("auto_decomposition");
   });
 
   it("tells a clarify rerun in suggest mode", async () => {
@@ -515,18 +539,11 @@ describe("the real agents on the mock model, unwatched", () => {
     const { db, api } = decomposerSetup({ task: twoSteps });
     const task = addTask(db, { title: "Improve performance" });
     const suggestion = insertSuggestion(db, clarificationFor(addRun(db), task.id, Date.now()));
-    const runId = await start(api, "decomposer/clarify", {
-      suggestionId: suggestion.id,
-      generateAnyway: true,
+    const body = { suggestionId: suggestion.id, generateAnyway: true };
+    expect(await finished(db, api, "decomposer/clarify", body)).toMatchObject({
+      kind: "run_finished",
+      title: "The Decomposer has suggestions to review",
+      body: "1 task has subtasks to review.",
     });
-    expect(await ended(db, runId)).toBe("completed");
-    expect((await inbox(api)).items).toEqual([
-      expect.objectContaining({
-        kind: "run_finished",
-        title: "The Decomposer has suggestions to review",
-        body: "1 task has subtasks to review.",
-        runId,
-      }),
-    ]);
   });
 });
