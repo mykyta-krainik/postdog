@@ -6,11 +6,12 @@ import {
   listAgentRunsResponseSchema,
   plannerLatestResponseSchema,
   type AgentRun,
+  type ListAgentRunsResponse,
 } from "@postdog/shared";
 import useSWR, { useSWRConfig } from "swr";
 import type { z } from "zod";
 import { fetcherFor } from "@/shared/api";
-import { RUN_POLL_INTERVAL_MS, runPollInterval } from "../model/polling";
+import { runListPollInterval, runPollInterval } from "../model/polling";
 import { runningPollInterval } from "../model/running";
 import { agentRunKeys, type AgentRunsQuery } from "./keys";
 
@@ -30,6 +31,16 @@ export function useAgentsInfo(enabled = true) {
 }
 
 /**
+ * The data cached under a key as of this render. Poll intervals are numbers computed from it,
+ * not functions: SWR calls a function only when it schedules the next poll, so data that had
+ * not loaded yet would decide the first interval.
+ */
+function useCached<Data>(key: string | null): Data | undefined {
+  const { cache } = useSWRConfig();
+  return key === null ? undefined : (cache.get(key)?.data as Data | undefined);
+}
+
+/**
  * One run, refetched every 1.5 s while it is running and never after it settles.
  * Pass an agent's run schema to get its typed input and output. Pass undefined to skip the request.
  */
@@ -38,12 +49,8 @@ export function useAgentRun<Schema extends RunSchema = typeof agentRunSchema>(
   schema: Schema = agentRunSchema as unknown as Schema,
 ) {
   const key = runId === undefined ? null : agentRunKeys.run(runId);
-  const { cache } = useSWRConfig();
-  const cached = key === null ? undefined : (cache.get(key)?.data as AgentRun | undefined);
   return useSWR<z.output<Schema>>(key, fetcherFor(schema), {
-    // A number from this render's data, not a function: SWR calls a function only when it
-    // schedules the next poll, so a run that was not loaded yet would never start polling.
-    refreshInterval: runPollInterval(cached),
+    refreshInterval: runPollInterval(useCached<AgentRun>(key)),
     // Below the poll interval, so each poll sends a request.
     dedupingInterval: 1000,
     revalidateOnFocus: false,
@@ -55,9 +62,9 @@ export function useAgentRun<Schema extends RunSchema = typeof agentRunSchema>(
  * agent route answers 403 while AI is off, so pass enabled = aiEnabled.
  */
 export function useAgentRuns(query: AgentRunsQuery = {}, enabled = true) {
-  return useSWR(enabled ? agentRunKeys.runs(query) : null, fetchRuns, {
-    refreshInterval: (data) =>
-      data?.items.some((run) => run.status === "running") ? RUN_POLL_INTERVAL_MS : 0,
+  const key = enabled ? agentRunKeys.runs(query) : null;
+  return useSWR(key, fetchRuns, {
+    refreshInterval: runListPollInterval(useCached<ListAgentRunsResponse>(key)),
     dedupingInterval: 1000,
   });
 }
@@ -67,8 +74,9 @@ export function useAgentRuns(query: AgentRunsQuery = {}, enabled = true) {
  * focus. Pass enabled = aiEnabled: with AI off it sends nothing and `runs` stays undefined.
  */
 export function useRunningRuns(enabled = true) {
-  const { data } = useSWR(enabled ? agentRunKeys.running() : null, fetchRuns, {
-    refreshInterval: runningPollInterval,
+  const key = enabled ? agentRunKeys.running() : null;
+  const { data } = useSWR(key, fetchRuns, {
+    refreshInterval: runningPollInterval(useCached<ListAgentRunsResponse>(key)),
     // Below the fast poll, so each poll sends a request.
     dedupingInterval: 1000,
     revalidateOnFocus: true,
